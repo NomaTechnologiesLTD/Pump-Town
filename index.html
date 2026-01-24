@@ -321,6 +321,227 @@
             .territory-grid {
                 grid-template-columns: 1fr !important;
             }
+            
+            /* Prediction Market Mobile Fix */
+            .prediction-market-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .prediction-stats-grid {
+                grid-template-columns: 1fr !important;
+                gap: 15px !important;
+            }
+            
+            /* Arcade mini games - 2 columns on tablet, 1 on mobile */
+            .arcade-mini-games {
+                grid-template-columns: 1fr 1fr !important;
+            }
+            
+            /* Degen Arcade header resource display */
+            .arcade-header {
+                flex-direction: column !important;
+                gap: 15px !important;
+            }
+            
+            .arcade-header .resource-display {
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+                gap: 10px !important;
+            }
+            
+            .arcade-header .resource-item {
+                padding: 8px 12px !important;
+                font-size: 0.85em !important;
+            }
+            
+            /* Ledger mobile fixes */
+            .ledger-section {
+                padding: 15px !important;
+            }
+            
+            .ledger-header {
+                flex-direction: column !important;
+                gap: 15px !important;
+                align-items: flex-start !important;
+            }
+            
+            .ledger-filters {
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            
+            .ledger-filter-btn {
+                padding: 6px 12px !important;
+                font-size: 0.8em !important;
+            }
+            
+            .ledger-entry {
+                flex-wrap: wrap !important;
+                gap: 10px !important;
+                padding: 12px !important;
+            }
+            
+            .ledger-content {
+                flex: 1 1 100% !important;
+                order: 1 !important;
+            }
+            
+            .ledger-icon {
+                order: 0 !important;
+            }
+            
+            .ledger-time {
+                order: 2 !important;
+                font-size: 0.75em !important;
+            }
+            
+            .ledger-rep {
+                order: 3 !important;
+                font-size: 0.8em !important;
+            }
+            
+            /* Hall of Fame/Shame grid */
+            .hall-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Trading mini grid */
+            .trading-mini-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Friends section mobile fix */
+            .friend-card {
+                flex-wrap: nowrap !important;
+                gap: 10px !important;
+                padding: 10px 12px !important;
+            }
+            
+            .friend-info {
+                flex: 1 !important;
+                min-width: 0 !important;
+            }
+            
+            .friend-info > div:last-child {
+                overflow: hidden !important;
+            }
+            
+            .friend-info span {
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                max-width: 120px !important;
+                display: inline-block !important;
+            }
+            
+            .visit-btn {
+                flex-shrink: 0 !important;
+                padding: 6px 12px !important;
+                font-size: 0.85em !important;
+            }
+            
+            /* Memecoin launcher mobile fix */
+            .coin-creator {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+            
+            .coin-input {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            /* Sidebar toggle more visible */
+            .sidebar-toggle {
+                top: 15px !important;
+                left: 15px !important;
+                width: 45px !important;
+                height: 45px !important;
+                font-size: 1.3em !important;
+            }
+            
+            .main-content {
+                padding: 15px !important;
+                padding-top: 75px !important;
+            }
+            
+            /* Arcade mini games stack on mobile */
+            .arcade-mini-games {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Sniper game, slot machine responsive */
+            .sniper-game,
+            .slot-machine,
+            .daily-puzzle {
+                padding: 15px !important;
+            }
+            
+            /* Prediction market cards full width */
+            .prediction-market-grid {
+                gap: 15px !important;
+            }
+            
+            /* Recent Activity feed */
+            .activity-feed .activity-item {
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+            
+            /* Ledger entries more compact */
+            .ledger-entry {
+                padding: 10px !important;
+            }
+            
+            .ledger-player {
+                max-width: 100px !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            /* Extra small screens */
+            .sidebar-toggle {
+                top: 10px !important;
+                left: 10px !important;
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 1.2em !important;
+            }
+            
+            .main-content {
+                padding: 10px !important;
+                padding-top: 65px !important;
+            }
+            
+            /* Friend names shorter on very small screens */
+            .friend-info span {
+                max-width: 80px !important;
+            }
+            
+            /* Ledger ultra compact */
+            .ledger-filters {
+                width: 100% !important;
+            }
+            
+            .ledger-filter-btn {
+                flex: 1 !important;
+                text-align: center !important;
+            }
+        }
+        
+        /* New class for arcade mini games grid */
+        .arcade-mini-games {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         
         @media (max-width: 1200px) {
@@ -8995,7 +9216,7 @@
                                 />
                                 
                                 {/* New Games Grid */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '25px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                                <div className="arcade-mini-games">
                                     {/* Token Sniper */}
                                     <TokenSniperGame 
                                         resources={resources}
@@ -9011,13 +9232,6 @@
                                         onMayorComment={triggerMayorComment}
                                         playerName={character?.name}
                                         playerLevel={character?.level || 1}
-                                    />
-                                    
-                                    {/* Daily Puzzle */}
-                                    <DailyPuzzle 
-                                        resources={resources}
-                                        onResourceChange={handleResourceChange}
-                                        showToast={showToast}
                                     />
                                 </div>
                             </>
@@ -9064,7 +9278,7 @@
                                 <CTFeed playerName={character?.name} />
                                 
                                 {/* Whale Alerts & Degen Bingo */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                                <div className="trading-mini-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                                     <WhaleAlerts showToast={showToast} />
                                     <DegenBingo showToast={showToast} />
                                 </div>
@@ -15117,7 +15331,7 @@
             return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                     {/* Header Stats */}
-                    <div style={{
+                    <div className="prediction-stats-grid" style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(3, 1fr)',
                         gap: '20px'
@@ -15163,7 +15377,7 @@
                     {/* Markets Grid */}
                     <div>
                         <h3 style={{ color: '#ffd700', marginBottom: '20px' }}>🔮 Active Markets</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
+                        <div className="prediction-market-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
                             {markets.map(market => {
                                 const userBet = activeBets.find(b => b.marketId === market.id && b.status === 'active');
                                 
