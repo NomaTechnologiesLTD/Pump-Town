@@ -716,10 +716,10 @@ app.post('/api/save-character', async (req, res) => {
     let avatarStr = typeof character.avatar === 'object' ? JSON.stringify(character.avatar) : character.avatar;
     
     await pool.query(`
-      INSERT INTO characters (user_id, email, name, role, trait, avatar, xp, level, reputation, degen_score, treasury)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      ON CONFLICT (email) DO UPDATE SET name=$3, role=$4, trait=$5, avatar=$6, xp=$7, level=$8, reputation=$9, degen_score=$10, treasury=$11, updated_at=CURRENT_TIMESTAMP
-    `, [userId, email.toLowerCase(), character.name, character.role, character.trait, avatarStr, character.xp||0, character.level||1, character.reputation||50, character.degenScore||0, character.treasury||1000]);
+      INSERT INTO characters (user_id, email, name, role, trait, avatar, xp, level, reputation, degen_score, treasury, votes_count)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ON CONFLICT (email) DO UPDATE SET name=$3, role=$4, trait=$5, avatar=$6, xp=$7, level=$8, reputation=$9, degen_score=$10, treasury=$11, votes_count=GREATEST(characters.votes_count, $12), updated_at=CURRENT_TIMESTAMP
+    `, [userId, email.toLowerCase(), character.name, character.role, character.trait, avatarStr, character.xp||0, character.level||1, character.reputation||50, character.degenScore||0, character.treasury||1000, character.votesCount||0]);
     
     console.log('💾 Character saved:', character.name);
     res.json({ success: true });
