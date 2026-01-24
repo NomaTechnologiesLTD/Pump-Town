@@ -8609,24 +8609,25 @@
                     generateNewVote(newState);
                     setAiGenerating(false);
                     
-                    // Fetch Mayor's reaction to the vote
-                    try {
-                        const reactionResponse = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-reaction', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                question: gameState.currentVote.question,
-                                winningOption: selectedOption,
-                                totalVotes: 1
-                            })
-                        });
-                        const reactionData = await reactionResponse.json();
+                    // Fetch Mayor's reaction to the vote (using .then to avoid await in non-async)
+                    fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-reaction', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            question: gameState.currentVote.question,
+                            winningOption: selectedOption,
+                            totalVotes: 1
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(reactionData => {
                         if (reactionData.success && reactionData.reaction) {
                             setMayorReaction(reactionData.reaction);
                         }
-                    } catch (error) {
+                    })
+                    .catch(error => {
                         console.error('Mayor reaction error:', error);
-                    }
+                    });
                 }, 3000);
             };
 
@@ -9310,10 +9311,12 @@
                     )}
                     
                     {/* Mayor Action Comment Popup */}
-                    <MayorActionComment 
-                        comment={mayorActionComment}
-                        onClose={() => setMayorActionComment(null)}
-                    />
+                    {mayorActionComment && (
+                        <MayorActionComment 
+                            comment={mayorActionComment}
+                            onClose={() => setMayorActionComment(null)}
+                        />
+                    )}
                 </div>
             );
         }
@@ -18630,7 +18633,7 @@
                         </button>
                     </div>
                     <div className="mayor-tips-content">
-                        "{tip}"
+                        "{tip || 'Loading wisdom...'}"
                     </div>
                 </div>
             );
