@@ -7771,6 +7771,47 @@
                 localStorage.setItem('pumptown_player_stats', JSON.stringify(playerStats));
             }, [playerStats]);
             
+            // Sync character and stats to backend periodically
+            useEffect(() => {
+                if (!wallet || !character) return;
+                
+                // Debounce backend sync - only sync every 30 seconds max
+                const syncTimer = setTimeout(() => {
+                    const charToSync = {
+                        ...character,
+                        xp: playerStats.xp,
+                        level: playerStats.level,
+                        degenScore: playerStats.degenScore || 0
+                    };
+                    saveCharacterToBackend(wallet.address, charToSync);
+                    // Also update localStorage with merged data
+                    localStorage.setItem('pumptown_character', JSON.stringify(charToSync));
+                }, 30000); // 30 second debounce
+                
+                return () => clearTimeout(syncTimer);
+            }, [playerStats.xp, playerStats.level, character?.votesCount]);
+            
+            // Save data to backend when user leaves the page
+            useEffect(() => {
+                if (!wallet || !character) return;
+                
+                const handleBeforeUnload = () => {
+                    const charToSync = {
+                        ...character,
+                        xp: playerStats.xp,
+                        level: playerStats.level,
+                        degenScore: playerStats.degenScore || 0
+                    };
+                    // Use sendBeacon for reliable delivery on page close
+                    const data = JSON.stringify({ email: wallet.address, character: charToSync });
+                    const blob = new Blob([data], { type: 'application/json' });
+                    navigator.sendBeacon('https://pump-town-backend-production.up.railway.app/api/save-character', blob);
+                };
+                
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+            }, [wallet, character, playerStats.xp, playerStats.level]);
+            
             // Save current zone
             useEffect(() => {
                 localStorage.setItem('pumptown_current_zone', currentZone);
@@ -8075,7 +8116,7 @@
                     const response = await fetch('https://pump-town-backend-production.up.railway.app/api/load-character', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ walletAddress })
+                        body: JSON.stringify({ email: walletAddress })
                     });
                     const data = await response.json();
                     if (data.success && data.character) {
@@ -8136,7 +8177,7 @@
                     await fetch('https://pump-town-backend-production.up.railway.app/api/save-character', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ walletAddress, character: charData })
+                        body: JSON.stringify({ email: walletAddress, character: charData })
                     });
                     console.log('Character saved to backend');
                 } catch (error) {
@@ -8384,11 +8425,11 @@
                             },
                             voteHistory: mergedHistory,
                             leaderboard: [
-                                { rank: 1, name: 'DegenDan', votes: 42, streak: 15, score: 980 },
-                                { rank: 2, name: 'WhaleWatcher', votes: 38, streak: 12, score: 875 },
-                                { rank: 3, name: 'DiamondDave', votes: 35, streak: 10, score: 820 },
-                                { rank: 4, name: 'PaperHunter', votes: 28, streak: 8, score: 650 },
-                                { rank: 5, name: 'SnipeKing', votes: 25, streak: 7, score: 590 }
+                                { rank: 1, name: 'DegenDan', votes: 4, streak: 1, score: 45 },
+                                { rank: 2, name: 'WhaleWatcher', votes: 3, streak: 1, score: 35 },
+                                { rank: 3, name: 'DiamondDave', votes: 3, streak: 1, score: 30 },
+                                { rank: 4, name: 'PaperHunter', votes: 2, streak: 1, score: 20 },
+                                { rank: 5, name: 'SnipeKing', votes: 1, streak: 1, score: 10 }
                             ]
                         });
                     } else {
@@ -8457,7 +8498,31 @@
                 // Save to localStorage
                 localStorage.setItem('pumptown_wallet', JSON.stringify(walletData));
                 // Try to load existing character from backend
-                await loadCharacterFromBackend(walletData.address);
+                const loadedFromBackend = await loadCharacterFromBackend(walletData.address);
+                
+                // Fallback to localStorage if backend fails
+                if (!loadedFromBackend) {
+                    const savedCharacter = localStorage.getItem('pumptown_character');
+                    if (savedCharacter) {
+                        try {
+                            const char = JSON.parse(savedCharacter);
+                            // Calculate holding days
+                            if (char.joinedDate) {
+                                const joinedDate = new Date(char.joinedDate);
+                                const now = new Date();
+                                char.holdingDays = Math.floor((now - joinedDate) / (1000 * 60 * 60 * 24));
+                            }
+                            // Ensure avatar is valid
+                            char.avatar = ensureValidAvatar(char.avatar);
+                            setCharacter(char);
+                            // Try to save to backend for future
+                            saveCharacterToBackend(walletData.address, char);
+                            console.log('Character loaded from localStorage fallback');
+                        } catch (e) {
+                            console.error('Error loading character from localStorage:', e);
+                        }
+                    }
+                }
             };
 
             const createCharacter = async (charData) => {
@@ -18145,23 +18210,28 @@
         }
 
         function TownStats({ stats, day, round }) {
+            // Only show actual game stats, filter out database fields
+            const displayStats = ['economy', 'security', 'culture', 'morale'];
+            
             return (
                 <div className="card">
                     <div className="day-counter">Day {day}</div>
                     <div className="round-counter">Round {round} • 6H Cycle</div>
                     
                     <div className="stats-grid">
-                        {Object.entries(stats).map(([key, value]) => (
-                            <div key={key} className="stat-item">
-                                <div className="stat-label">{key.charAt(0).toUpperCase() + key.slice(1)}</div>
-                                <div className="stat-value">{value}{key !== 'treasury' ? '%' : ' $TOWN'}</div>
-                                {key !== 'treasury' && (
+                        {displayStats.map(key => {
+                            const value = stats[key];
+                            if (value === undefined) return null;
+                            return (
+                                <div key={key} className="stat-item">
+                                    <div className="stat-label">{key.charAt(0).toUpperCase() + key.slice(1)}</div>
+                                    <div className="stat-value">{value}%</div>
                                     <div className="progress-bar">
                                         <div className="progress-fill" style={{ width: `${value}%` }}></div>
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             );
