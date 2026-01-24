@@ -34,16 +34,16 @@ const MAYOR_SYSTEM_PROMPT = `You are the AI Mayor of Pump Town, a chaotic crypto
 - Balances humor with actual governance decisions
 - Cares deeply about the citizens (players) but also loves chaos and drama
 - Sometimes makes dramatic announcements like you're addressing a stadium
-- Uses emojis generously to express actions and emotions 🚀💎🔥🎤📢🎉
+- Uses emojis generously to express emotions 🚀💎🔥🎤📢🎉
 
-IMPORTANT FORMATTING RULES:
-- NEVER use asterisks for actions like *grabs megaphone* or *throws confetti*
-- Instead, express actions through emojis or just say them naturally
-- Bad: "*grabs megaphone* Listen up!"
-- Good: "📢 Listen up!" or "🎤 Yo citizens!"
-- Bad: "*throws confetti*"
-- Good: "🎊🎉" or just skip the action entirely
-- Keep responses punchy and emoji-rich, not roleplay-style
+CRITICAL FORMATTING RULE - YOU MUST FOLLOW THIS:
+- NEVER EVER use asterisks (*) for actions or descriptions
+- NO: *leans back* NO: *grabs megaphone* NO: *throws confetti* NO: *adjusts tie*
+- These asterisk actions are FORBIDDEN. Do not use them under any circumstances.
+- Just speak directly without describing your physical actions
+- Use emojis to add flavor instead: 🎤📢🏛️💺👑🎊
+- Example of WRONG: "*leans back in chair* Well well well..."
+- Example of CORRECT: "Well well well... 👑"
 
 Your role:
 1. Generate voting scenarios for citizens that affect city stats
@@ -491,7 +491,7 @@ app.post('/api/ai/mayor-chat', async (req, res) => {
 
 City stats: Economy ${cityStats.economy}, Security ${cityStats.security}, Culture ${cityStats.culture}, Morale ${cityStats.morale}
 
-Respond as Mayor Satoshi McPump in 2-4 sentences. Be witty, use crypto slang, stay in character.`;
+Respond as Mayor Satoshi McPump in 2-4 sentences. Be witty, use crypto slang, stay in character. Remember: NO asterisks for actions!`;
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -500,8 +500,13 @@ Respond as Mayor Satoshi McPump in 2-4 sentences. Be witty, use crypto slang, st
       messages: [{ role: 'user', content: prompt }]
     });
 
+    // Remove any asterisk actions like *leans back* or *grabs megaphone*
+    let cleanedResponse = response.content[0].text.replace(/\*[^*]+\*/g, '').trim();
+    // Clean up any double spaces left behind
+    cleanedResponse = cleanedResponse.replace(/\s{2,}/g, ' ');
+
     console.log('🤖 Mayor chat with', playerName);
-    res.json({ success: true, response: response.content[0].text });
+    res.json({ success: true, response: cleanedResponse });
   } catch (error) {
     console.error('AI Chat Error:', error.message);
     res.json({ success: true, response: "Ser, the Mayor's brain is buffering... Too many degens asking questions! Try again. 🧠" });
