@@ -17994,7 +17994,9 @@
                             }
                             onConnect({ address: email.toLowerCase(), balance: 100000 });
                         } else {
-                            // Signup success
+                            // Signup success - clear any old character data so new user creates fresh
+                            localStorage.removeItem('pumptown_character');
+                            localStorage.removeItem('pumptown_wallet');
                             setSuccess('Account created! Check your email for a welcome message 🐸');
                             setTimeout(() => {
                                 onConnect({ address: email.toLowerCase(), balance: 100000 });
