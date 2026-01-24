@@ -8719,6 +8719,16 @@
                 setWallet(walletData);
                 // Save to localStorage
                 localStorage.setItem('pumptown_wallet', JSON.stringify(walletData));
+                
+                // Check if this is a fresh signup - skip loading old characters
+                const isFreshSignup = sessionStorage.getItem('pumptown_fresh_signup');
+                if (isFreshSignup) {
+                    console.log('🆕 Fresh signup detected - skipping character load, showing creator');
+                    sessionStorage.removeItem('pumptown_fresh_signup');
+                    setCharacter(null); // Force character creation screen
+                    return;
+                }
+                
                 // Try to load existing character from backend
                 const loadedFromBackend = await loadCharacterFromBackend(walletData.address);
                 
@@ -17994,9 +18004,29 @@
                             }
                             onConnect({ address: email.toLowerCase(), balance: 100000 });
                         } else {
-                            // Signup success - clear any old character data so new user creates fresh
+                            // Signup success - COMPLETELY clear all old data for fresh start
+                            console.log('🆕 New signup - clearing ALL old data');
                             localStorage.removeItem('pumptown_character');
                             localStorage.removeItem('pumptown_wallet');
+                            localStorage.removeItem('pumptown_user');
+                            localStorage.removeItem('pumptown_player_stats');
+                            localStorage.removeItem('pumptown_resources');
+                            localStorage.removeItem('pumptown_quests');
+                            localStorage.removeItem('pumptown_visited_zones');
+                            localStorage.removeItem('pumptown_current_zone');
+                            localStorage.removeItem('pumptown_territories');
+                            localStorage.removeItem('pumptown_guild');
+                            localStorage.removeItem('pumptown_action_history');
+                            localStorage.removeItem('pumptown_achievements');
+                            localStorage.removeItem('pumptown_friends');
+                            localStorage.removeItem('pumptown_launched_coins');
+                            localStorage.removeItem('pumptown_predictions');
+                            localStorage.removeItem('pumptown_active_bets');
+                            localStorage.removeItem('pumptown_last_briefing');
+                            
+                            // Mark this as a fresh signup so we don't load old characters
+                            sessionStorage.setItem('pumptown_fresh_signup', 'true');
+                            
                             setSuccess('Account created! Check your email for a welcome message 🐸');
                             setTimeout(() => {
                                 onConnect({ address: email.toLowerCase(), balance: 100000 });
