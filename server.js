@@ -88,7 +88,7 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS characters (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id),
-        email VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
         name VARCHAR(100) NOT NULL,
         role VARCHAR(100),
         trait VARCHAR(100),
@@ -109,6 +109,21 @@ async function initDatabase() {
     await client.query(`ALTER TABLE characters ALTER COLUMN avatar TYPE TEXT`).catch(() => {});
     await client.query(`ALTER TABLE characters ALTER COLUMN role TYPE VARCHAR(100)`).catch(() => {});
     await client.query(`ALTER TABLE characters ALTER COLUMN trait TYPE VARCHAR(100)`).catch(() => {});
+    
+    // Add unique constraint on email if it doesn't exist (for existing databases)
+    // First, remove any duplicate emails (keep most recent)
+    await client.query(`
+      DELETE FROM characters a USING characters b
+      WHERE a.id < b.id AND LOWER(a.email) = LOWER(b.email)
+    `).catch(() => {});
+    
+    await client.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'characters_email_key') THEN
+          ALTER TABLE characters ADD CONSTRAINT characters_email_key UNIQUE (email);
+        END IF;
+      END $$;
+    `).catch(() => {});
 
     // Votes table
     await client.query(`
