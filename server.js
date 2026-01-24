@@ -504,8 +504,75 @@ app.get('/api/ai/status', (req, res) => {
   res.json({
     enabled: !!anthropic,
     model: 'claude-sonnet-4-20250514',
-    features: ['vote-generation', 'mayor-reactions', 'events', 'chat']
+    features: ['vote-generation', 'mayor-reactions', 'events', 'chat', 'daily-briefing']
   });
+});
+
+// Daily Briefing - Mayor's morning update
+app.post('/api/ai/daily-briefing', async (req, res) => {
+  if (!anthropic) {
+    return res.json({ 
+      success: true, 
+      briefing: {
+        greeting: "GM citizen! The Mayor's AI is offline but Pump Town never sleeps!",
+        summary: "Check the city stats and cast your vote. Diamond hands get rewarded!",
+        tip: "Pro tip: Vote early, vote often. WAGMI!"
+      }
+    });
+  }
+
+  try {
+    const { playerName, stats, day } = req.body;
+    const cityStats = stats || await getCityStats();
+    const { day: currentDay } = getDayAndRound();
+    
+    const prompt = `Generate a daily briefing for a citizen logging into Pump Town.
+
+Player: "${playerName || 'Citizen'}"
+Governance Day: ${day || currentDay}
+City Stats:
+- Economy: ${cityStats.economy}/100
+- Security: ${cityStats.security}/100  
+- Culture: ${cityStats.culture}/100
+- Morale: ${cityStats.morale}/100
+
+Generate JSON (pure JSON only):
+{
+  "greeting": "Personalized GM greeting with their name (1 sentence, crypto slang)",
+  "summary": "Brief state of the city and what needs attention (2-3 sentences)",
+  "tip": "A helpful or funny tip for the day (1 sentence)"
+}
+
+Be dramatic, use crypto slang, mention any stats that are critically low (<30) or high (>80).`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 512,
+      system: MAYOR_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      const briefing = JSON.parse(jsonMatch[0]);
+      console.log('🌅 Daily briefing for', playerName);
+      res.json({ success: true, briefing });
+    } else {
+      throw new Error('Parse error');
+    }
+  } catch (error) {
+    console.error('Daily Briefing Error:', error.message);
+    res.json({ 
+      success: true, 
+      briefing: {
+        greeting: `GM ${req.body.playerName || 'Citizen'}! Rise and grind!`,
+        summary: "Another day in Pump Town. The city needs your votes. Check the stats and make your voice heard!",
+        tip: "Diamond hands are forged in the fire of governance. WAGMI!"
+      }
+    });
+  }
 });
 
 // ==================== AUTH ENDPOINTS ====================
