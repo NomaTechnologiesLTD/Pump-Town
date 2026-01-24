@@ -38,6 +38,7 @@
             color: #00ff88;
             min-height: 100vh;
             overflow-x: hidden;
+            padding-top: 36px; /* Space for news ticker */
         }
 
         /* ==================== SIDEBAR NAVIGATION ==================== */
@@ -6827,6 +6828,323 @@
             border-color: #fff;
             color: #fff;
         }
+
+        /* ==================== BREAKING NEWS TICKER ==================== */
+        .news-ticker-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(90deg, #1a1a2e, #16213e);
+            border-bottom: 2px solid #ffd700;
+            z-index: 9998;
+            overflow: hidden;
+            height: 36px;
+        }
+
+        .news-ticker {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            animation: tickerScroll 30s linear infinite;
+            white-space: nowrap;
+        }
+
+        @keyframes tickerScroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .news-ticker-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 40px;
+            color: #fff;
+            font-size: 0.9em;
+        }
+
+        .news-ticker-icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .news-ticker-label {
+            background: #ff4444;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-right: 10px;
+            text-transform: uppercase;
+        }
+
+        .news-ticker-label.live { background: #ff4444; }
+        .news-ticker-label.update { background: #ffd700; color: #000; }
+        .news-ticker-label.alert { background: #a855f7; }
+
+        .news-ticker-close {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #888;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+        }
+
+        .news-ticker-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* ==================== EMERGENCY BROADCAST ==================== */
+        .emergency-broadcast-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            animation: emergencyFlash 0.5s ease;
+        }
+
+        @keyframes emergencyFlash {
+            0%, 50% { background: rgba(255, 0, 0, 0.3); }
+            25%, 75%, 100% { background: rgba(0, 0, 0, 0.95); }
+        }
+
+        .emergency-broadcast {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 4px solid;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 550px;
+            width: 90%;
+            text-align: center;
+            animation: emergencyPop 0.5s ease;
+        }
+
+        .emergency-broadcast.crisis { border-color: #ff4444; }
+        .emergency-broadcast.opportunity { border-color: #00ff88; }
+        .emergency-broadcast.chaos { border-color: #a855f7; }
+        .emergency-broadcast.celebration { border-color: #ffd700; }
+
+        @keyframes emergencyPop {
+            0% { transform: scale(0.5) rotate(-5deg); opacity: 0; }
+            50% { transform: scale(1.1) rotate(2deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .emergency-broadcast-header {
+            font-size: 1em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            animation: emergencyBlink 1s ease infinite;
+        }
+
+        .emergency-broadcast.crisis .emergency-broadcast-header { color: #ff4444; }
+        .emergency-broadcast.opportunity .emergency-broadcast-header { color: #00ff88; }
+        .emergency-broadcast.chaos .emergency-broadcast-header { color: #a855f7; }
+        .emergency-broadcast.celebration .emergency-broadcast-header { color: #ffd700; }
+
+        @keyframes emergencyBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .emergency-broadcast-icon {
+            font-size: 4em;
+            margin: 20px 0;
+            animation: emergencyBounce 0.5s ease infinite alternate;
+        }
+
+        @keyframes emergencyBounce {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        .emergency-broadcast-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        .emergency-broadcast-message {
+            font-size: 1.1em;
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .emergency-broadcast-mayor {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .emergency-broadcast-mayor-label {
+            font-size: 0.8em;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .emergency-broadcast-mayor-text {
+            color: #fff;
+            font-style: italic;
+        }
+
+        .emergency-broadcast-close {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+
+        .emergency-broadcast-close:hover {
+            transform: scale(1.05);
+        }
+
+        /* ==================== MAYOR TIPS WIDGET ==================== */
+        .mayor-tips {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 170, 0, 0.05));
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .mayor-tips-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.85em;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .mayor-tips-content {
+            color: #fff;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .mayor-tips-refresh {
+            background: transparent;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            cursor: pointer;
+            margin-left: auto;
+            transition: all 0.3s;
+        }
+
+        .mayor-tips-refresh:hover {
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .mayor-tips-refresh:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ==================== MAYOR ACTION COMMENT ==================== */
+        .mayor-action-comment {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 2px solid #ffd700;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 300px;
+            z-index: 9997;
+            animation: commentSlideIn 0.4s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes commentSlideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .mayor-action-comment.leaving {
+            animation: commentSlideOut 0.4s ease forwards;
+        }
+
+        @keyframes commentSlideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .mayor-action-comment-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .mayor-action-comment-avatar {
+            font-size: 2em;
+        }
+
+        .mayor-action-comment-name {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .mayor-action-comment-context {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .mayor-action-comment-text {
+            color: #fff;
+            line-height: 1.5;
+        }
+
+        .mayor-action-comment-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+
+        .mayor-action-comment-close:hover {
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -7221,6 +7539,9 @@
             const [showDailyBriefing, setShowDailyBriefing] = useState(false);
             const [mayorReaction, setMayorReaction] = useState(null);
             const [quickActionResponse, setQuickActionResponse] = useState(null);
+            const [showNewsTicker, setShowNewsTicker] = useState(true);
+            const [emergencyBroadcast, setEmergencyBroadcast] = useState(null);
+            const [mayorActionComment, setMayorActionComment] = useState(null);
             
             // Navigation state - MUST be at top level before any returns
             const [currentPage, setCurrentPage] = useState('dashboard');
@@ -7262,6 +7583,67 @@
                 toastTimeoutRef.current = setTimeout(() => {
                     setToasts([]);
                 }, duration);
+            };
+            
+            // Trigger Mayor action comment for game events
+            const triggerMayorComment = async (action, outcome, details = {}) => {
+                const commentTemplates = {
+                    casino_win: [
+                        { context: 'On your casino win', text: `YOOO ${details.playerName || 'fren'}! You just hit it big! ${details.amount ? `+${details.amount} tokens!` : ''} The house is SHOOK. This is what diamond hands look like! 💎🎰` },
+                        { context: 'Witnessing greatness', text: `Another W for the books! The degen gods smile upon you today. Don't let it go to your head... actually, let it. You earned this! 🚀` },
+                        { context: 'Casino alert', text: `WHALE ALERT in the casino! ${details.playerName || 'Citizen'} is on a heater! Security, keep an eye on this one - they're dangerous! 🐋` }
+                    ],
+                    casino_loss: [
+                        { context: 'On your loss', text: `Oof. That one hurt to watch. But remember, ${details.playerName || 'fren'} - legends aren't made in wins, they're forged in losses. WAGMI! 💪` },
+                        { context: 'Words of comfort', text: `The casino giveth and the casino taketh. Today it tooketh. Tomorrow? Redemption arc incoming. I believe in you! 🎰` },
+                        { context: 'Degen wisdom', text: `Paper loss isn't real loss until you stop playing. That's not financial advice. Actually, maybe stop playing. That IS financial advice. 📉😅` }
+                    ],
+                    casino_jackpot: [
+                        { context: '🚨 JACKPOT ALERT 🚨', text: `HOLY MOTHER OF SATOSHI! ${details.playerName || 'A LEGEND'} JUST HIT THE JACKPOT! ${details.amount ? `${details.amount} TOKENS!` : ''} THE CITY IS SHAKING! 🎰💰🚀` },
+                        { context: 'Historic moment', text: `I'm literally shaking. This is the biggest hit Pump Town Casino has ever seen! Screenshot this! NFT this! REMEMBER THIS DAY! 🏆` }
+                    ],
+                    level_up: [
+                        { context: 'Level up!', text: `DING! ${details.playerName || 'Citizen'} just leveled up to ${details.level || 'the next level'}! The grind is REAL and you're proof! Keep climbing, degen! 📈` },
+                        { context: 'Achievement unlocked', text: `Another level conquered! At this rate, you'll be running for Mayor soon. Wait... should I be worried? 👀🏛️` }
+                    ],
+                    streak: [
+                        { context: 'Streak milestone', text: `${details.days || 'Multiple'} day voting streak! This citizen GOVERNS. Consistency is the real alpha. Keep it up! 🔥` },
+                        { context: 'Diamond commitment', text: `Look at this beautiful streak! While others touch grass, you're out here touching DEMOCRACY. Respect. 💎` }
+                    ],
+                    achievement: [
+                        { context: 'Achievement unlocked', text: `NEW BADGE ACQUIRED: ${details.badge || 'Mystery Achievement'}! Your trophy case grows. Your legacy expands. Your legend... CONTINUES! 🏆` }
+                    ]
+                };
+                
+                const templates = commentTemplates[`${action}_${outcome}`] || commentTemplates[action] || [
+                    { context: 'Mayor noticed', text: `I see you out there making moves, ${details.playerName || 'citizen'}. Keep grinding! WAGMI! 🎩` }
+                ];
+                
+                const template = templates[Math.floor(Math.random() * templates.length)];
+                
+                // Try to get AI-generated comment for special occasions
+                if ((outcome === 'jackpot' || (action === 'casino' && outcome === 'win' && details.amount > 1000)) && Math.random() < 0.5) {
+                    try {
+                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                message: `React to this: ${details.playerName || 'A citizen'} just ${outcome === 'jackpot' ? 'hit the JACKPOT' : 'won big'} at the casino! ${details.amount ? `They won ${details.amount} tokens!` : ''} Give a short, hype reaction (2-3 sentences max).`,
+                                playerName: details.playerName || 'Lucky Winner',
+                                playerLevel: details.playerLevel || 1
+                            })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            setMayorActionComment({ context: template.context, text: data.response });
+                            return;
+                        }
+                    } catch (e) {
+                        // Fall back to template
+                    }
+                }
+                
+                setMayorActionComment(template);
             };
             
             // CLEANUP: Remove old territory/guild data and clean cached chat messages
@@ -7875,16 +8257,27 @@
                         
                         if (data.success && data.event) {
                             lastEventTime = now;
-                            setSpecialEvent({
-                                type: data.event.type || 'chaos',
-                                title: `${data.event.icon || '🚨'} ${data.event.title}`,
-                                description: data.event.description,
-                                mayorAnnouncement: data.event.mayorAnnouncement,
-                                effects: data.event.effects
-                            });
                             
-                            // Play sound for events
-                            if (window.GameSounds) window.GameSounds.notification();
+                            // For crisis events with critical stats, show emergency broadcast instead
+                            if (triggerReason === 'crisis' && data.event.type === 'crisis') {
+                                setEmergencyBroadcast({
+                                    type: 'crisis',
+                                    icon: data.event.icon || '🚨',
+                                    title: data.event.title,
+                                    message: data.event.description,
+                                    mayorMessage: data.event.mayorAnnouncement
+                                });
+                                if (window.GameSounds) window.GameSounds.error();
+                            } else {
+                                setSpecialEvent({
+                                    type: data.event.type || 'chaos',
+                                    title: `${data.event.icon || '🚨'} ${data.event.title}`,
+                                    description: data.event.description,
+                                    mayorAnnouncement: data.event.mayorAnnouncement,
+                                    effects: data.event.effects
+                                });
+                                if (window.GameSounds) window.GameSounds.notification();
+                            }
                             
                             console.log('🎭 AI Event triggered:', data.event.title);
                         }
@@ -8470,6 +8863,9 @@
                                         {/* Mayor Mood Indicator */}
                                         <MayorMood stats={gameState.stats} />
                                         
+                                        {/* Mayor Tips & Wisdom */}
+                                        <MayorTips playerLevel={character?.level || 1} />
+                                        
                                         {/* Special Event Banner */}
                                         {specialEvent && (
                                             <SpecialEventBanner 
@@ -8546,6 +8942,9 @@
                                         resources={resources}
                                         onResourceChange={handleResourceChange}
                                         showToast={showToast}
+                                        onMayorComment={triggerMayorComment}
+                                        playerName={character?.name}
+                                        playerLevel={character?.level || 1}
                                     />
                                     
                                     {/* Daily Puzzle */}
@@ -8892,6 +9291,29 @@
                             </div>
                         </div>
                     )}
+                    
+                    {/* Breaking News Ticker */}
+                    {showNewsTicker && gameState && (
+                        <BreakingNewsTicker 
+                            stats={gameState.stats}
+                            day={gameState.day}
+                            onClose={() => setShowNewsTicker(false)}
+                        />
+                    )}
+                    
+                    {/* Emergency Broadcast */}
+                    {emergencyBroadcast && (
+                        <EmergencyBroadcast 
+                            broadcast={emergencyBroadcast}
+                            onClose={() => setEmergencyBroadcast(null)}
+                        />
+                    )}
+                    
+                    {/* Mayor Action Comment Popup */}
+                    <MayorActionComment 
+                        comment={mayorActionComment}
+                        onClose={() => setMayorActionComment(null)}
+                    />
                 </div>
             );
         }
@@ -12431,7 +12853,7 @@
         }
 
         // ==================== SLOT MACHINE ====================
-        function SlotMachine({ resources, onResourceChange, showToast }) {
+        function SlotMachine({ resources, onResourceChange, showToast, onMayorComment, playerName, playerLevel }) {
             const [reels, setReels] = useState(['🍋', '🍋', '🍋']);
             const [spinning, setSpinning] = useState(false);
             const [bet, setBet] = useState(25);
@@ -12502,6 +12924,12 @@
                                     window.GameSounds.win();
                                 }
                             }
+                            // Trigger Mayor comment for big wins
+                            if (onMayorComment && multiplier >= 10) {
+                                onMayorComment('casino', 'jackpot', { playerName, playerLevel, amount: winnings });
+                            } else if (onMayorComment && winnings > 100) {
+                                onMayorComment('casino', 'win', { playerName, playerLevel, amount: winnings });
+                            }
                         } else if (finalReels[0] === finalReels[1] || finalReels[1] === finalReels[2]) {
                             // Two matching
                             const winnings = Math.floor(bet * 1.5);
@@ -12511,6 +12939,10 @@
                         } else {
                             setResult({ win: false });
                             if (window.GameSounds) window.GameSounds.lose();
+                            // Occasionally comment on losses (10% chance)
+                            if (onMayorComment && Math.random() < 0.1) {
+                                onMayorComment('casino', 'loss', { playerName, playerLevel, amount: bet });
+                            }
                         }
                     }
                 }, 100);
@@ -18021,6 +18453,223 @@
                     <button className="special-event-dismiss" onClick={onDismiss}>
                         Dismiss
                     </button>
+                </div>
+            );
+        }
+
+        // ==================== BREAKING NEWS TICKER ====================
+        function BreakingNewsTicker({ stats, day, onClose }) {
+            const [headlines, setHeadlines] = useState([]);
+            const [visible, setVisible] = useState(true);
+            
+            useEffect(() => {
+                const generateHeadlines = async () => {
+                    // Generate contextual headlines based on city stats
+                    const baseHeadlines = [];
+                    
+                    if (stats) {
+                        if (stats.economy < 30) {
+                            baseHeadlines.push({ icon: '📉', label: 'ALERT', text: 'ECONOMY IN FREEFALL: Treasury reserves critically low!' });
+                        } else if (stats.economy > 80) {
+                            baseHeadlines.push({ icon: '📈', label: 'LIVE', text: 'BULL RUN CONFIRMED: Economy pumping to new highs!' });
+                        }
+                        
+                        if (stats.security < 30) {
+                            baseHeadlines.push({ icon: '🚨', label: 'ALERT', text: 'CRIME WAVE: Ruggers running rampant in DeFi District!' });
+                        }
+                        
+                        if (stats.morale > 80) {
+                            baseHeadlines.push({ icon: '🎉', label: 'LIVE', text: 'VIBES IMMACULATE: Citizen morale at all-time high!' });
+                        }
+                        
+                        if (stats.culture > 80) {
+                            baseHeadlines.push({ icon: '🎨', label: 'UPDATE', text: 'NFT Renaissance: Pump Town art scene exploding!' });
+                        }
+                    }
+                    
+                    // Add some evergreen headlines
+                    const evergreenHeadlines = [
+                        { icon: '🏛️', label: 'LIVE', text: `Day ${day || 1} of Governance: Mayor Satoshi addresses the citizens` },
+                        { icon: '🗳️', label: 'UPDATE', text: 'VOTE NOW: Your voice shapes the future of Pump Town!' },
+                        { icon: '💎', label: 'LIVE', text: 'Diamond hands report record holding streaks this week' },
+                        { icon: '🐋', label: 'ALERT', text: 'Whale activity detected: Large positions moving' },
+                        { icon: '🎰', label: 'UPDATE', text: 'Degen Casino jackpot growing: Will you be the next winner?' },
+                        { icon: '🚀', label: 'LIVE', text: 'Mayor Satoshi: "WAGMI is not just a meme, it\'s a lifestyle"' }
+                    ];
+                    
+                    // Combine and shuffle
+                    const allHeadlines = [...baseHeadlines, ...evergreenHeadlines.slice(0, 3)];
+                    setHeadlines(allHeadlines);
+                };
+                
+                generateHeadlines();
+                
+                // Refresh headlines periodically
+                const interval = setInterval(generateHeadlines, 5 * 60 * 1000);
+                return () => clearInterval(interval);
+            }, [stats, day]);
+            
+            if (!visible || headlines.length === 0) return null;
+            
+            return (
+                <div className="news-ticker-container">
+                    <div className="news-ticker">
+                        {headlines.concat(headlines).map((headline, idx) => (
+                            <div key={idx} className="news-ticker-item">
+                                <span className="news-ticker-icon">{headline.icon}</span>
+                                <span className={`news-ticker-label ${headline.label.toLowerCase()}`}>{headline.label}</span>
+                                <span>{headline.text}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <button className="news-ticker-close" onClick={() => { setVisible(false); onClose?.(); }}>✕</button>
+                </div>
+            );
+        }
+
+        // ==================== EMERGENCY BROADCAST ====================
+        function EmergencyBroadcast({ broadcast, onClose }) {
+            if (!broadcast) return null;
+            
+            const typeConfig = {
+                crisis: { header: '🚨 EMERGENCY BROADCAST 🚨', icon: '💥' },
+                opportunity: { header: '💰 SPECIAL OPPORTUNITY 💰', icon: '🎯' },
+                chaos: { header: '🌀 CHAOS ALERT 🌀', icon: '🎪' },
+                celebration: { header: '🎉 CELEBRATION TIME 🎉', icon: '🏆' }
+            };
+            
+            const config = typeConfig[broadcast.type] || typeConfig.chaos;
+            
+            return (
+                <div className="emergency-broadcast-overlay" onClick={onClose}>
+                    <div className={`emergency-broadcast ${broadcast.type || 'chaos'}`} onClick={e => e.stopPropagation()}>
+                        <div className="emergency-broadcast-header">{config.header}</div>
+                        <div className="emergency-broadcast-icon">{broadcast.icon || config.icon}</div>
+                        <div className="emergency-broadcast-title">{broadcast.title}</div>
+                        <div className="emergency-broadcast-message">{broadcast.message}</div>
+                        
+                        {broadcast.mayorMessage && (
+                            <div className="emergency-broadcast-mayor">
+                                <div className="emergency-broadcast-mayor-label">🎩 Mayor Satoshi Says:</div>
+                                <div className="emergency-broadcast-mayor-text">"{broadcast.mayorMessage}"</div>
+                            </div>
+                        )}
+                        
+                        <button className="emergency-broadcast-close" onClick={onClose}>
+                            I Understand 💎
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== MAYOR TIPS & WISDOM ====================
+        function MayorTips({ playerLevel }) {
+            const [tip, setTip] = useState(null);
+            const [loading, setLoading] = useState(false);
+            
+            const localTips = [
+                "Diamond hands aren't born, they're forged in the fires of red candles. 💎",
+                "In Pump Town, we don't have paper hands. We have origami enthusiasts who left. 📄",
+                "The best time to buy was yesterday. The second best time is after doing your own research. 📊",
+                "Remember: Every whale started as a shrimp. Keep stacking, fren. 🦐→🐋",
+                "WAGMI isn't just a saying, it's a lifestyle choice. Choose wisely. 🚀",
+                "The real treasure was the degens we met along the way. And also actual treasure. 💰",
+                "When in doubt, zoom out. Unless you're already zoomed out. Then maybe touch grass. 🌿",
+                "Not financial advice, but voting is always a good investment in democracy. 🗳️",
+                "They said I was crazy for building an AI-governed city. They were right. But here we are! 🏛️",
+                "Pro tip: The casino always wins. But so do legends. Are you a legend? 🎰",
+                "Pump Town wasn't built in a day. It was built in a fever dream. Welcome. 🌙",
+                "Your portfolio is temporary. Your voting record is forever. Choose based. ✅"
+            ];
+            
+            useEffect(() => {
+                // Set initial random tip
+                setTip(localTips[Math.floor(Math.random() * localTips.length)]);
+            }, []);
+            
+            const fetchNewTip = async () => {
+                setLoading(true);
+                
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: 'Give me one short piece of degen wisdom or a funny crypto tip. Just the tip itself, no preamble. Make it memorable and quotable.',
+                            playerName: 'Wisdom Seeker',
+                            playerLevel: playerLevel || 1
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        setTip(data.response);
+                    } else {
+                        throw new Error('Failed');
+                    }
+                } catch (error) {
+                    // Fallback to local tip
+                    setTip(localTips[Math.floor(Math.random() * localTips.length)]);
+                }
+                
+                setLoading(false);
+            };
+            
+            return (
+                <div className="mayor-tips">
+                    <div className="mayor-tips-header">
+                        <span>🎩</span>
+                        <span>Mayor's Wisdom</span>
+                        <button 
+                            className="mayor-tips-refresh" 
+                            onClick={fetchNewTip}
+                            disabled={loading}
+                        >
+                            {loading ? '...' : '🔄 New'}
+                        </button>
+                    </div>
+                    <div className="mayor-tips-content">
+                        "{tip}"
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== MAYOR ACTION COMMENTS ====================
+        function MayorActionComment({ comment, onClose }) {
+            const [leaving, setLeaving] = useState(false);
+            
+            useEffect(() => {
+                if (!comment) return;
+                
+                // Auto-dismiss after 6 seconds
+                const timer = setTimeout(() => {
+                    setLeaving(true);
+                    setTimeout(onClose, 400);
+                }, 6000);
+                
+                return () => clearTimeout(timer);
+            }, [comment, onClose]);
+            
+            if (!comment) return null;
+            
+            const handleClose = () => {
+                setLeaving(true);
+                setTimeout(onClose, 400);
+            };
+            
+            return (
+                <div className={`mayor-action-comment ${leaving ? 'leaving' : ''}`}>
+                    <button className="mayor-action-comment-close" onClick={handleClose}>✕</button>
+                    <div className="mayor-action-comment-header">
+                        <div className="mayor-action-comment-avatar">🎩</div>
+                        <div>
+                            <div className="mayor-action-comment-name">Mayor Satoshi</div>
+                            <div className="mayor-action-comment-context">{comment.context}</div>
+                        </div>
+                    </div>
+                    <div className="mayor-action-comment-text">{comment.text}</div>
                 </div>
             );
         }
