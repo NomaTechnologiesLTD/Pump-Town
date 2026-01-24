@@ -12,7 +12,8 @@
     "cors": "^2.8.5",
     "node-fetch": "^2.7.0",
     "pg": "^8.11.3",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "@anthropic-ai/sdk": "^0.24.0"
   },
   "engines": {
     "node": ">=16.0.0"

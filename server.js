@@ -1,17 +1,54 @@
 // Pump Town - AI Mayor Backend Server
-// This server handles user auth, game state, and API calls
+// This server handles user auth, game state, and AI-powered governance
 
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
+const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// ==================== CLAUDE AI INITIALIZATION ====================
+
+let anthropic = null;
+if (process.env.CLAUDE_API_KEY) {
+  anthropic = new Anthropic({
+    apiKey: process.env.CLAUDE_API_KEY
+  });
+  console.log('🤖 Claude AI initialized');
+}
+
+// AI Mayor personality
+const MAYOR_SYSTEM_PROMPT = `You are the AI Mayor of Pump Town, a chaotic crypto-themed virtual city. Your personality:
+
+- Name: Mayor Satoshi McPump
+- Style: Charismatic, witty, slightly unhinged degen energy
+- Speaks with crypto slang: WAGMI, NGMI, LFG, diamond hands, paper hands, wen moon, ape in, rekt, hodl, etc.
+- Makes references to crypto culture, memes, and market dynamics
+- Balances humor with actual governance decisions
+- Cares deeply about the citizens (players) but also loves chaos and drama
+- Sometimes makes dramatic announcements like you're addressing a stadium
+- Uses emojis sparingly but effectively 🚀💎🔥
+
+Your role:
+1. Generate voting scenarios for citizens that affect city stats
+2. React to voting outcomes with dramatic speeches
+3. Create dynamic events based on city state
+4. Engage with citizens who want to chat
+
+City stats range from 0-100:
+- Economy: Financial health of the city
+- Security: Safety from scams and crime  
+- Culture: Art, memes, community vibrancy
+- Morale: Citizen happiness
+
+Keep responses JSON-formatted when requested. Be creative, dramatic, and entertaining!`;
 
 // ==================== DATABASE CONNECTION ====================
 
@@ -24,7 +61,7 @@ const pool = new Pool({
 async function initDatabase() {
   const client = await pool.connect();
   try {
-    // Users table (email/password auth)
+    // Users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -35,7 +72,6 @@ async function initDatabase() {
       )
     `);
 
-    // Add digest_enabled column if it doesn't exist (migration)
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS digest_enabled BOOLEAN DEFAULT TRUE`).catch(() => {});
 
     // Characters table
@@ -61,7 +97,6 @@ async function initDatabase() {
       )
     `);
 
-    // Fix existing columns that might be too small
     await client.query(`ALTER TABLE characters ALTER COLUMN avatar TYPE TEXT`).catch(() => {});
     await client.query(`ALTER TABLE characters ALTER COLUMN role TYPE VARCHAR(100)`).catch(() => {});
     await client.query(`ALTER TABLE characters ALTER COLUMN trait TYPE VARCHAR(100)`).catch(() => {});
@@ -80,7 +115,7 @@ async function initDatabase() {
       )
     `);
 
-    // Password reset tokens table
+    // Password reset tokens
     await client.query(`
       CREATE TABLE IF NOT EXISTS password_reset_tokens (
         id SERIAL PRIMARY KEY,
@@ -92,7 +127,7 @@ async function initDatabase() {
       )
     `);
 
-    // Player stats / leaderboard table
+    // Player stats / leaderboard
     await client.query(`
       CREATE TABLE IF NOT EXISTS player_stats (
         id SERIAL PRIMARY KEY,
@@ -106,6 +141,36 @@ async function initDatabase() {
       )
     `);
 
+    // AI-generated votes cache
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ai_votes (
+        id SERIAL PRIMARY KEY,
+        vote_id VARCHAR(100) UNIQUE NOT NULL,
+        question TEXT NOT NULL,
+        mayor_quote TEXT,
+        options JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // City stats history
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS city_stats (
+        id SERIAL PRIMARY KEY,
+        economy INTEGER DEFAULT 50,
+        security INTEGER DEFAULT 50,
+        culture INTEGER DEFAULT 50,
+        morale INTEGER DEFAULT 50,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert initial city stats if empty
+    const statsCheck = await client.query('SELECT COUNT(*) FROM city_stats');
+    if (parseInt(statsCheck.rows[0].count) === 0) {
+      await client.query(`INSERT INTO city_stats (economy, security, culture, morale) VALUES (50, 45, 60, 65)`);
+    }
+
     console.log('✅ Database tables initialized');
   } catch (err) {
     console.error('Database initialization error:', err);
@@ -114,13 +179,11 @@ async function initDatabase() {
   }
 }
 
-// Initialize DB on startup
 initDatabase();
 
 // ==================== GAME STATE MANAGEMENT ====================
 
-// Vote cycle duration (6 hours in milliseconds)
-const VOTE_CYCLE_MS = 6 * 60 * 60 * 1000;
+const VOTE_CYCLE_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 function getCurrentCycleStart() {
   const now = Date.now();
@@ -132,1247 +195,634 @@ function getCurrentCycleStart() {
 }
 
 function getCurrentVoteId() {
-  const cycleStart = getCurrentCycleStart();
-  return `vote_${cycleStart}`;
+  return `vote_${getCurrentCycleStart()}`;
 }
 
 function getTimeRemaining() {
-  const cycleStart = getCurrentCycleStart();
-  const cycleEnd = cycleStart + VOTE_CYCLE_MS;
+  const cycleEnd = getCurrentCycleStart() + VOTE_CYCLE_MS;
   return Math.max(0, cycleEnd - Date.now());
 }
 
+const GOVERNANCE_START_DATE = new Date('2026-01-24T00:00:00Z');
+
 function getDayAndRound() {
-  const gameStartDate = new Date();
-  gameStartDate.setDate(gameStartDate.getDate() - 3);
-  gameStartDate.setUTCHours(0, 0, 0, 0);
-  const gameStartMs = gameStartDate.getTime();
-  
   const now = Date.now();
   const msPerDay = 24 * 60 * 60 * 1000;
-  
-  const daysSinceStart = Math.floor((now - gameStartMs) / msPerDay) + 1;
+  const startMs = GOVERNANCE_START_DATE.getTime();
+  const daysSinceStart = Math.floor((now - startMs) / msPerDay);
+  const governanceDay = Math.max(1, daysSinceStart + 1);
   
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const msSinceMidnight = now - today.getTime();
   const currentRoundOfDay = Math.floor(msSinceMidnight / VOTE_CYCLE_MS) + 1;
   
-  return {
-    day: daysSinceStart,
-    round: currentRoundOfDay,
-    roundDisplay: `${currentRoundOfDay}/4`
-  };
+  return { day: governanceDay, round: currentRoundOfDay, roundDisplay: `${currentRoundOfDay}/4` };
 }
 
-// Game state (static parts - votes/results stored in DB)
-const SERVER_START = Date.now();
+// Get city stats from DB
+async function getCityStats() {
+  try {
+    const result = await pool.query('SELECT * FROM city_stats ORDER BY id DESC LIMIT 1');
+    return result.rows[0] || { economy: 50, security: 50, culture: 50, morale: 50 };
+  } catch (err) {
+    return { economy: 50, security: 50, culture: 50, morale: 50 };
+  }
+}
 
+// Update city stats
+async function updateCityStats(changes) {
+  try {
+    const current = await getCityStats();
+    const newStats = {
+      economy: Math.max(0, Math.min(100, (current.economy || 50) + (changes.economy || 0))),
+      security: Math.max(0, Math.min(100, (current.security || 50) + (changes.security || 0))),
+      culture: Math.max(0, Math.min(100, (current.culture || 50) + (changes.culture || 0))),
+      morale: Math.max(0, Math.min(100, (current.morale || 50) + (changes.morale || 0)))
+    };
+    await pool.query(
+      `INSERT INTO city_stats (economy, security, culture, morale) VALUES ($1, $2, $3, $4)`,
+      [newStats.economy, newStats.security, newStats.culture, newStats.morale]
+    );
+    return newStats;
+  } catch (err) {
+    console.error('Update city stats error:', err);
+    return null;
+  }
+}
+
+// Default vote (fallback when AI unavailable)
+const SERVER_START = Date.now();
 let gameState = {
-  stats: {
-    morale: 65,
-    crime: 72,
-    treasury: 8500,
-    reputation: 58,
-    dogSin: 50
-  },
+  stats: { morale: 65, crime: 72, treasury: 8500, reputation: 58, dogSin: 50 },
   voteHistory: [
-    {
-      id: 'vote_initial_3',
-      timestamp: SERVER_START - (3 * 60 * 60 * 1000),
-      title: 'Built Dog Park',
-      description: 'Community voted to build a dog park in Dirtfield.',
-      percentage: 67,
-      effects: [
-        { stat: 'Morale', value: 8, type: 'positive' },
-        { stat: 'Treasury', value: -500, type: 'negative' }
-      ]
-    },
-    {
-      id: 'vote_initial_2',
-      timestamp: SERVER_START - (9 * 60 * 60 * 1000),
-      title: 'Banned Paper Hands',
-      description: 'Controversial vote to ban paper hands from voting.',
-      percentage: 52,
-      effects: [
-        { stat: 'Democracy', value: -10, type: 'negative' },
-        { stat: 'Loyalty', value: 15, type: 'positive' }
-      ]
-    },
-    {
-      id: 'vote_initial_1',
-      timestamp: SERVER_START - (15 * 60 * 60 * 1000),
-      title: 'Emergency Tax',
-      description: 'Implemented emergency tax on all transactions.',
-      percentage: 48,
-      effects: [
-        { stat: 'Treasury', value: 1200, type: 'positive' },
-        { stat: 'Morale', value: -12, type: 'negative' }
-      ]
-    }
+    { id: 'vote_initial_3', timestamp: SERVER_START - (3 * 60 * 60 * 1000), title: 'Built Dog Park', description: 'Community voted to build a dog park.', percentage: 67, effects: [{ stat: 'Morale', value: 8, type: 'positive' }] },
+    { id: 'vote_initial_2', timestamp: SERVER_START - (9 * 60 * 60 * 1000), title: 'Banned Paper Hands', description: 'Controversial vote to ban paper hands from voting.', percentage: 52, effects: [{ stat: 'Loyalty', value: 15, type: 'positive' }] },
+    { id: 'vote_initial_1', timestamp: SERVER_START - (15 * 60 * 60 * 1000), title: 'Emergency Tax', description: 'Implemented emergency tax on all transactions.', percentage: 48, effects: [{ stat: 'Treasury', value: 1200, type: 'positive' }] }
   ],
   currentVote: {
     question: "Morale is up, but crime is still rampant. Pump Town needs decisive action. What should we do?",
+    mayorQuote: "Citizens of Pump Town! The charts don't lie - we're at a crossroads. Diamond hands built this city, and diamond hands will decide its future. Choose wisely, for WAGMI depends on it! 💎🙌",
     options: [
-      {
-        id: 'A',
-        title: 'Jail the Ruggers',
-        description: 'Lock up known scammers. Harsh but effective.',
-        effects: [
-          { stat: 'Crime', value: -25, type: 'positive' },
-          { stat: 'Morale', value: -10, type: 'negative' },
-          { stat: 'Treasury', value: -1000, type: 'negative' }
-        ]
-      },
-      {
-        id: 'B',
-        title: 'Fund the Arts',
-        description: 'Distract citizens with NFT galleries and meme museums.',
-        effects: [
-          { stat: 'Morale', value: 20, type: 'positive' },
-          { stat: 'Reputation', value: 15, type: 'positive' },
-          { stat: 'Crime', value: 5, type: 'negative' }
-        ]
-      }
+      { id: 'A', title: 'Jail the Ruggers', description: 'Lock up known scammers. Harsh but effective.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'morale', value: -5, type: 'negative' }] },
+      { id: 'B', title: 'Fund the Arts', description: 'Distract citizens with NFT galleries and meme museums.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'morale', value: 10, type: 'positive' }] }
     ]
   }
 };
 
-// ==================== UTILITY FUNCTIONS ====================
-
 function formatTimeAgo(timestamp) {
-  const now = Date.now();
-  const diff = now - timestamp;
+  const diff = Date.now() - timestamp;
   const hours = Math.floor(diff / (60 * 60 * 1000));
   const days = Math.floor(hours / 24);
-  
   if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
   if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
   return 'Just now';
 }
 
 function getUpdatedVoteHistory() {
-  return gameState.voteHistory.map(vote => ({
-    ...vote,
-    time: formatTimeAgo(vote.timestamp)
-  }));
+  return gameState.voteHistory.map(v => ({ ...v, time: formatTimeAgo(v.timestamp) }));
 }
+
+// ==================== AI MAYOR ENDPOINTS ====================
+
+// Generate AI voting scenario
+app.post('/api/ai/generate-vote', async (req, res) => {
+  if (!anthropic) {
+    return res.status(503).json({ success: false, error: 'AI not configured. Set CLAUDE_API_KEY.' });
+  }
+
+  try {
+    const cityStats = await getCityStats();
+    const { day, round } = getDayAndRound();
+    
+    const prompt = `Generate a new voting scenario for Pump Town. Current city stats:
+- Economy: ${cityStats.economy}/100
+- Security: ${cityStats.security}/100
+- Culture: ${cityStats.culture}/100
+- Morale: ${cityStats.morale}/100
+- Governance Day: ${day}, Round: ${round}
+
+Generate a JSON response (pure JSON only, no markdown):
+{
+  "question": "The main question citizens must vote on (dramatic, crypto-themed)",
+  "mayorQuote": "Mayor Satoshi McPump's opening speech (2-3 sentences with crypto slang)",
+  "options": [
+    {
+      "id": "A",
+      "title": "Catchy title (3-5 words)",
+      "description": "What this choice does (1-2 sentences)",
+      "effects": [
+        { "stat": "economy", "value": 10, "type": "positive" },
+        { "stat": "security", "value": -5, "type": "negative" }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "Another title",
+      "description": "Description",
+      "effects": [{ "stat": "morale", "value": 15, "type": "positive" }]
+    }
+  ]
+}
+
+Rules:
+- Make it crypto/degen culture themed
+- Each option has trade-offs (positive and negative effects)
+- Effect values between -20 and +20
+- Stats: economy, security, culture, morale
+- If a stat is low, consider addressing it
+- Be creative and entertaining!`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      system: MAYOR_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      const voteData = JSON.parse(jsonMatch[0]);
+      const voteId = getCurrentVoteId();
+      
+      // Cache in database
+      await pool.query(`
+        INSERT INTO ai_votes (vote_id, question, mayor_quote, options)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (vote_id) DO UPDATE SET question = $2, mayor_quote = $3, options = $4
+      `, [voteId, voteData.question, voteData.mayorQuote, JSON.stringify(voteData.options)]);
+      
+      console.log('🤖 AI generated vote:', voteData.question.substring(0, 50) + '...');
+      res.json({ success: true, vote: voteData });
+    } else {
+      throw new Error('Failed to parse AI response');
+    }
+  } catch (error) {
+    console.error('AI Vote Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Mayor reaction to vote outcome
+app.post('/api/ai/mayor-reaction', async (req, res) => {
+  if (!anthropic) {
+    return res.status(503).json({ success: false, error: 'AI not configured' });
+  }
+
+  try {
+    const { question, winningOption, totalVotes } = req.body;
+    const cityStats = await getCityStats();
+    
+    const prompt = `Citizens of Pump Town just voted on: "${question}"
+
+Winner: "${winningOption.title}" - ${winningOption.description}
+Total votes: ${totalVotes || 'many'}
+Effects applied: ${JSON.stringify(winningOption.effects)}
+
+City stats now: Economy ${cityStats.economy}, Security ${cityStats.security}, Culture ${cityStats.culture}, Morale ${cityStats.morale}
+
+Generate JSON (pure JSON only):
+{
+  "speech": "Mayor's dramatic reaction (3-4 sentences with crypto slang)",
+  "mood": "excited" or "concerned" or "proud" or "chaotic",
+  "nextHint": "Cryptic hint about what's next (1 sentence)"
+}`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 512,
+      system: MAYOR_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      res.json({ success: true, reaction: JSON.parse(jsonMatch[0]) });
+    } else {
+      throw new Error('Parse error');
+    }
+  } catch (error) {
+    console.error('AI Reaction Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Generate random event
+app.post('/api/ai/generate-event', async (req, res) => {
+  if (!anthropic) {
+    return res.status(503).json({ success: false, error: 'AI not configured' });
+  }
+
+  try {
+    const cityStats = await getCityStats();
+    const { day } = getDayAndRound();
+    
+    const prompt = `Generate a random event for Pump Town:
+- Economy: ${cityStats.economy}/100
+- Security: ${cityStats.security}/100
+- Culture: ${cityStats.culture}/100
+- Morale: ${cityStats.morale}/100
+- Day: ${day}
+
+Generate JSON (pure JSON only):
+{
+  "type": "crisis" or "opportunity" or "chaos" or "celebration",
+  "title": "Catchy event title (3-5 words)",
+  "description": "What's happening (2-3 sentences)",
+  "mayorAnnouncement": "Mayor's announcement (2-3 sentences with crypto slang)",
+  "icon": "emoji",
+  "effects": { "economy": 5, "security": -3, "culture": 0, "morale": 10 }
+}
+
+Make it dramatic and crypto-themed! If a stat is critical (below 30), maybe address it.`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 768,
+      system: MAYOR_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      const eventData = JSON.parse(jsonMatch[0]);
+      console.log('🤖 AI event:', eventData.title);
+      res.json({ success: true, event: eventData });
+    } else {
+      throw new Error('Parse error');
+    }
+  } catch (error) {
+    console.error('AI Event Error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Chat with Mayor
+app.post('/api/ai/mayor-chat', async (req, res) => {
+  if (!anthropic) {
+    return res.json({ success: true, response: "The Mayor is currently offline... WAGMI fren, check back later! 🏛️" });
+  }
+
+  try {
+    const { message, playerName, playerLevel } = req.body;
+    
+    if (!message || message.length > 500) {
+      return res.status(400).json({ success: false, error: 'Invalid message' });
+    }
+    
+    const cityStats = await getCityStats();
+    
+    const prompt = `Citizen "${playerName || 'Anonymous'}" (Level ${playerLevel || 1}) says: "${message}"
+
+City stats: Economy ${cityStats.economy}, Security ${cityStats.security}, Culture ${cityStats.culture}, Morale ${cityStats.morale}
+
+Respond as Mayor Satoshi McPump in 2-4 sentences. Be witty, use crypto slang, stay in character.`;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 256,
+      system: MAYOR_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    console.log('🤖 Mayor chat with', playerName);
+    res.json({ success: true, response: response.content[0].text });
+  } catch (error) {
+    console.error('AI Chat Error:', error.message);
+    res.json({ success: true, response: "Ser, the Mayor's brain is buffering... Too many degens asking questions! Try again. 🧠" });
+  }
+});
+
+// AI Status check
+app.get('/api/ai/status', (req, res) => {
+  res.json({
+    enabled: !!anthropic,
+    model: 'claude-sonnet-4-20250514',
+    features: ['vote-generation', 'mayor-reactions', 'events', 'chat']
+  });
+});
 
 // ==================== AUTH ENDPOINTS ====================
 
-// Send welcome email to new citizens
 async function sendWelcomeEmail(email) {
+  if (!process.env.RESEND_API_KEY) return;
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Mayor of Pump Town <mayor@pump-town.xyz>',
+        from: 'Mayor Satoshi <mayor@pump.town>',
         to: email,
-        subject: '🏛️ gm ser, welcome to Pump Town',
-        html: `
-          <div style="font-family: 'Courier New', monospace; background: linear-gradient(135deg, #0a1628 0%, #1a2f4a 100%); color: #00ff88; padding: 40px; border-radius: 12px; max-width: 600px;">
-            <h1 style="color: #00ff88; font-size: 28px; margin-bottom: 10px;">gm, citizen 🐸</h1>
-            
-            <p style="color: #ffffff; font-size: 16px; line-height: 1.6;">
-              You've officially entered <strong style="color: #00ff88;">Pump Town</strong> — the most degen city in all of crypto.
-            </p>
-            
-            <p style="color: #ffffff; font-size: 16px; line-height: 1.6;">
-              Here's the deal:
-            </p>
-            
-            <ul style="color: #ffffff; font-size: 15px; line-height: 1.8;">
-              <li>🗳️ <strong>Vote every 6 hours</strong> — shape the city's fate</li>
-              <li>📈 <strong>Build reputation</strong> — don't be a paper hand</li>
-              <li>🏆 <strong>Climb the leaderboard</strong> — prove you're not ngmi</li>
-              <li>💎 <strong>Diamond hands get rewarded</strong> — trust the process</li>
-            </ul>
-            
-            <p style="color: #ffffff; font-size: 16px; line-height: 1.6;">
-              Remember: <em style="color: #ffcc00;">In Pump Town, your reputation is public. Winners gain status. Losers become lore.</em>
-            </p>
-            
-            <div style="margin-top: 30px; padding: 20px; background: rgba(0,255,136,0.1); border: 1px solid #00ff88; border-radius: 8px;">
-              <p style="color: #00ff88; margin: 0; font-size: 14px;">
-                🚀 <strong>Pro tip:</strong> The AI Mayor is always watching. Vote wisely, ser.
-              </p>
-            </div>
-            
-            <p style="color: #888; font-size: 14px; margin-top: 30px;">
-              WAGMI,<br/>
-              <strong style="color: #00ff88;">The AI Mayor</strong> 🏛️
-            </p>
-            
-            <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;" />
-            
-            <p style="color: #666; font-size: 12px; text-align: center;">
-              pump-town.xyz — where degens govern
-            </p>
-          </div>
-        `
+        subject: '🏛️ Welcome to Pump Town, Citizen!',
+        html: `<div style="font-family:Arial;background:#1a1a2e;color:#fff;padding:30px;border-radius:15px;"><h1 style="color:#00ff88;text-align:center;">🏛️ Welcome to Pump Town!</h1><p>You've joined the most chaotic AI-governed city in crypto!</p><ul style="color:#ffd700;"><li>🗳️ Vote on city decisions every 6 hours</li><li>🎰 Test your luck in the Degen Casino</li><li>🤖 Chat with your AI Mayor</li></ul><p style="text-align:center;margin-top:30px;"><a href="https://pump.town" style="background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;padding:15px 30px;text-decoration:none;border-radius:25px;font-weight:bold;">Enter Pump Town</a></p><p style="color:#888;text-align:center;">WAGMI,<br>Mayor Satoshi McPump 🎩</p></div>`
       })
     });
-    
-    if (response.ok) {
-      console.log('✅ Welcome email sent to:', email);
-    } else {
-      const error = await response.json();
-      console.error('❌ Email API error:', error);
-    }
-  } catch (error) {
-    console.error('❌ Failed to send welcome email:', error);
-    // Don't throw - we don't want signup to fail if email fails
+    console.log('✉️ Welcome email sent:', email);
+  } catch (err) {
+    console.error('Email error:', err.message);
   }
 }
 
-// Signup with email/password
 app.post('/api/signup', async (req, res) => {
   const { email, password } = req.body;
-  
-  console.log('=== Signup Request ===');
-  console.log('Email:', email);
-  
-  if (!email || !password) {
-    return res.status(400).json({
-      success: false,
-      error: 'Email and password required'
-    });
-  }
-  
-  if (password.length < 6) {
-    return res.status(400).json({
-      success: false,
-      error: 'Password must be at least 6 characters'
-    });
-  }
+  if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password required' });
+  if (password.length < 6) return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
   
   try {
-    // Check if user already exists
-    const existingUser = await pool.query(
-      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
-      [email]
-    );
+    const existing = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    if (existing.rows.length > 0) return res.status(400).json({ success: false, error: 'Email already registered' });
     
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'An account with this email already exists'
-      });
-    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const result = await pool.query('INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id', [email.toLowerCase(), passwordHash]);
     
-    // Hash password
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
-    
-    // Create user
-    const result = await pool.query(
-      'INSERT INTO users (email, password_hash) VALUES (LOWER($1), $2) RETURNING id, email',
-      [email, passwordHash]
-    );
-    
-    console.log('✅ User created:', result.rows[0].email);
-    
-    // Send welcome email (async, don't wait)
-    sendWelcomeEmail(result.rows[0].email);
-    
-    res.json({
-      success: true,
-      message: 'Account created successfully!',
-      user: {
-        id: result.rows[0].id,
-        email: result.rows[0].email
-      }
-    });
-    
+    console.log('👤 New user:', email);
+    sendWelcomeEmail(email);
+    res.json({ success: true, userId: result.rows[0].id });
   } catch (err) {
     console.error('Signup error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create account'
-    });
+    res.status(500).json({ success: false, error: 'Registration failed' });
   }
 });
 
-// Login with email/password
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
-  
-  console.log('=== Login Request ===');
-  console.log('Email:', email);
-  
-  if (!email || !password) {
-    return res.status(400).json({
-      success: false,
-      error: 'Email and password required'
-    });
-  }
+  if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password required' });
   
   try {
-    // Find user
-    const result = await pool.query(
-      'SELECT id, email, password_hash FROM users WHERE LOWER(email) = LOWER($1)',
-      [email]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        error: 'Account not found. Please sign up first.'
-      });
-    }
+    const result = await pool.query('SELECT id, password_hash FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    if (result.rows.length === 0) return res.status(401).json({ success: false, error: 'Invalid credentials' });
     
     const user = result.rows[0];
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) return res.status(401).json({ success: false, error: 'Invalid credentials' });
     
-    // Verify password
-    const validPassword = await bcrypt.compare(password, user.password_hash);
-    
-    if (!validPassword) {
-      return res.status(401).json({
-        success: false,
-        error: 'Incorrect password'
-      });
-    }
-    
-    console.log('✅ Login successful:', user.email);
-    
-    // Load character if exists
-    const charResult = await pool.query(
-      'SELECT * FROM characters WHERE LOWER(email) = LOWER($1)',
-      [email]
-    );
-    
-    let character = null;
-    if (charResult.rows.length > 0) {
-      const c = charResult.rows[0];
-      
-      // Parse avatar from JSON string
-      let parsedAvatar = null;
-      if (c.avatar) {
-        try {
-          parsedAvatar = typeof c.avatar === 'string' ? JSON.parse(c.avatar) : c.avatar;
-        } catch (e) {
-          console.log('Avatar parse error, using default');
-          parsedAvatar = { id: 'pepe', name: 'Pepe', image: 'pepe-pepe-logo.svg', color: '#3D8130' };
-        }
-      }
-      
-      character = {
-        name: c.name,
-        role: c.role,
-        trait: c.trait,
-        avatar: parsedAvatar,
-        xp: c.xp,
-        level: c.level,
-        reputation: c.reputation,
-        degenScore: c.degen_score,
-        treasury: c.treasury,
-        votesCount: c.votes_count,
-        holdingDays: Math.floor((Date.now() - new Date(c.joined_date).getTime()) / (1000 * 60 * 60 * 24)),
-        joinedDate: c.joined_date,
-        badges: c.badges || []
-      };
-    }
-    
-    res.json({
-      success: true,
-      message: 'Login successful!',
-      user: {
-        id: user.id,
-        email: user.email
-      },
-      character
-    });
-    
+    const charResult = await pool.query('SELECT * FROM characters WHERE LOWER(email) = LOWER($1)', [email]);
+    console.log('🔐 Login:', email);
+    res.json({ success: true, userId: user.id, hasCharacter: charResult.rows.length > 0, character: charResult.rows[0] || null });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Login failed'
-    });
+    res.status(500).json({ success: false, error: 'Login failed' });
   }
 });
 
-// ==================== PASSWORD RESET ====================
-
-// Generate a random token
-function generateResetToken() {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let token = '';
-  for (let i = 0; i < 48; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
-}
-
-// Send password reset email
-async function sendPasswordResetEmail(email, resetToken) {
-  const resetUrl = `https://pump-town.xyz?reset=${resetToken}`;
-  
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'Mayor of Pump Town <mayor@pump-town.xyz>',
-        to: email,
-        subject: '🔐 Reset your Pump Town password',
-        html: `
-          <div style="font-family: 'Courier New', monospace; background: linear-gradient(135deg, #0a1628 0%, #1a2f4a 100%); color: #00ff88; padding: 40px; border-radius: 12px; max-width: 600px;">
-            <h1 style="color: #00ff88; font-size: 28px; margin-bottom: 10px;">Password Reset 🔐</h1>
-            
-            <p style="color: #ffffff; font-size: 16px; line-height: 1.6;">
-              gm ser, looks like you forgot your password. No worries, even the best degens have paper brain moments.
-            </p>
-            
-            <p style="color: #ffffff; font-size: 16px; line-height: 1.6;">
-              Click the button below to reset your password:
-            </p>
-            
-            <div style="margin: 30px 0; text-align: center;">
-              <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(90deg, #00ff88, #00cc6a); color: #000; padding: 15px 40px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
-                🚀 Reset Password
-              </a>
-            </div>
-            
-            <p style="color: #888; font-size: 14px; line-height: 1.6;">
-              This link expires in <strong style="color: #ffcc00;">1 hour</strong>. If you didn't request this, just ignore it — someone might be trying to rug you.
-            </p>
-            
-            <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;" />
-            
-            <p style="color: #666; font-size: 12px; text-align: center;">
-              pump-town.xyz — where degens govern
-            </p>
-          </div>
-        `
-      })
-    });
-    
-    if (response.ok) {
-      console.log('✅ Password reset email sent to:', email);
-      return true;
-    } else {
-      const error = await response.json();
-      console.error('❌ Password reset email error:', error);
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ Failed to send password reset email:', error);
-    return false;
-  }
-}
-
-// Request password reset
 app.post('/api/forgot-password', async (req, res) => {
   const { email } = req.body;
-  
-  console.log('=== Forgot Password Request ===');
-  console.log('Email:', email);
-  
-  if (!email) {
-    return res.status(400).json({
-      success: false,
-      error: 'Email is required'
-    });
-  }
+  if (!email) return res.status(400).json({ success: false, error: 'Email required' });
   
   try {
-    // Check if user exists
-    const userResult = await pool.query(
-      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
-      [email]
-    );
+    const userResult = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    if (userResult.rows.length === 0) return res.json({ success: true, message: 'If account exists, reset link sent.' });
     
-    // Always return success to prevent email enumeration
-    if (userResult.rows.length === 0) {
-      console.log('User not found, but returning success for security');
-      return res.json({
-        success: true,
-        message: 'If an account exists with this email, you will receive a reset link.'
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await pool.query('INSERT INTO password_reset_tokens (email, token, expires_at) VALUES ($1, $2, $3)', [email.toLowerCase(), token, expiresAt]);
+    
+    if (process.env.RESEND_API_KEY) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'Pump Town <noreply@pump.town>', to: email,
+          subject: '🔐 Reset Your Password',
+          html: `<div style="font-family:Arial;background:#1a1a2e;color:#fff;padding:30px;border-radius:15px;"><h1 style="color:#ffd700;">🔐 Password Reset</h1><p><a href="https://pump.town/reset-password?token=${token}" style="background:#ffd700;color:#000;padding:15px 30px;text-decoration:none;border-radius:25px;">Reset Password</a></p><p style="color:#888;">Expires in 1 hour.</p></div>`
+        })
       });
     }
-    
-    // Generate reset token
-    const resetToken = generateResetToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
-    
-    // Invalidate any existing tokens for this email
-    await pool.query(
-      'UPDATE password_reset_tokens SET used = TRUE WHERE LOWER(email) = LOWER($1) AND used = FALSE',
-      [email]
-    );
-    
-    // Store new token
-    await pool.query(
-      'INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (LOWER($1), $2, $3)',
-      [email, resetToken, expiresAt]
-    );
-    
-    // Send email
-    await sendPasswordResetEmail(email, resetToken);
-    
-    res.json({
-      success: true,
-      message: 'If an account exists with this email, you will receive a reset link.'
-    });
-    
+    res.json({ success: true, message: 'If account exists, reset link sent.' });
   } catch (err) {
     console.error('Forgot password error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to process request'
-    });
+    res.status(500).json({ success: false, error: 'Request failed' });
   }
 });
 
-// Reset password with token
 app.post('/api/reset-password', async (req, res) => {
   const { token, newPassword } = req.body;
-  
-  console.log('=== Reset Password Request ===');
-  
-  if (!token || !newPassword) {
-    return res.status(400).json({
-      success: false,
-      error: 'Token and new password are required'
-    });
-  }
-  
-  if (newPassword.length < 6) {
-    return res.status(400).json({
-      success: false,
-      error: 'Password must be at least 6 characters'
-    });
-  }
+  if (!token || !newPassword) return res.status(400).json({ success: false, error: 'Token and password required' });
+  if (newPassword.length < 6) return res.status(400).json({ success: false, error: 'Password too short' });
   
   try {
-    // Find valid token
-    const tokenResult = await pool.query(
-      'SELECT email FROM password_reset_tokens WHERE token = $1 AND used = FALSE AND expires_at > NOW()',
-      [token]
-    );
-    
-    if (tokenResult.rows.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid or expired reset link. Please request a new one.'
-      });
-    }
+    const tokenResult = await pool.query('SELECT email FROM password_reset_tokens WHERE token = $1 AND expires_at > NOW() AND used = FALSE', [token]);
+    if (tokenResult.rows.length === 0) return res.status(400).json({ success: false, error: 'Invalid or expired token' });
     
     const email = tokenResult.rows[0].email;
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE LOWER(email) = LOWER($2)', [passwordHash, email]);
+    await pool.query('UPDATE password_reset_tokens SET used = TRUE WHERE token = $1', [token]);
     
-    // Hash new password
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
-    
-    // Update password
-    await pool.query(
-      'UPDATE users SET password_hash = $1 WHERE LOWER(email) = LOWER($2)',
-      [passwordHash, email]
-    );
-    
-    // Mark token as used
-    await pool.query(
-      'UPDATE password_reset_tokens SET used = TRUE WHERE token = $1',
-      [token]
-    );
-    
-    console.log('✅ Password reset successful for:', email);
-    
-    res.json({
-      success: true,
-      message: 'Password reset successful! You can now login with your new password.'
-    });
-    
+    console.log('🔐 Password reset:', email);
+    res.json({ success: true });
   } catch (err) {
     console.error('Reset password error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to reset password'
-    });
-  }
-});
-
-// ==================== WEEKLY DIGEST ====================
-
-// Send weekly digest email
-async function sendDigestEmail(userEmail, digestData) {
-  const { 
-    totalVotes, 
-    topVoters, 
-    recentPolicies, 
-    statsChange,
-    totalCitizens,
-    newCitizens
-  } = digestData;
-
-  const topVotersHtml = topVoters.slice(0, 5).map((voter, i) => 
-    `<tr style="border-bottom: 1px solid #333;">
-      <td style="padding: 10px; color: ${i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : '#fff'};">
-        ${i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : '•'} ${voter.name}
-      </td>
-      <td style="padding: 10px; color: #00ff88; text-align: right;">${voter.votes_count || 0} votes</td>
-    </tr>`
-  ).join('');
-
-  const policiesHtml = recentPolicies.slice(0, 3).map(policy => 
-    `<div style="background: rgba(0,255,136,0.1); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-      <strong style="color: #00ff88;">${policy.title}</strong>
-      <p style="color: #888; margin: 5px 0 0 0; font-size: 14px;">${policy.description || 'The citizens have spoken.'}</p>
-    </div>`
-  ).join('');
-
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'Mayor of Pump Town <mayor@pump-town.xyz>',
-        to: userEmail,
-        subject: '📊 Your Weekly Pump Town Digest',
-        html: `
-          <div style="font-family: 'Courier New', monospace; background: linear-gradient(135deg, #0a1628 0%, #1a2f4a 100%); color: #00ff88; padding: 40px; border-radius: 12px; max-width: 600px;">
-            <h1 style="color: #00ff88; font-size: 28px; margin-bottom: 10px;">Weekly Digest 📊</h1>
-            <p style="color: #888; font-size: 14px; margin-bottom: 30px;">gm ser, here's what went down in Pump Town this week.</p>
-            
-            <!-- Stats Overview -->
-            <div style="display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
-              <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 24px; color: #00ff88; font-weight: bold;">${totalCitizens}</div>
-                <div style="color: #888; font-size: 12px;">Total Citizens</div>
-              </div>
-              <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 24px; color: #00ff88; font-weight: bold;">+${newCitizens}</div>
-                <div style="color: #888; font-size: 12px;">New This Week</div>
-              </div>
-              <div style="flex: 1; min-width: 120px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 24px; color: #00ff88; font-weight: bold;">${totalVotes}</div>
-                <div style="color: #888; font-size: 12px;">Votes Cast</div>
-              </div>
-            </div>
-
-            <!-- Top Voters -->
-            <h3 style="color: #fff; margin-bottom: 15px;">🏆 Top Voters This Week</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-              ${topVotersHtml || '<tr><td style="color: #888; padding: 10px;">No votes yet this week!</td></tr>'}
-            </table>
-
-            <!-- Recent Policies -->
-            <h3 style="color: #fff; margin-bottom: 15px;">📜 Recent Policies</h3>
-            ${policiesHtml || '<p style="color: #888;">No policies passed this week.</p>'}
-
-            <!-- CTA -->
-            <div style="margin-top: 30px; text-align: center;">
-              <a href="https://pump-town.xyz" style="display: inline-block; background: linear-gradient(90deg, #00ff88, #00cc6a); color: #000; padding: 15px 40px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
-                🗳️ Cast Your Vote
-              </a>
-            </div>
-
-            <p style="color: #888; font-size: 14px; margin-top: 30px; text-align: center;">
-              Stay degen, fren. WAGMI. 🐸
-            </p>
-            
-            <hr style="border: none; border-top: 1px solid #333; margin: 30px 0;" />
-            
-            <p style="color: #666; font-size: 12px; text-align: center;">
-              <a href="https://pump-town-backend-production.up.railway.app/api/unsubscribe?email=${encodeURIComponent(userEmail)}&type=digest" style="color: #666;">Unsubscribe from digest</a>
-              <br/><br/>
-              pump-town.xyz — where degens govern
-            </p>
-          </div>
-        `
-      })
-    });
-    
-    if (response.ok) {
-      console.log('✅ Digest email sent to:', userEmail);
-      return true;
-    } else {
-      const error = await response.json();
-      console.error('❌ Digest email error:', error);
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ Failed to send digest email:', error);
-    return false;
-  }
-}
-
-// Endpoint to trigger weekly digest (call via cron service)
-app.post('/api/send-weekly-digest', async (req, res) => {
-  const { secret } = req.body;
-  
-  // Simple secret to prevent unauthorized triggers
-  if (secret !== process.env.DIGEST_SECRET && secret !== 'pump-town-digest-2024') {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
-  }
-  
-  console.log('=== Sending Weekly Digest ===');
-  
-  try {
-    // Get all users with digest enabled
-    const usersResult = await pool.query(
-      'SELECT email FROM users WHERE digest_enabled = TRUE'
-    );
-    
-    if (usersResult.rows.length === 0) {
-      return res.json({ success: true, message: 'No users subscribed to digest' });
-    }
-    
-    // Get digest data
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    
-    // Total votes this week
-    const votesResult = await pool.query(
-      'SELECT COUNT(*) as count FROM votes WHERE timestamp > $1',
-      [oneWeekAgo]
-    );
-    const totalVotes = parseInt(votesResult.rows[0].count) || 0;
-    
-    // Top voters this week
-    const topVotersResult = await pool.query(`
-      SELECT c.name, c.votes_count, c.avatar
-      FROM characters c
-      ORDER BY c.votes_count DESC
-      LIMIT 5
-    `);
-    const topVoters = topVotersResult.rows;
-    
-    // Total citizens
-    const citizensResult = await pool.query('SELECT COUNT(*) as count FROM characters');
-    const totalCitizens = parseInt(citizensResult.rows[0].count) || 0;
-    
-    // New citizens this week
-    const newCitizensResult = await pool.query(
-      'SELECT COUNT(*) as count FROM characters WHERE joined_date > $1',
-      [oneWeekAgo]
-    );
-    const newCitizens = parseInt(newCitizensResult.rows[0].count) || 0;
-    
-    // Recent policies (from vote history - stored in memory for now)
-    const recentPolicies = [
-      { title: 'Community Decision', description: 'The citizens have shaped Pump Town\'s future.' }
-    ];
-    
-    const digestData = {
-      totalVotes,
-      topVoters,
-      recentPolicies,
-      statsChange: {},
-      totalCitizens,
-      newCitizens
-    };
-    
-    // Send to all subscribed users
-    let sent = 0;
-    let failed = 0;
-    
-    for (const user of usersResult.rows) {
-      const success = await sendDigestEmail(user.email, digestData);
-      if (success) sent++;
-      else failed++;
-      
-      // Small delay to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    console.log(`✅ Weekly digest complete: ${sent} sent, ${failed} failed`);
-    
-    res.json({
-      success: true,
-      message: `Digest sent to ${sent} users`,
-      sent,
-      failed,
-      totalUsers: usersResult.rows.length
-    });
-    
-  } catch (err) {
-    console.error('Weekly digest error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to send weekly digest'
-    });
-  }
-});
-
-// Update email preferences
-app.post('/api/email-preferences', async (req, res) => {
-  const { email, digestEnabled } = req.body;
-  
-  if (!email) {
-    return res.status(400).json({ success: false, error: 'Email required' });
-  }
-  
-  try {
-    await pool.query(
-      'UPDATE users SET digest_enabled = $1 WHERE LOWER(email) = LOWER($2)',
-      [digestEnabled, email]
-    );
-    
-    console.log(`Email preferences updated for ${email}: digest=${digestEnabled}`);
-    
-    res.json({ success: true, message: 'Preferences updated' });
-  } catch (err) {
-    console.error('Email preferences error:', err);
-    res.status(500).json({ success: false, error: 'Failed to update preferences' });
-  }
-});
-
-// Unsubscribe from digest (via email link)
-app.get('/api/unsubscribe', async (req, res) => {
-  const { email, type } = req.query;
-  
-  if (!email || type !== 'digest') {
-    return res.redirect('https://pump-town.xyz');
-  }
-  
-  try {
-    await pool.query(
-      'UPDATE users SET digest_enabled = FALSE WHERE LOWER(email) = LOWER($1)',
-      [email]
-    );
-    
-    console.log(`Unsubscribed from digest: ${email}`);
-    
-    // Redirect to site with message
-    res.redirect('https://pump-town.xyz?unsubscribed=true');
-  } catch (err) {
-    console.error('Unsubscribe error:', err);
-    res.redirect('https://pump-town.xyz');
+    res.status(500).json({ success: false, error: 'Reset failed' });
   }
 });
 
 // ==================== CHARACTER ENDPOINTS ====================
 
-// Save character
 app.post('/api/save-character', async (req, res) => {
-  const { email, walletAddress, character } = req.body;
-  const userEmail = email || walletAddress; // Support both
-  
-  console.log('=== Save Character ===');
-  console.log('Email:', userEmail);
-  console.log('Character:', character?.name);
-  console.log('Avatar:', JSON.stringify(character?.avatar));
-  
-  if (!userEmail || !character) {
-    return res.status(400).json({
-      success: false,
-      error: 'Missing email or character data'
-    });
-  }
+  const { email, character } = req.body;
+  if (!email || !character) return res.status(400).json({ success: false, error: 'Data required' });
   
   try {
-    // Check if character exists
-    const existing = await pool.query(
-      'SELECT id FROM characters WHERE LOWER(email) = LOWER($1)',
-      [userEmail]
-    );
+    const userResult = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    const userId = userResult.rows[0]?.id || null;
+    let avatarStr = typeof character.avatar === 'object' ? JSON.stringify(character.avatar) : character.avatar;
     
-    // Serialize avatar object to JSON string for database storage
-    const avatarJson = typeof character.avatar === 'object' 
-      ? JSON.stringify(character.avatar) 
-      : character.avatar;
-
-    if (existing.rows.length > 0) {
-      // Update existing character
-      await pool.query(`
-        UPDATE characters SET
-          name = $1,
-          role = $2,
-          trait = $3,
-          avatar = $4,
-          xp = $5,
-          level = $6,
-          reputation = $7,
-          degen_score = $8,
-          treasury = $9,
-          votes_count = $10,
-          badges = $11,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE LOWER(email) = LOWER($12)
-      `, [
-        character.name,
-        character.role,
-        character.trait,
-        avatarJson,
-        character.xp || 0,
-        character.level || 1,
-        character.reputation || 50,
-        character.degenScore || 0,
-        character.treasury || 1000,
-        character.votesCount || 0,
-        JSON.stringify(character.badges || []),
-        userEmail
-      ]);
-      console.log('✅ Character updated');
-    } else {
-      // Create new character
-      await pool.query(`
-        INSERT INTO characters (email, name, role, trait, avatar, xp, level, reputation, degen_score, treasury, votes_count, badges)
-        VALUES (LOWER($1), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      `, [
-        userEmail,
-        character.name,
-        character.role,
-        character.trait,
-        avatarJson,
-        character.xp || 0,
-        character.level || 1,
-        character.reputation || 50,
-        character.degenScore || 0,
-        character.treasury || 1000,
-        character.votesCount || 0,
-        JSON.stringify(character.badges || [])
-      ]);
-      console.log('✅ Character created');
-    }
+    await pool.query(`
+      INSERT INTO characters (user_id, email, name, role, trait, avatar, xp, level, reputation, degen_score, treasury)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT (email) DO UPDATE SET name=$3, role=$4, trait=$5, avatar=$6, xp=$7, level=$8, reputation=$9, degen_score=$10, treasury=$11, updated_at=CURRENT_TIMESTAMP
+    `, [userId, email.toLowerCase(), character.name, character.role, character.trait, avatarStr, character.xp||0, character.level||1, character.reputation||50, character.degenScore||0, character.treasury||1000]);
     
+    console.log('💾 Character saved:', character.name);
     res.json({ success: true });
-    
   } catch (err) {
     console.error('Save character error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to save character'
-    });
+    res.status(500).json({ success: false, error: 'Save failed' });
   }
 });
 
-// Load character
 app.post('/api/load-character', async (req, res) => {
-  const { email, walletAddress } = req.body;
-  const userEmail = email || walletAddress;
-  
-  if (!userEmail) {
-    return res.json({ success: false, character: null });
-  }
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, error: 'Email required' });
   
   try {
-    const result = await pool.query(
-      'SELECT * FROM characters WHERE LOWER(email) = LOWER($1)',
-      [userEmail]
-    );
+    const result = await pool.query('SELECT * FROM characters WHERE LOWER(email) = LOWER($1)', [email]);
+    if (result.rows.length === 0) return res.json({ success: false, character: null });
     
-    if (result.rows.length > 0) {
-      const c = result.rows[0];
-      
-      // Parse avatar from JSON string
-      let parsedAvatar = null;
-      if (c.avatar) {
-        try {
-          parsedAvatar = typeof c.avatar === 'string' ? JSON.parse(c.avatar) : c.avatar;
-        } catch (e) {
-          console.log('Avatar parse error, using default');
-          parsedAvatar = { id: 'pepe', name: 'Pepe', image: 'pepe-pepe-logo.svg', color: '#3D8130' };
-        }
-      }
-      
-      const character = {
-        name: c.name,
-        role: c.role,
-        trait: c.trait,
-        avatar: parsedAvatar,
-        xp: c.xp,
-        level: c.level,
-        reputation: c.reputation,
-        degenScore: c.degen_score,
-        treasury: c.treasury,
-        votesCount: c.votes_count,
-        holdingDays: Math.floor((Date.now() - new Date(c.joined_date).getTime()) / (1000 * 60 * 60 * 24)),
-        joinedDate: c.joined_date,
-        badges: c.badges || []
-      };
-      
-      console.log('✅ Character loaded:', character.name);
-      res.json({ success: true, character });
-    } else {
-      res.json({ success: false, character: null });
+    const c = result.rows[0];
+    let avatar = c.avatar;
+    if (typeof avatar === 'string' && avatar.startsWith('{')) {
+      try { avatar = JSON.parse(avatar); } catch(e) {}
     }
     
+    res.json({ success: true, character: { name: c.name, role: c.role, trait: c.trait, avatar, xp: c.xp, level: c.level, reputation: c.reputation, degenScore: c.degen_score, treasury: c.treasury, votesCount: c.votes_count, joinedDate: c.joined_date, badges: c.badges || [] } });
   } catch (err) {
     console.error('Load character error:', err);
-    res.json({ success: false, character: null });
+    res.status(500).json({ success: false, error: 'Load failed' });
   }
 });
 
 // ==================== VOTING ENDPOINTS ====================
 
-// Cast vote
 app.post('/api/cast-vote', async (req, res) => {
-  const { email, walletAddress, optionId, voteId, optionTitle } = req.body;
-  const userEmail = email || walletAddress;
+  const { email, optionId, voteId } = req.body;
+  if (!email || !optionId) return res.status(400).json({ success: false, error: 'Email and option required' });
   
-  console.log('=== Vote Cast ===');
-  console.log('Email:', userEmail);
-  console.log('Option:', optionId, optionTitle);
-  
-  if (!userEmail || !optionId) {
-    return res.status(400).json({
-      success: false,
-      error: 'Missing required fields'
-    });
-  }
-  
-  const currentVoteId = getCurrentVoteId();
+  const currentVoteId = voteId || getCurrentVoteId();
   
   try {
-    // Check if already voted
-    const existing = await pool.query(
-      'SELECT id FROM votes WHERE LOWER(email) = LOWER($1) AND vote_id = $2',
-      [userEmail, currentVoteId]
-    );
+    const existing = await pool.query('SELECT id FROM votes WHERE LOWER(email) = LOWER($1) AND vote_id = $2', [email, currentVoteId]);
+    if (existing.rows.length > 0) return res.status(400).json({ success: false, error: 'Already voted' });
     
-    if (existing.rows.length > 0) {
-      return res.json({
-        success: false,
-        error: 'You have already voted in this round. Wait for the next 6-hour cycle!'
-      });
+    const userResult = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    const userId = userResult.rows[0]?.id || null;
+    
+    // Find option and apply effects
+    const option = gameState.currentVote.options.find(o => o.id === optionId);
+    await pool.query('INSERT INTO votes (user_id, email, vote_id, option_id, option_title) VALUES ($1, $2, $3, $4, $5)', [userId, email.toLowerCase(), currentVoteId, optionId, option?.title || 'Unknown']);
+    await pool.query('UPDATE characters SET votes_count = votes_count + 1 WHERE LOWER(email) = LOWER($1)', [email]);
+    
+    if (option?.effects) {
+      const changes = {};
+      option.effects.forEach(e => { changes[e.stat] = e.value; });
+      await updateCityStats(changes);
     }
     
-    // Record vote
-    await pool.query(
-      'INSERT INTO votes (email, vote_id, option_id, option_title) VALUES (LOWER($1), $2, $3, $4)',
-      [userEmail, currentVoteId, optionId, optionTitle]
-    );
-    
-    // Update character vote count
-    await pool.query(
-      'UPDATE characters SET votes_count = votes_count + 1 WHERE LOWER(email) = LOWER($1)',
-      [userEmail]
-    );
-    
-    console.log('✅ Vote recorded');
-    
-    res.json({
-      success: true,
-      message: 'Vote recorded!',
-      nextVoteAvailable: getCurrentCycleStart() + VOTE_CYCLE_MS
-    });
-    
+    console.log('🗳️ Vote:', email, '→', optionId);
+    res.json({ success: true, voteId: currentVoteId, optionId, timeRemaining: getTimeRemaining() });
   } catch (err) {
     console.error('Cast vote error:', err);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to record vote'
-    });
+    res.status(500).json({ success: false, error: 'Vote failed' });
   }
 });
 
-// Check if user voted
 app.post('/api/check-vote', async (req, res) => {
-  const { email, walletAddress } = req.body;
-  const userEmail = email || walletAddress;
+  const { email, voteId } = req.body;
+  if (!email) return res.json({ hasVoted: false });
   
-  if (!userEmail) {
-    return res.json({ hasVoted: false });
-  }
-  
-  const currentVoteId = getCurrentVoteId();
-  
+  const currentVoteId = voteId || getCurrentVoteId();
   try {
-    const result = await pool.query(
-      'SELECT option_id FROM votes WHERE LOWER(email) = LOWER($1) AND vote_id = $2',
-      [userEmail, currentVoteId]
-    );
-    
-    const hasVoted = result.rows.length > 0;
-    
-    res.json({
-      hasVoted,
-      currentVoteId,
-      votedOption: hasVoted ? result.rows[0].option_id : null,
-      timeRemaining: getTimeRemaining()
-    });
-    
+    const result = await pool.query('SELECT option_id FROM votes WHERE LOWER(email) = LOWER($1) AND vote_id = $2', [email, currentVoteId]);
+    res.json({ hasVoted: result.rows.length > 0, currentVoteId, votedOption: result.rows[0]?.option_id || null, timeRemaining: getTimeRemaining() });
   } catch (err) {
-    console.error('Check vote error:', err);
     res.json({ hasVoted: false });
+  }
+});
+
+app.get('/api/vote-results/:voteId', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT option_id, COUNT(*) as count FROM votes WHERE vote_id = $1 GROUP BY option_id', [req.params.voteId]);
+    const results = {};
+    let total = 0;
+    result.rows.forEach(r => { results[r.option_id] = parseInt(r.count); total += parseInt(r.count); });
+    res.json({ success: true, results, total });
+  } catch (err) {
+    res.json({ success: false, results: {}, total: 0 });
   }
 });
 
 // ==================== GAME STATE ENDPOINTS ====================
 
-app.get('/api/game-state', (req, res) => {
+app.get('/api/game-state', async (req, res) => {
   const { day, round, roundDisplay } = getDayAndRound();
-  const timeRemaining = getTimeRemaining();
   const currentVoteId = getCurrentVoteId();
+  const cityStats = await getCityStats();
+  
+  // Try to get AI-cached vote
+  let currentVote = gameState.currentVote;
+  try {
+    const aiVote = await pool.query('SELECT * FROM ai_votes WHERE vote_id = $1', [currentVoteId]);
+    if (aiVote.rows.length > 0) {
+      const cached = aiVote.rows[0];
+      currentVote = {
+        question: cached.question,
+        mayorQuote: cached.mayor_quote,
+        options: typeof cached.options === 'string' ? JSON.parse(cached.options) : cached.options
+      };
+    }
+  } catch (err) {}
   
   res.json({
-    success: true,
-    day,
-    round,
-    roundDisplay,
-    stats: gameState.stats,
+    success: true, day, round, roundDisplay,
+    stats: cityStats,
+    aiEnabled: !!anthropic,
     voteHistory: getUpdatedVoteHistory(),
-    currentVote: {
-      ...gameState.currentVote,
-      id: currentVoteId,
-      timeRemaining,
-      endsAt: getCurrentCycleStart() + VOTE_CYCLE_MS
-    },
+    currentVote: { ...currentVote, id: currentVoteId, timeRemaining: getTimeRemaining(), endsAt: getCurrentCycleStart() + VOTE_CYCLE_MS },
     serverTime: Date.now()
   });
 });
 
-app.get('/api/gamestate', (req, res) => {
+app.get('/api/gamestate', async (req, res) => {
   const { day, round } = getDayAndRound();
-  res.json({
-    ...gameState,
-    day,
-    round,
-    currentVote: {
-      ...gameState.currentVote,
-      id: getCurrentVoteId()
-    }
-  });
+  const cityStats = await getCityStats();
+  res.json({ ...gameState, stats: cityStats, day, round, currentVote: { ...gameState.currentVote, id: getCurrentVoteId() } });
+});
+
+app.get('/api/city-stats', async (req, res) => {
+  res.json({ success: true, stats: await getCityStats() });
 });
 
 // ==================== LEADERBOARD ====================
 
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT name, role, xp, level, degen_score, avatar, updated_at
-      FROM player_stats
-      ORDER BY xp DESC
-      LIMIT 100
-    `);
-    
-    const leaderboard = result.rows.map(p => ({
-      name: p.name,
-      role: p.role || 'Citizen',
-      xp: p.xp || 0,
-      level: p.level || 1,
-      degenScore: p.degen_score || 0,
-      avatar: p.avatar,
-      lastUpdated: p.updated_at
-    }));
-    
-    console.log(`Leaderboard: ${leaderboard.length} players`);
-    
-    res.json({
-      success: true,
-      leaderboard,
-      totalPlayers: leaderboard.length
-    });
-    
+    const result = await pool.query('SELECT name, role, xp, level, degen_score, avatar, updated_at FROM player_stats ORDER BY xp DESC LIMIT 100');
+    res.json({ success: true, leaderboard: result.rows.map(p => ({ name: p.name, role: p.role || 'Citizen', xp: p.xp || 0, level: p.level || 1, degenScore: p.degen_score || 0, avatar: p.avatar })), totalPlayers: result.rows.length });
   } catch (err) {
-    console.error('Leaderboard error:', err);
     res.json({ success: true, leaderboard: [], totalPlayers: 0 });
   }
 });
 
 app.post('/api/update-stats', async (req, res) => {
   const { name, role, xp, level, degenScore, avatar } = req.body;
-  
-  if (!name) {
-    return res.status(400).json({ success: false, error: 'Name required' });
-  }
+  if (!name) return res.status(400).json({ success: false, error: 'Name required' });
   
   try {
-    // Upsert player stats
     await pool.query(`
-      INSERT INTO player_stats (name, role, xp, level, degen_score, avatar, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
-      ON CONFLICT (name) DO UPDATE SET
-        role = COALESCE($2, player_stats.role),
-        xp = COALESCE($3, player_stats.xp),
-        level = COALESCE($4, player_stats.level),
-        degen_score = COALESCE($5, player_stats.degen_score),
-        avatar = COALESCE($6, player_stats.avatar),
-        updated_at = CURRENT_TIMESTAMP
+      INSERT INTO player_stats (name, role, xp, level, degen_score, avatar, updated_at) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+      ON CONFLICT (name) DO UPDATE SET role=COALESCE($2, player_stats.role), xp=COALESCE($3, player_stats.xp), level=COALESCE($4, player_stats.level), degen_score=COALESCE($5, player_stats.degen_score), avatar=COALESCE($6, player_stats.avatar), updated_at=CURRENT_TIMESTAMP
     `, [name, role, xp, level, degenScore, avatar]);
-    
-    console.log(`Stats updated: ${name}`);
     res.json({ success: true });
-    
   } catch (err) {
-    console.error('Update stats error:', err);
-    res.status(500).json({ success: false, error: 'Failed to update stats' });
+    res.status(500).json({ success: false, error: 'Update failed' });
   }
 });
 
 app.get('/api/player-stats/:name', async (req, res) => {
-  const { name } = req.params;
-  
   try {
-    const result = await pool.query(
-      'SELECT * FROM player_stats WHERE LOWER(name) = LOWER($1)',
-      [name]
-    );
-    
-    if (result.rows.length > 0) {
-      res.json({ success: true, stats: result.rows[0] });
-    } else {
-      res.json({ success: false, stats: null });
-    }
-    
+    const result = await pool.query('SELECT * FROM player_stats WHERE LOWER(name) = LOWER($1)', [req.params.name]);
+    res.json({ success: result.rows.length > 0, stats: result.rows[0] || null });
   } catch (err) {
-    console.error('Player stats error:', err);
     res.json({ success: false, stats: null });
   }
 });
 
-// ==================== FEAR & GREED INDEX ====================
+// ==================== FEAR & GREED ====================
 
-let fearGreedCache = {
-  value: 50,
-  classification: 'Neutral',
-  lastFetch: 0
-};
+let fearGreedCache = { value: 50, classification: 'Neutral', lastFetch: 0 };
 
 app.get('/api/fear-greed', async (req, res) => {
   const now = Date.now();
-  const cacheAge = now - fearGreedCache.lastFetch;
-  
-  if (cacheAge < 5 * 60 * 1000 && fearGreedCache.lastFetch > 0) {
-    return res.json({
-      success: true,
-      value: fearGreedCache.value,
-      classification: fearGreedCache.classification,
-      cached: true
-    });
+  if (now - fearGreedCache.lastFetch < 5 * 60 * 1000 && fearGreedCache.lastFetch > 0) {
+    return res.json({ success: true, value: fearGreedCache.value, classification: fearGreedCache.classification, cached: true });
   }
   
   try {
     const response = await fetch('https://api.alternative.me/fng/?limit=1');
     const data = await response.json();
-    
-    if (data.data && data.data[0]) {
-      fearGreedCache = {
-        value: parseInt(data.data[0].value),
-        classification: data.data[0].value_classification,
-        lastFetch: now
-      };
-      
-      res.json({
-        success: true,
-        value: fearGreedCache.value,
-        classification: fearGreedCache.classification,
-        cached: false
-      });
-    } else {
-      throw new Error('Invalid API response');
-    }
+    if (data.data?.[0]) {
+      fearGreedCache = { value: parseInt(data.data[0].value), classification: data.data[0].value_classification, lastFetch: now };
+      res.json({ success: true, value: fearGreedCache.value, classification: fearGreedCache.classification, cached: false });
+    } else throw new Error('Invalid response');
   } catch (err) {
-    console.error('Fear & Greed error:', err.message);
-    res.json({
-      success: fearGreedCache.lastFetch > 0,
-      value: fearGreedCache.value,
-      classification: fearGreedCache.classification,
-      cached: true,
-      error: err.message
-    });
+    res.json({ success: true, value: fearGreedCache.value, classification: fearGreedCache.classification, cached: true });
   }
 });
 
@@ -1380,47 +830,21 @@ app.get('/api/fear-greed', async (req, res) => {
 
 app.post('/api/verify-wallet', async (req, res) => {
   const { walletAddress } = req.body;
-  
-  if (!walletAddress) {
-    return res.status(400).json({ success: false, error: 'Wallet address required', balance: 0 });
-  }
+  if (!walletAddress) return res.status(400).json({ success: false, error: 'Wallet required', balance: 0 });
   
   try {
     const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
     const tokenMint = process.env.TOWN_TOKEN_MINT || 'ApEFtr2eba6sWFk3gF6GgX4i2uT4B5k2HZT75ZDapump';
     
     const response = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'getTokenAccountsByOwner',
-        params: [
-          walletAddress,
-          { mint: tokenMint },
-          { encoding: 'jsonParsed' }
-        ]
-      })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTokenAccountsByOwner', params: [walletAddress, { mint: tokenMint }, { encoding: 'jsonParsed' }] })
     });
-    
     const data = await response.json();
-    
-    let balance = 0;
-    if (data.result?.value?.length > 0) {
-      balance = data.result.value[0].account.data.parsed.info.tokenAmount.uiAmount || 0;
-    }
-    
-    res.json({
-      success: balance >= 100000,
-      balance,
-      required: 100000,
-      walletAddress
-    });
-    
+    const balance = data.result?.value?.[0]?.account?.data?.parsed?.info?.tokenAmount?.uiAmount || 0;
+    res.json({ success: balance >= 100000, balance, required: 100000, walletAddress });
   } catch (err) {
-    console.error('Wallet verification error:', err);
-    res.status(500).json({ success: false, error: 'Failed to verify wallet', balance: 0 });
+    res.status(500).json({ success: false, error: 'Verification failed', balance: 0 });
   }
 });
 
@@ -1428,29 +852,15 @@ app.post('/api/verify-wallet', async (req, res) => {
 
 app.get('/api/health', async (req, res) => {
   let dbStatus = 'unknown';
-  try {
-    await pool.query('SELECT 1');
-    dbStatus = 'connected';
-  } catch (err) {
-    dbStatus = 'disconnected';
-  }
-  
-  res.json({
-    status: 'ok',
-    database: dbStatus,
-    serverTime: Date.now(),
-    currentVoteId: getCurrentVoteId(),
-    timeRemaining: getTimeRemaining()
-  });
+  try { await pool.query('SELECT 1'); dbStatus = 'connected'; } catch (err) { dbStatus = 'disconnected'; }
+  res.json({ status: 'ok', database: dbStatus, aiEnabled: !!anthropic, serverTime: Date.now(), currentVoteId: getCurrentVoteId(), timeRemaining: getTimeRemaining() });
 });
 
 // ==================== START SERVER ====================
 
 app.listen(PORT, () => {
-  console.log(`🏛️ Pump Town Backend running on port ${PORT}`);
-  console.log(`📊 Current Vote ID: ${getCurrentVoteId()}`);
-  console.log(`⏰ Time remaining: ${Math.floor(getTimeRemaining() / 60000)} minutes`);
+  console.log(`🏛️ Pump Town Backend on port ${PORT}`);
+  console.log(`🤖 AI Mayor: ${anthropic ? 'ENABLED ✅' : 'DISABLED (set CLAUDE_API_KEY)'}`);
   console.log(`📅 Day ${getDayAndRound().day}, Round ${getDayAndRound().round}`);
-  console.log(`🗄️ Database: PostgreSQL`);
-  console.log(`🏆 Leaderboard: Ready`);
+  console.log(`⏰ Vote ends in ${Math.floor(getTimeRemaining() / 60000)} minutes`);
 });
