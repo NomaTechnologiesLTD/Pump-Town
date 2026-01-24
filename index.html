@@ -6473,6 +6473,360 @@
         .poker-btn.fold { background: #ff4444; color: #fff; }
         .poker-btn.call { background: #ffd700; color: #000; }
         .poker-btn.raise { background: #00ff88; color: #000; }
+
+        /* ==================== MAYOR MOOD SYSTEM ==================== */
+        .mayor-mood {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mayor-mood-icon {
+            font-size: 2.5em;
+            animation: moodPulse 2s infinite;
+        }
+
+        @keyframes moodPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .mayor-mood-info {
+            flex: 1;
+        }
+
+        .mayor-mood-label {
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .mayor-mood-status {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .mayor-mood-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .mayor-mood-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease, background 0.5s ease;
+        }
+
+        /* ==================== MAYOR DAILY BRIEFING ==================== */
+        .daily-briefing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .daily-briefing {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 3px solid #ffd700;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp 0.5s ease;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .daily-briefing-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .daily-briefing-avatar {
+            font-size: 3em;
+            animation: mayorBounce 1s ease infinite;
+        }
+
+        @keyframes mayorBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .daily-briefing-title {
+            color: #ffd700;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .daily-briefing-content {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #fff;
+        }
+
+        .daily-briefing-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .daily-briefing-stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .daily-briefing-stat-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .daily-briefing-stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .daily-briefing-close {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .daily-briefing-close:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        /* ==================== MAYOR QUICK ACTIONS ==================== */
+        .mayor-quick-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+            justify-content: center;
+        }
+
+        .mayor-quick-btn {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mayor-quick-btn:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+            transform: translateY(-2px);
+        }
+
+        .mayor-quick-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .mayor-quick-btn.roast { border-color: #ff6b6b; color: #ff6b6b; }
+        .mayor-quick-btn.roast:hover { background: rgba(255, 107, 107, 0.2); }
+        
+        .mayor-quick-btn.prophecy { border-color: #a855f7; color: #a855f7; }
+        .mayor-quick-btn.prophecy:hover { background: rgba(168, 85, 247, 0.2); }
+
+        .mayor-quick-btn.advice { border-color: #00ff88; color: #00ff88; }
+        .mayor-quick-btn.advice:hover { background: rgba(0, 255, 136, 0.2); }
+
+        .mayor-quick-btn.compliment { border-color: #00d4ff; color: #00d4ff; }
+        .mayor-quick-btn.compliment:hover { background: rgba(0, 212, 255, 0.2); }
+
+        /* ==================== MAYOR REACTION MODAL ==================== */
+        .mayor-reaction-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .mayor-reaction {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 3px solid;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: reactionPop 0.4s ease;
+        }
+
+        .mayor-reaction.excited { border-color: #00ff88; }
+        .mayor-reaction.concerned { border-color: #ff6b6b; }
+        .mayor-reaction.proud { border-color: #ffd700; }
+        .mayor-reaction.chaotic { border-color: #a855f7; }
+
+        @keyframes reactionPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .mayor-reaction-header {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .mayor-reaction-mood {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding: 5px 15px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        .mayor-reaction.excited .mayor-reaction-mood { background: rgba(0, 255, 136, 0.2); color: #00ff88; }
+        .mayor-reaction.concerned .mayor-reaction-mood { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+        .mayor-reaction.proud .mayor-reaction-mood { background: rgba(255, 215, 0, 0.2); color: #ffd700; }
+        .mayor-reaction.chaotic .mayor-reaction-mood { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+
+        .mayor-reaction-speech {
+            font-size: 1.15em;
+            line-height: 1.6;
+            color: #fff;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+
+        .mayor-reaction-hint {
+            font-size: 0.9em;
+            color: #888;
+            font-style: italic;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mayor-reaction-close {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .mayor-reaction-close:hover {
+            transform: scale(1.05);
+        }
+
+        /* ==================== SPECIAL EVENT BANNER ==================== */
+        .special-event-banner {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(255, 107, 107, 0.2));
+            border: 2px solid;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            animation: eventGlow 2s ease infinite;
+        }
+
+        .special-event-banner.crisis { border-color: #ff6b6b; }
+        .special-event-banner.opportunity { border-color: #00ff88; }
+        .special-event-banner.chaos { border-color: #a855f7; }
+        .special-event-banner.celebration { border-color: #ffd700; }
+
+        @keyframes eventGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.5); }
+        }
+
+        .special-event-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .special-event-description {
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+
+        .special-event-mayor {
+            font-style: italic;
+            color: #ffd700;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .special-event-dismiss {
+            background: transparent;
+            border: 1px solid #666;
+            color: #888;
+            padding: 5px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+
+        .special-event-dismiss:hover {
+            border-color: #fff;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -6864,6 +7218,9 @@
             const [showConfetti, setShowConfetti] = useState(false);
             const [specialEvent, setSpecialEvent] = useState(null);
             const [votingDisabled, setVotingDisabled] = useState(false);
+            const [showDailyBriefing, setShowDailyBriefing] = useState(false);
+            const [mayorReaction, setMayorReaction] = useState(null);
+            const [quickActionResponse, setQuickActionResponse] = useState(null);
             
             // Navigation state - MUST be at top level before any returns
             const [currentPage, setCurrentPage] = useState('dashboard');
@@ -7469,23 +7826,83 @@
                 return () => clearInterval(interval);
             }, []);
 
-            // Check for special events randomly
+            // Check for special events - AI-generated based on city stats
             useEffect(() => {
-                const checkSpecialEvent = () => {
-                    const random = Math.random();
-                    if (random < 0.1) { // 10% chance
-                        const events = [
-                            { type: 'flash', title: '⚡ FLASH VOTE', description: 'Emergency decision needed! Voting closes in 15 minutes!' },
-                            { type: 'crisis', title: '💣 CRISIS MODE', description: 'The treasury is at risk! Make a decision now!' },
-                            { type: 'festival', title: '🎉 TOWN FESTIVAL', description: 'Double rewards today! All votes count 2x!' },
+                let lastEventTime = 0;
+                const EVENT_COOLDOWN = 5 * 60 * 1000; // 5 minute cooldown between events
+                
+                const checkSpecialEvent = async () => {
+                    const now = Date.now();
+                    
+                    // Don't trigger events too frequently
+                    if (now - lastEventTime < EVENT_COOLDOWN) return;
+                    
+                    // Check if we should trigger an event
+                    let shouldTrigger = false;
+                    let triggerReason = 'random';
+                    
+                    if (gameState?.stats) {
+                        const { economy, security, culture, morale } = gameState.stats;
+                        
+                        // Crisis triggers (any stat below 30)
+                        if (economy < 30 || security < 30 || culture < 30 || morale < 30) {
+                            shouldTrigger = Math.random() < 0.3; // 30% chance when in crisis
+                            triggerReason = 'crisis';
+                        }
+                        // Celebration triggers (any stat above 80)
+                        else if (economy > 80 || security > 80 || culture > 80 || morale > 80) {
+                            shouldTrigger = Math.random() < 0.2; // 20% chance when thriving
+                            triggerReason = 'celebration';
+                        }
+                        // Random chance
+                        else {
+                            shouldTrigger = Math.random() < 0.08; // 8% random chance
+                        }
+                    } else {
+                        shouldTrigger = Math.random() < 0.08;
+                    }
+                    
+                    if (!shouldTrigger) return;
+                    
+                    try {
+                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/generate-event', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ triggerReason })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success && data.event) {
+                            lastEventTime = now;
+                            setSpecialEvent({
+                                type: data.event.type || 'chaos',
+                                title: `${data.event.icon || '🚨'} ${data.event.title}`,
+                                description: data.event.description,
+                                mayorAnnouncement: data.event.mayorAnnouncement,
+                                effects: data.event.effects
+                            });
+                            
+                            // Play sound for events
+                            if (window.GameSounds) window.GameSounds.notification();
+                            
+                            console.log('🎭 AI Event triggered:', data.event.title);
+                        }
+                    } catch (error) {
+                        console.error('AI Event error:', error);
+                        // Fallback to simple event on error
+                        const fallbackEvents = [
+                            { type: 'chaos', title: '🌀 MARKET TURBULENCE', description: 'Wild swings detected! Stay diamond-handed!' },
+                            { type: 'opportunity', title: '💎 ALPHA LEAKED', description: 'Insider info spreading through the city!' }
                         ];
-                        setSpecialEvent(events[Math.floor(Math.random() * events.length)]);
+                        setSpecialEvent(fallbackEvents[Math.floor(Math.random() * fallbackEvents.length)]);
                     }
                 };
 
                 const eventCheck = setInterval(checkSpecialEvent, 120000); // Check every 2 minutes
+                checkSpecialEvent(); // Check once on mount
                 return () => clearInterval(eventCheck);
-            }, []);
+            }, [gameState?.stats]);
 
             // Check if already voted when loading - properly handle both cases
             useEffect(() => {
@@ -7630,6 +8047,16 @@
                     });
                 }
                 setLoading(false);
+                
+                // Show daily briefing if not shown today
+                const today = new Date().toDateString();
+                const lastBriefing = localStorage.getItem('pumptown_last_briefing');
+                if (lastBriefing !== today) {
+                    setTimeout(() => {
+                        setShowDailyBriefing(true);
+                        localStorage.setItem('pumptown_last_briefing', today);
+                    }, 1500); // Delay to let the UI load first
+                }
             };
 
             const connectWallet = async (walletData) => {
@@ -7788,6 +8215,25 @@
 
                     generateNewVote(newState);
                     setAiGenerating(false);
+                    
+                    // Fetch Mayor's reaction to the vote
+                    try {
+                        const reactionResponse = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-reaction', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                question: gameState.currentVote.question,
+                                winningOption: selectedOption,
+                                totalVotes: 1
+                            })
+                        });
+                        const reactionData = await reactionResponse.json();
+                        if (reactionData.success && reactionData.reaction) {
+                            setMayorReaction(reactionData.reaction);
+                        }
+                    } catch (error) {
+                        console.error('Mayor reaction error:', error);
+                    }
                 }, 3000);
             };
 
@@ -8021,6 +8467,17 @@
                                     </div>
                                     
                                     <div style={{ minWidth: 0 }}>
+                                        {/* Mayor Mood Indicator */}
+                                        <MayorMood stats={gameState.stats} />
+                                        
+                                        {/* Special Event Banner */}
+                                        {specialEvent && (
+                                            <SpecialEventBanner 
+                                                event={specialEvent} 
+                                                onDismiss={() => setSpecialEvent(null)} 
+                                            />
+                                        )}
+                                        
                                         <MayorSection 
                                             currentVote={gameState.currentVote} 
                                             onVote={castVote}
@@ -8399,6 +8856,42 @@
                     </div>
                     
                     <SoundToggle />
+                    
+                    {/* Daily Briefing Modal */}
+                    {showDailyBriefing && gameState && (
+                        <MayorDailyBriefing 
+                            stats={gameState.stats}
+                            playerName={character?.name || 'Citizen'}
+                            day={gameState.day}
+                            onClose={() => setShowDailyBriefing(false)}
+                        />
+                    )}
+                    
+                    {/* Mayor Reaction Modal (after voting) */}
+                    {mayorReaction && (
+                        <MayorReactionModal 
+                            reaction={mayorReaction}
+                            onClose={() => setMayorReaction(null)}
+                        />
+                    )}
+                    
+                    {/* Quick Action Response Modal */}
+                    {quickActionResponse && (
+                        <div className="mayor-reaction-overlay" onClick={() => setQuickActionResponse(null)}>
+                            <div className={`mayor-reaction ${quickActionResponse.type === 'roast' ? 'chaotic' : quickActionResponse.type === 'prophecy' ? 'concerned' : 'excited'}`} onClick={e => e.stopPropagation()}>
+                                <div className="mayor-reaction-header">
+                                    {quickActionResponse.type === 'roast' ? '🔥' : quickActionResponse.type === 'prophecy' ? '🔮' : quickActionResponse.type === 'advice' ? '💡' : '💎'}
+                                </div>
+                                <div className="mayor-reaction-mood">{quickActionResponse.label}</div>
+                                <div className="mayor-reaction-speech">
+                                    "{quickActionResponse.response}"
+                                </div>
+                                <button className="mayor-reaction-close" onClick={() => setQuickActionResponse(null)}>
+                                    Based! 🚀
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -17278,6 +17771,260 @@
             );
         }
 
+        // ==================== MAYOR MOOD COMPONENT ====================
+        function MayorMood({ stats }) {
+            const calculateMood = () => {
+                if (!stats) return { mood: 'neutral', icon: '😐', label: 'Neutral', color: '#888', value: 50 };
+                
+                const avg = (stats.economy + stats.security + stats.culture + stats.morale) / 4;
+                const lowest = Math.min(stats.economy, stats.security, stats.culture, stats.morale);
+                const highest = Math.max(stats.economy, stats.security, stats.culture, stats.morale);
+                
+                if (lowest < 20) return { mood: 'panic', icon: '😱', label: 'MAXIMUM PANIC', color: '#ff4444', value: 15 };
+                if (lowest < 35) return { mood: 'bearish', icon: '😰', label: 'Bearish & Stressed', color: '#ff6b6b', value: 30 };
+                if (avg < 40) return { mood: 'concerned', icon: '😟', label: 'Concerned', color: '#ffa500', value: 40 };
+                if (avg < 55) return { mood: 'neutral', icon: '😐', label: 'Cautiously Optimistic', color: '#888', value: 50 };
+                if (avg < 70) return { mood: 'bullish', icon: '😊', label: 'Bullish Vibes', color: '#00ff88', value: 65 };
+                if (highest > 85) return { mood: 'euphoric', icon: '🤑', label: 'EUPHORIA MODE', color: '#ffd700', value: 90 };
+                return { mood: 'pumped', icon: '🚀', label: 'Pumped & Ready', color: '#00d4ff', value: 75 };
+            };
+            
+            const { mood, icon, label, color, value } = calculateMood();
+            
+            return (
+                <div className="mayor-mood">
+                    <div className="mayor-mood-icon">{icon}</div>
+                    <div className="mayor-mood-info">
+                        <div className="mayor-mood-label">Mayor's Mood</div>
+                        <div className="mayor-mood-status" style={{ color }}>{label}</div>
+                        <div className="mayor-mood-bar">
+                            <div 
+                                className="mayor-mood-fill" 
+                                style={{ width: `${value}%`, background: color }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== MAYOR DAILY BRIEFING ====================
+        function MayorDailyBriefing({ stats, playerName, day, onClose }) {
+            const [briefing, setBriefing] = useState(null);
+            const [loading, setLoading] = useState(true);
+            
+            useEffect(() => {
+                const fetchBriefing = async () => {
+                    try {
+                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/daily-briefing', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ playerName, stats, day })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            setBriefing(data.briefing);
+                        } else {
+                            throw new Error('Failed');
+                        }
+                    } catch (error) {
+                        // Fallback briefing
+                        setBriefing({
+                            greeting: `GM ${playerName}! Welcome back to Pump Town!`,
+                            summary: `Day ${day} of governance. The city needs your votes, citizen. Markets are moving, decisions await. WAGMI! 🚀`,
+                            tip: "Pro tip: Vote early, vote often. Diamond hands get rewarded."
+                        });
+                    }
+                    setLoading(false);
+                };
+                fetchBriefing();
+            }, []);
+            
+            const getStatColor = (value) => {
+                if (value < 30) return '#ff4444';
+                if (value < 50) return '#ffa500';
+                if (value < 70) return '#ffd700';
+                return '#00ff88';
+            };
+            
+            return (
+                <div className="daily-briefing-overlay" onClick={onClose}>
+                    <div className="daily-briefing" onClick={e => e.stopPropagation()}>
+                        <div className="daily-briefing-header">
+                            <div className="daily-briefing-avatar">🎩</div>
+                            <div className="daily-briefing-title">Mayor's Daily Briefing</div>
+                        </div>
+                        
+                        {loading ? (
+                            <div style={{ padding: '40px', color: '#888' }}>
+                                <div className="spinner" style={{ marginBottom: '15px' }}></div>
+                                Mayor is preparing your briefing...
+                            </div>
+                        ) : (
+                            <>
+                                <div className="daily-briefing-content">
+                                    <p style={{ marginBottom: '10px', color: '#ffd700' }}>{briefing?.greeting}</p>
+                                    <p>{briefing?.summary}</p>
+                                </div>
+                                
+                                {stats && (
+                                    <div className="daily-briefing-stats">
+                                        <div className="daily-briefing-stat">
+                                            <div className="daily-briefing-stat-label">Economy</div>
+                                            <div className="daily-briefing-stat-value" style={{ color: getStatColor(stats.economy) }}>
+                                                {stats.economy}%
+                                            </div>
+                                        </div>
+                                        <div className="daily-briefing-stat">
+                                            <div className="daily-briefing-stat-label">Security</div>
+                                            <div className="daily-briefing-stat-value" style={{ color: getStatColor(stats.security) }}>
+                                                {stats.security}%
+                                            </div>
+                                        </div>
+                                        <div className="daily-briefing-stat">
+                                            <div className="daily-briefing-stat-label">Culture</div>
+                                            <div className="daily-briefing-stat-value" style={{ color: getStatColor(stats.culture) }}>
+                                                {stats.culture}%
+                                            </div>
+                                        </div>
+                                        <div className="daily-briefing-stat">
+                                            <div className="daily-briefing-stat-label">Morale</div>
+                                            <div className="daily-briefing-stat-value" style={{ color: getStatColor(stats.morale) }}>
+                                                {stats.morale}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {briefing?.tip && (
+                                    <div style={{ fontSize: '0.9em', color: '#888', marginBottom: '20px' }}>
+                                        💡 {briefing.tip}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        
+                        <button className="daily-briefing-close" onClick={onClose}>
+                            LFG! 🚀
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== MAYOR QUICK ACTIONS ====================
+        function MayorQuickActions({ playerName, playerLevel, onResponse }) {
+            const [loading, setLoading] = useState(null);
+            
+            const actions = [
+                { id: 'roast', label: '🔥 Roast Me', className: 'roast', prompt: `Roast me playfully! My name is ${playerName} and I'm level ${playerLevel}. Give me a funny, savage but friendly roast about being a degen in Pump Town.` },
+                { id: 'prophecy', label: '🔮 Prophecy', className: 'prophecy', prompt: `Give me a cryptic market prophecy! Be mysterious and dramatic, mix real crypto wisdom with absurd predictions. Make it feel like ancient wisdom from a chaotic oracle.` },
+                { id: 'advice', label: '💡 Advice', className: 'advice', prompt: `Give me your best degen advice for succeeding in Pump Town! Mix actual helpful tips with your chaotic Mayor energy.` },
+                { id: 'compliment', label: '💎 Hype Me', className: 'compliment', prompt: `Hype me up! My name is ${playerName}, level ${playerLevel}. Give me an over-the-top motivational speech that makes me feel like the ultimate crypto chad. Maximum hype energy!` }
+            ];
+            
+            const handleAction = async (action) => {
+                if (loading) return;
+                setLoading(action.id);
+                
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: action.prompt,
+                            playerName,
+                            playerLevel
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success && onResponse) {
+                        onResponse({
+                            type: action.id,
+                            label: action.label,
+                            response: data.response
+                        });
+                    }
+                } catch (error) {
+                    console.error('Quick action error:', error);
+                }
+                
+                setLoading(null);
+            };
+            
+            return (
+                <div className="mayor-quick-actions">
+                    {actions.map(action => (
+                        <button
+                            key={action.id}
+                            className={`mayor-quick-btn ${action.className}`}
+                            onClick={() => handleAction(action)}
+                            disabled={loading !== null}
+                        >
+                            {loading === action.id ? '...' : action.label}
+                        </button>
+                    ))}
+                </div>
+            );
+        }
+
+        // ==================== MAYOR REACTION MODAL ====================
+        function MayorReactionModal({ reaction, onClose }) {
+            if (!reaction) return null;
+            
+            const moodIcons = {
+                excited: '🎉',
+                concerned: '😰',
+                proud: '👑',
+                chaotic: '🌀'
+            };
+            
+            return (
+                <div className="mayor-reaction-overlay" onClick={onClose}>
+                    <div className={`mayor-reaction ${reaction.mood || 'proud'}`} onClick={e => e.stopPropagation()}>
+                        <div className="mayor-reaction-header">
+                            {moodIcons[reaction.mood] || '🎩'}
+                        </div>
+                        <div className="mayor-reaction-mood">
+                            Mayor is {reaction.mood || 'reacting'}
+                        </div>
+                        <div className="mayor-reaction-speech">
+                            "{reaction.speech}"
+                        </div>
+                        {reaction.nextHint && (
+                            <div className="mayor-reaction-hint">
+                                🔮 {reaction.nextHint}
+                            </div>
+                        )}
+                        <button className="mayor-reaction-close" onClick={onClose}>
+                            WAGMI! 💎
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== SPECIAL EVENT BANNER ====================
+        function SpecialEventBanner({ event, onDismiss }) {
+            if (!event) return null;
+            
+            return (
+                <div className={`special-event-banner ${event.type || 'chaos'}`}>
+                    <div className="special-event-title">{event.title}</div>
+                    <div className="special-event-description">{event.description}</div>
+                    {event.mayorAnnouncement && (
+                        <div className="special-event-mayor">
+                            🎩 "{event.mayorAnnouncement}"
+                        </div>
+                    )}
+                    <button className="special-event-dismiss" onClick={onDismiss}>
+                        Dismiss
+                    </button>
+                </div>
+            );
+        }
+
         // ==================== MAYOR CHAT COMPONENT ====================
         function MayorChat({ playerName, playerLevel }) {
             const [messages, setMessages] = useState([]);
@@ -17328,6 +18075,52 @@
                 }
             };
             
+            const handleQuickAction = async (actionType) => {
+                if (loading) return;
+                
+                const prompts = {
+                    roast: `Roast me playfully! My name is ${playerName} and I'm level ${playerLevel}. Give me a funny, savage but friendly roast about being a degen in Pump Town.`,
+                    prophecy: `Give me a cryptic market prophecy! Be mysterious and dramatic, mix real crypto wisdom with absurd predictions. Make it feel like ancient wisdom from a chaotic oracle.`,
+                    advice: `Give me your best degen advice for succeeding in Pump Town! Mix actual helpful tips with your chaotic Mayor energy.`,
+                    hype: `Hype me up! My name is ${playerName}, level ${playerLevel}. Give me an over-the-top motivational speech that makes me feel like the ultimate crypto chad. Maximum hype energy!`
+                };
+                
+                const labels = {
+                    roast: '🔥 Roast Me',
+                    prophecy: '🔮 Prophecy',
+                    advice: '💡 Advice',
+                    hype: '💎 Hype Me'
+                };
+                
+                setMessages(prev => [...prev, { role: 'user', text: labels[actionType] }]);
+                setLoading(true);
+                
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: prompts[actionType],
+                            playerName: playerName || 'Citizen',
+                            playerLevel: playerLevel || 1
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setMessages(prev => [...prev, { role: 'mayor', text: data.response }]);
+                        if (window.GameSounds) window.GameSounds.notification();
+                    } else {
+                        setMessages(prev => [...prev, { role: 'mayor', text: "The Mayor's brain is buffering... Try again fren! 🧠" }]);
+                    }
+                } catch (error) {
+                    setMessages(prev => [...prev, { role: 'mayor', text: "Connection to City Hall rugged! WAGMI though! 📡" }]);
+                }
+                
+                setLoading(false);
+            };
+            
             return (
                 <div className="mayor-chat">
                     <div 
@@ -17342,6 +18135,22 @@
                     
                     {expanded && (
                         <>
+                            {/* Quick Action Buttons */}
+                            <div className="mayor-quick-actions">
+                                <button className="mayor-quick-btn roast" onClick={() => handleQuickAction('roast')} disabled={loading}>
+                                    🔥 Roast Me
+                                </button>
+                                <button className="mayor-quick-btn prophecy" onClick={() => handleQuickAction('prophecy')} disabled={loading}>
+                                    🔮 Prophecy
+                                </button>
+                                <button className="mayor-quick-btn advice" onClick={() => handleQuickAction('advice')} disabled={loading}>
+                                    💡 Advice
+                                </button>
+                                <button className="mayor-quick-btn compliment" onClick={() => handleQuickAction('hype')} disabled={loading}>
+                                    💎 Hype Me
+                                </button>
+                            </div>
+                            
                             <div className="mayor-chat-messages">
                                 {messages.length === 0 && (
                                     <div style={{ color: '#888', textAlign: 'center', padding: '20px' }}>
