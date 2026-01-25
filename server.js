@@ -181,6 +181,22 @@ async function initDatabase() {
       )
     `);
 
+    // Global chat messages table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        channel VARCHAR(50) DEFAULT 'global',
+        player_name VARCHAR(100) NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create index for faster chat queries
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_chat_channel_time ON chat_messages(channel, created_at DESC)
+    `).catch(() => {});
+
     // City stats history
     await client.query(`
       CREATE TABLE IF NOT EXISTS city_stats (
@@ -954,6 +970,98 @@ app.get('/api/player-stats/:name', async (req, res) => {
     res.json({ success: result.rows.length > 0, stats: result.rows[0] || null });
   } catch (err) {
     res.json({ success: false, stats: null });
+  }
+});
+
+// ==================== GLOBAL CHAT ====================
+
+// Get chat messages
+app.get('/api/chat/:channel', async (req, res) => {
+  const { channel } = req.params;
+  const limit = parseInt(req.query.limit) || 50;
+  
+  try {
+    const result = await pool.query(
+      'SELECT id, player_name, message, created_at FROM chat_messages WHERE channel = $1 ORDER BY created_at DESC LIMIT $2',
+      [channel, limit]
+    );
+    
+    // Return in chronological order (oldest first)
+    const messages = result.rows.reverse().map(row => ({
+      id: row.id,
+      name: row.player_name,
+      text: row.message,
+      time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date(row.created_at).getTime()
+    }));
+    
+    res.json({ success: true, messages });
+  } catch (err) {
+    console.error('Get chat error:', err);
+    res.json({ success: false, messages: [] });
+  }
+});
+
+// Send chat message
+app.post('/api/chat/send', async (req, res) => {
+  const { channel, playerName, message } = req.body;
+  
+  if (!playerName || !message) {
+    return res.status(400).json({ success: false, error: 'Name and message required' });
+  }
+  
+  // Basic validation
+  if (message.length > 500) {
+    return res.status(400).json({ success: false, error: 'Message too long (max 500 chars)' });
+  }
+  
+  const chatChannel = channel || 'global';
+  
+  try {
+    const result = await pool.query(
+      'INSERT INTO chat_messages (channel, player_name, message) VALUES ($1, $2, $3) RETURNING id, created_at',
+      [chatChannel, playerName, message.trim()]
+    );
+    
+    const newMsg = {
+      id: result.rows[0].id,
+      name: playerName,
+      text: message.trim(),
+      time: new Date(result.rows[0].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date(result.rows[0].created_at).getTime()
+    };
+    
+    console.log('💬 Chat:', playerName, '→', message.substring(0, 50));
+    res.json({ success: true, message: newMsg });
+  } catch (err) {
+    console.error('Send chat error:', err);
+    res.status(500).json({ success: false, error: 'Failed to send message' });
+  }
+});
+
+// Get new messages since a timestamp (for polling)
+app.get('/api/chat/:channel/since/:timestamp', async (req, res) => {
+  const { channel, timestamp } = req.params;
+  
+  try {
+    const since = new Date(parseInt(timestamp));
+    const result = await pool.query(
+      'SELECT id, player_name, message, created_at FROM chat_messages WHERE channel = $1 AND created_at > $2 ORDER BY created_at ASC LIMIT 50',
+      [channel, since]
+    );
+    
+    const messages = result.rows.map(row => ({
+      id: row.id,
+      name: row.player_name,
+      text: row.message,
+      time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date(row.created_at).getTime()
+    }));
+    
+    res.json({ success: true, messages });
+  } catch (err) {
+    console.error('Get new chat error:', err);
+    res.json({ success: false, messages: [] });
   }
 });
 
