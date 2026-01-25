@@ -7367,6 +7367,443 @@
         .mayor-action-comment-close:hover {
             color: #fff;
         }
+
+        /* ========== DAILY REWARD MODAL ========== */
+        .daily-reward-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .daily-reward-modal {
+            background: linear-gradient(145deg, #1a1a2e 0%, #0d0d15 100%);
+            border: 2px solid #ffd700;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp 0.4s ease;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+        }
+
+        .daily-reward-title {
+            font-size: 1.8em;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .daily-reward-streak {
+            font-size: 3em;
+            color: #00ff88;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .daily-reward-streak-label {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .daily-reward-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .daily-reward-day {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px 5px;
+            font-size: 0.75em;
+        }
+
+        .daily-reward-day.current {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+        }
+
+        .daily-reward-day.claimed {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: #00ff88;
+        }
+
+        .daily-reward-day-num {
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .daily-reward-day-reward {
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        .daily-reward-today {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .daily-reward-today h4 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+
+        .daily-reward-items {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .daily-reward-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 10px 15px;
+        }
+
+        .daily-reward-item-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .daily-reward-item-label {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        .daily-reward-claim-btn {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .daily-reward-claim-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .daily-reward-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: #666;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        /* ========== PLAYER PROFILE MODAL ========== */
+        .profile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .profile-modal {
+            background: linear-gradient(145deg, #1a1a2e 0%, #0d0d15 100%);
+            border: 2px solid #00ff88;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideUp 0.4s ease;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(0, 255, 136, 0.2);
+            padding: 5px;
+        }
+
+        .profile-name {
+            font-size: 1.5em;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .profile-role {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .profile-level-badge {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #000;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .profile-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .profile-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .profile-stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .profile-stat-label {
+            color: #888;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        .profile-badges {
+            margin-bottom: 25px;
+        }
+
+        .profile-badges h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .profile-badges-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .profile-badge {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.85em;
+        }
+
+        .profile-activity {
+            margin-top: 20px;
+        }
+
+        .profile-activity h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .profile-activity-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .profile-activity-icon {
+            font-size: 1.2em;
+        }
+
+        .profile-activity-time {
+            color: #666;
+            font-size: 0.8em;
+            margin-left: auto;
+        }
+
+        .profile-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: #666;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        /* ========== ACTIVITY FEED ========== */
+        .activity-feed {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .activity-feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .activity-feed-title {
+            font-size: 1.1em;
+            color: #00ff88;
+        }
+
+        .activity-feed-live {
+            font-size: 0.75em;
+            color: #ff4444;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .activity-feed-live::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #ff4444;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        .activity-feed-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .activity-feed-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .activity-feed-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-feed-icon {
+            font-size: 1.3em;
+            width: 30px;
+            text-align: center;
+        }
+
+        .activity-feed-content {
+            flex: 1;
+        }
+
+        .activity-feed-player {
+            color: #00ff88;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .activity-feed-player:hover {
+            color: #00ffaa;
+            text-decoration: underline;
+        }
+
+        .activity-feed-text {
+            color: #ccc;
+            font-size: 0.9em;
+        }
+
+        .activity-feed-time {
+            color: #666;
+            font-size: 0.75em;
+        }
+
+        /* ========== CHAT MENTIONS ========== */
+        .chat-mention {
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.15);
+            padding: 1px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .chat-mention:hover {
+            background: rgba(255, 215, 0, 0.3);
+        }
+
+        .chat-mention.is-me {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .chat-player-name {
+            color: #00ff88;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .chat-player-name:hover {
+            color: #00ffaa;
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 </head>
 <body>
@@ -7774,6 +8211,18 @@
                 return !localStorage.getItem('pumptown_tutorial_complete');
             });
             
+            // Daily Login Rewards state
+            const [showDailyReward, setShowDailyReward] = useState(false);
+            const [dailyRewardData, setDailyRewardData] = useState(null);
+            
+            // Player Profile Modal state
+            const [showPlayerProfile, setShowPlayerProfile] = useState(false);
+            const [playerProfileData, setPlayerProfileData] = useState(null);
+            const [profileLoading, setProfileLoading] = useState(false);
+            
+            // Activity Feed state
+            const [activityFeed, setActivityFeed] = useState([]);
+            
             // Toast notifications
             const [toasts, setToasts] = useState([]);
             const toastTimeoutRef = useRef(null);
@@ -8005,7 +8454,8 @@
                         level: playerStats.level,
                         degenScore: playerStats.degenScore || 0
                     };
-                    saveCharacterToBackend(wallet.address, charToSync);
+                    // Pass playerStats and resources to backend
+                    saveCharacterToBackend(wallet.address, charToSync, playerStats, resources);
                     // Also update localStorage with merged data
                     localStorage.setItem('pumptown_character', JSON.stringify(charToSync));
                 }, 30000); // 30 second debounce
@@ -8024,22 +8474,27 @@
                         level: playerStats.level,
                         degenScore: playerStats.degenScore || 0
                     };
-                    // Use sendBeacon for reliable delivery on page close
-                    const data = JSON.stringify({ email: wallet.address, character: charToSync });
+                    // Use sendBeacon for reliable delivery on page close - include stats and resources
+                    const data = JSON.stringify({ 
+                        email: wallet.address, 
+                        character: charToSync,
+                        playerStats: playerStats,
+                        resources: resources
+                    });
                     const blob = new Blob([data], { type: 'application/json' });
                     navigator.sendBeacon('https://pump-town-backend-production.up.railway.app/api/save-character', blob);
                 };
                 
                 window.addEventListener('beforeunload', handleBeforeUnload);
                 return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-            }, [wallet, character, playerStats.xp, playerStats.level]);
+            }, [wallet, character, playerStats.xp, playerStats.level, resources]);
             
             // Save current zone
             useEffect(() => {
                 localStorage.setItem('pumptown_current_zone', currentZone);
             }, [currentZone]);
             
-            // Save resources when they change
+            // Save resources when they change - also sync to backend periodically
             useEffect(() => {
                 localStorage.setItem('pumptown_resources', JSON.stringify(resources));
             }, [resources]);
@@ -8071,12 +8526,152 @@
                             // Play level up sound
                             if (window.GameSounds) window.GameSounds.levelUp();
                             showToast(`🎉 LEVEL UP! You are now Level ${newLevel}!`, 'success', 4000);
+                            // Post to activity feed
+                            postActivity('level_up', `reached Level ${newLevel}!`, '🎉');
                         }, 100);
                     }
                     
                     return { ...prev, xp: newXP, level: newLevel };
                 });
             };
+            
+            // ============ DAILY LOGIN REWARDS ============
+            const checkDailyReward = async () => {
+                if (!wallet?.address) return;
+                
+                try {
+                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/daily-reward/status/${encodeURIComponent(wallet.address)}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setDailyRewardData(data);
+                        if (data.canClaim) {
+                            // Show the daily reward modal
+                            setTimeout(() => setShowDailyReward(true), 1000);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to check daily reward:', err);
+                }
+            };
+            
+            const claimDailyReward = async () => {
+                if (!wallet?.address || !dailyRewardData?.canClaim) return;
+                
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/daily-reward/claim', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            email: wallet.address, 
+                            playerName: character?.name 
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Update resources
+                        setResources(data.newResources);
+                        // Add XP
+                        if (data.xpEarned) {
+                            addXP(data.xpEarned);
+                        }
+                        // Update daily reward data
+                        setDailyRewardData(prev => ({
+                            ...prev,
+                            canClaim: false,
+                            currentStreak: data.newStreak
+                        }));
+                        // Show success
+                        showToast(`🎁 Day ${data.rewardDay} reward claimed! ${data.newStreak} day streak!`, 'success');
+                        // Close modal
+                        setShowDailyReward(false);
+                    } else {
+                        showToast(data.error || 'Failed to claim reward', 'error');
+                    }
+                } catch (err) {
+                    console.error('Failed to claim daily reward:', err);
+                    showToast('Failed to claim reward', 'error');
+                }
+            };
+            
+            // ============ PLAYER PROFILES ============
+            const openPlayerProfile = async (playerName) => {
+                if (!playerName || playerName === character?.name) {
+                    // Don't open own profile this way
+                    return;
+                }
+                
+                setProfileLoading(true);
+                setShowPlayerProfile(true);
+                
+                try {
+                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/player/${encodeURIComponent(playerName)}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setPlayerProfileData(data.profile);
+                    } else {
+                        showToast('Player not found', 'error');
+                        setShowPlayerProfile(false);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch player profile:', err);
+                    showToast('Failed to load profile', 'error');
+                    setShowPlayerProfile(false);
+                }
+                
+                setProfileLoading(false);
+            };
+            
+            // ============ ACTIVITY FEED ============
+            const fetchActivityFeed = async () => {
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/activity/recent?limit=15');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setActivityFeed(data.activities);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch activity feed:', err);
+                }
+            };
+            
+            const postActivity = async (activityType, description, icon = '📢') => {
+                if (!character?.name) return;
+                
+                try {
+                    await fetch('https://pump-town-backend-production.up.railway.app/api/activity', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            playerName: character.name,
+                            activityType,
+                            description,
+                            icon
+                        })
+                    });
+                } catch (err) {
+                    console.error('Failed to post activity:', err);
+                }
+            };
+            
+            // Check daily reward on login
+            useEffect(() => {
+                if (wallet?.address && character?.name) {
+                    checkDailyReward();
+                }
+            }, [wallet?.address, character?.name]);
+            
+            // Fetch activity feed on mount and when on dashboard
+            useEffect(() => {
+                fetchActivityFeed();
+                // Poll for new activities every 30 seconds
+                const interval = setInterval(fetchActivityFeed, 30000);
+                return () => clearInterval(interval);
+            }, []);
             
             // Update city stats based on player actions
             const updateCityStats = (statChanges) => {
@@ -8381,6 +8976,45 @@
                         setCharacter(char);
                         localStorage.setItem('pumptown_character', JSON.stringify(char));
                         
+                        // ====== RESTORE PLAYER STATS FROM BACKEND ======
+                        if (data.playerStats) {
+                            const localStats = JSON.parse(localStorage.getItem('pumptown_player_stats') || '{}');
+                            // Merge: take maximum values between backend and local
+                            const mergedStats = {
+                                xp: Math.max(data.playerStats.xp || 0, localStats.xp || 0),
+                                level: Math.max(data.playerStats.level || 1, localStats.level || 1),
+                                totalGamesPlayed: Math.max(data.playerStats.totalGamesPlayed || 0, localStats.totalGamesPlayed || 0),
+                                questsCompleted: Math.max(data.playerStats.questsCompleted || 0, localStats.questsCompleted || 0),
+                                degenScore: Math.max(data.playerStats.degenScore || 0, localStats.degenScore || 0),
+                                knifeHighscore: Math.max(data.playerStats.knifeHighscore || 0, localStats.knifeHighscore || 0),
+                                chartHighscore: Math.max(data.playerStats.chartHighscore || 0, localStats.chartHighscore || 0),
+                                memeHighscore: Math.max(data.playerStats.memeHighscore || 0, localStats.memeHighscore || 0),
+                                rugHighscore: Math.max(data.playerStats.rugHighscore || 0, localStats.rugHighscore || 0),
+                                maxCombo: Math.max(data.playerStats.maxCombo || 0, localStats.maxCombo || 0),
+                                chartWins: Math.max(data.playerStats.chartWins || 0, localStats.chartWins || 0),
+                                rugsFound: Math.max(data.playerStats.rugsFound || 0, localStats.rugsFound || 0),
+                                viralMemes: Math.max(data.playerStats.viralMemes || 0, localStats.viralMemes || 0)
+                            };
+                            setPlayerStats(mergedStats);
+                            localStorage.setItem('pumptown_player_stats', JSON.stringify(mergedStats));
+                            console.log('✅ Player stats restored from backend:', mergedStats);
+                        }
+                        
+                        // ====== RESTORE RESOURCES FROM BACKEND ======
+                        if (data.resources) {
+                            const localResources = JSON.parse(localStorage.getItem('pumptown_resources') || '{}');
+                            // Merge: take maximum values between backend and local
+                            const mergedResources = {
+                                hopium: Math.max(data.resources.hopium || 0, localResources.hopium || 0),
+                                alpha: Math.max(data.resources.alpha || 0, localResources.alpha || 0),
+                                copium: Math.max(data.resources.copium || 0, localResources.copium || 0),
+                                liquidity: Math.max(data.resources.liquidity || 0, localResources.liquidity || 0)
+                            };
+                            setResources(mergedResources);
+                            localStorage.setItem('pumptown_resources', JSON.stringify(mergedResources));
+                            console.log('✅ Resources restored from backend:', mergedResources);
+                        }
+                        
                         // Sync merged data back to backend
                         saveCharacterToBackend(walletAddress, char);
                         
@@ -8393,15 +9027,24 @@
                 }
             };
 
-            // Function to save character to backend
-            const saveCharacterToBackend = async (walletAddress, charData) => {
+            // Function to save character to backend (includes playerStats and resources)
+            const saveCharacterToBackend = async (walletAddress, charData, stats = null, res = null) => {
                 try {
+                    // Get current stats and resources if not provided
+                    const currentStats = stats || JSON.parse(localStorage.getItem('pumptown_player_stats') || '{}');
+                    const currentResources = res || JSON.parse(localStorage.getItem('pumptown_resources') || '{}');
+                    
                     await fetch('https://pump-town-backend-production.up.railway.app/api/save-character', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: walletAddress, character: charData })
+                        body: JSON.stringify({ 
+                            email: walletAddress, 
+                            character: charData,
+                            playerStats: currentStats,
+                            resources: currentResources
+                        })
                     });
-                    console.log('Character saved to backend');
+                    console.log('Character + progress saved to backend');
                 } catch (error) {
                     console.error('Error saving character to backend:', error);
                 }
@@ -8618,32 +9261,32 @@
                             stats: data.stats,
                             currentVote: {
                                 id: data.currentVote.id,
-                                question: data.currentVote.question || "Morale is up, but crime is still rampant. Pump Town needs decisive action. What should we do?",
+                                question: data.currentVote.question || "A time traveler appeared claiming they're from 2030. They say $TOWN will either moon 1000x or go to zero depending on today's vote.",
                                 options: data.currentVote.options || [
                                     {
                                         id: 'A',
-                                        title: 'Jail the Ruggers',
-                                        description: 'Send all rug pulling criminals from Rug Alley to the city jail.',
+                                        title: 'Follow the Prophecy 🔮',
+                                        description: 'Do exactly what the time traveler says. They recommended burning 50% of treasury.',
                                         effects: [
-                                            { stat: 'Crime', value: -25, type: 'positive' },
-                                            { stat: 'Morale', value: -10, type: 'negative' },
-                                            { stat: 'Treasury', value: -1000, type: 'negative' }
+                                            { stat: 'Treasury', value: -50, type: 'negative' },
+                                            { stat: 'Morale', value: 20, type: 'positive' },
+                                            { stat: 'Reputation', value: 25, type: 'positive' }
                                         ]
                                     },
                                     {
                                         id: 'B',
-                                        title: 'Fund the Arts',
-                                        description: 'Distract citizens with NFT galleries and meme museums.',
+                                        title: 'Ignore the Schizo 🧠',
+                                        description: "Time travel isn't real. This person needs help. Call security.",
                                         effects: [
-                                            { stat: 'Morale', value: 20, type: 'positive' },
-                                            { stat: 'Reputation', value: 15, type: 'positive' },
-                                            { stat: 'Crime', value: 5, type: 'negative' }
+                                            { stat: 'Morale', value: -10, type: 'negative' },
+                                            { stat: 'Crime', value: -5, type: 'positive' },
+                                            { stat: 'Treasury', value: 5, type: 'positive' }
                                         ]
                                     }
                                 ],
                                 timeRemaining: data.currentVote.timeRemaining,
                                 endsAt: data.currentVote.endsAt,
-                                mayorQuote: "Listen up degens. We've got a situation. Crime is rampant in Rug Alley. Treasury's looking thin. You wanted democracy? You got it. Now make a decision and live with the consequences."
+                                mayorQuote: data.currentVote.mayorQuote || "Look, they showed me some wild shit. Flying cars, robot mayors, the works. Could be legit. Could be a schizo. Either way, pressure's on."
                             },
                             voteHistory: mergedHistory,
                             leaderboard: [
@@ -8660,6 +9303,7 @@
                 } catch (error) {
                     console.error('Error fetching game state:', error);
                     // Fallback to default state - uses calculated governance day
+                    // Use a simple but entertaining default vote
                     setGameState({
                         day: governanceDay,
                         round: 1,
@@ -8672,31 +9316,35 @@
                         },
                         currentVote: {
                             id: `vote_${Date.now()}`,
-                            question: "Morale is up, but crime is still rampant. Pump Town needs decisive action. What should we do?",
+                            question: "Someone released 10,000 digital frogs into the city. They're everywhere. Eating bandwidth. Croaking in chat.",
                             options: [
                                 {
                                     id: 'A',
-                                    title: 'Jail the Ruggers',
-                                    description: 'Send all rug pulling criminals from Rug Alley to the city jail.',
+                                    title: 'Exterminate the Frogs 🔫',
+                                    description: 'Deploy anti-frog protocols. Clean up the city. Restore order.',
                                     effects: [
-                                        { stat: 'Crime', value: -25, type: 'positive' },
-                                        { stat: 'Morale', value: -10, type: 'negative' },
-                                        { stat: 'Treasury', value: -1000, type: 'negative' }
-                                    ]
+                                        { stat: 'Morale', value: -25, type: 'negative' },
+                                        { stat: 'Crime', value: -10, type: 'positive' },
+                                        { stat: 'Treasury', value: -15, type: 'negative' }
+                                    ],
+                                    votes: 34,
+                                    percentage: 42
                                 },
                                 {
                                     id: 'B',
-                                    title: 'Fund the Arts',
-                                    description: 'Distract citizens with NFT galleries and meme museums.',
+                                    title: 'Embrace Frog Nation 🐸',
+                                    description: 'Make frogs our official mascot. Launch $FROG token. Lean into the chaos.',
                                     effects: [
-                                        { stat: 'Morale', value: 20, type: 'positive' },
+                                        { stat: 'Morale', value: 30, type: 'positive' },
                                         { stat: 'Reputation', value: 15, type: 'positive' },
-                                        { stat: 'Crime', value: 5, type: 'negative' }
-                                    ]
+                                        { stat: 'Treasury', value: -5, type: 'negative' }
+                                    ],
+                                    votes: 47,
+                                    percentage: 58
                                 }
                             ],
                             timeRemaining: 6 * 60 * 60 * 1000,
-                            mayorQuote: "Listen up degens. We've got a situation."
+                            mayorQuote: "I don't know who did this but I'm not even mad. It's kinda based. But also our servers are dying. What do?"
                         },
                         voteHistory: [],
                         leaderboard: []
@@ -8928,39 +9576,314 @@
                 }, 3000);
             };
 
-            const generateNewVote = async (state) => {
-                const newVote = {
-                    id: state.currentVote.id + 1,
-                    question: "The city is facing a new challenge. Economic crisis looms. What's your move?",
+            // MASSIVE VOTE POOL - 30 unique scenarios for maximum entertainment
+            const VOTE_POOL = [
+                // === ECONOMIC CRISIS ===
+                {
+                    category: 'economy',
+                    question: "Treasury's almost empty. A whale just offered to donate 100K $TOWN... but they want naming rights to the city square.",
+                    mayorQuote: "Look, I hate corporate sellouts as much as the next degen. But we're broke. You want me to rename it 'CumRocket Plaza' or let the city starve?",
                     options: [
-                        {
-                            id: 'A',
-                            title: 'Tax the Whales',
-                            description: 'Implement a 5% tax on all wallets holding over 1M $TOWN.',
-                            effects: [
-                                { stat: 'Treasury', value: 25, type: 'positive' },
-                                { stat: 'Morale', value: -8, type: 'negative' },
-                                { stat: 'Reputation', value: -12, type: 'negative' }
-                            ],
-                            votes: 0,
-                            percentage: 0
-                        },
-                        {
-                            id: 'B',
-                            title: 'Launch Community Event',
-                            description: 'Host a 48-hour trading competition with prizes.',
-                            effects: [
-                                { stat: 'Morale', value: 15, type: 'positive' },
-                                { stat: 'Treasury', value: -10, type: 'negative' },
-                                { stat: 'Reputation', value: 8, type: 'positive' }
-                            ],
-                            votes: 0,
-                            percentage: 0
-                        }
-                    ],
-                    timeLeft: 21600,
-                    mayorQuote: "You elected me to make tough decisions. Well, here's a tough one. Economy's tanking. We need $TOWN flowing. Pick your poison."
+                        { id: 'A', title: 'Take the Money 💰', description: "Accept the whale's offer. The square becomes 'WhaleWatch Plaza' for 30 days.", effects: [{ stat: 'Treasury', value: 35, type: 'positive' }, { stat: 'Morale', value: -15, type: 'negative' }, { stat: 'Reputation', value: -20, type: 'negative' }] },
+                        { id: 'B', title: 'Reject & Stay Poor 🏴', description: "Tell them to shove it. Pride over profit. The city stays authentic but hungry.", effects: [{ stat: 'Morale', value: 25, type: 'positive' }, { stat: 'Reputation', value: 15, type: 'positive' }, { stat: 'Treasury', value: -20, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'economy',
+                    question: "A mysterious benefactor wants to airdrop 10K $TOWN to random citizens... but only if we ban memes for a week.",
+                    mayorQuote: "I know, I know. A week without memes sounds like cruel and unusual punishment. But free money is free money, anon.",
+                    options: [
+                        { id: 'A', title: 'Accept the Airdrop 🪂', description: "Ban memes for 7 days. Citizens get free $TOWN. Meme addicts will suffer.", effects: [{ stat: 'Treasury', value: 20, type: 'positive' }, { stat: 'Morale', value: -30, type: 'negative' }, { stat: 'Crime', value: 15, type: 'negative' }] },
+                        { id: 'B', title: 'Protect the Memes 🐸', description: "Reject the offer. Memes are sacred. The culture must be preserved at all costs.", effects: [{ stat: 'Morale', value: 20, type: 'positive' }, { stat: 'Reputation', value: 10, type: 'positive' }, { stat: 'Treasury', value: -5, type: 'negative' }] }
+                    ]
+                },
+                // === SOCIAL DRAMA ===
+                {
+                    category: 'drama',
+                    question: "Two prominent citizens are in a Twitter beef. @DiamondHands69 accused @PaperHandPete of being a serial rugger. The city is divided.",
+                    mayorQuote: "I've seen wars start over less. These two idiots are tearing the community apart. We gotta do something before someone gets doxxed.",
+                    options: [
+                        { id: 'A', title: 'Public Trial 🔨', description: "Hold a community court. Both sides present evidence. The city votes on who's guilty.", effects: [{ stat: 'Morale', value: -10, type: 'negative' }, { stat: 'Reputation', value: 20, type: 'positive' }, { stat: 'Crime', value: -15, type: 'positive' }] },
+                        { id: 'B', title: 'Cage Match 🥊', description: "Let them settle it in the arena. Winner takes the other's reputation. Maximum entertainment.", effects: [{ stat: 'Morale', value: 25, type: 'positive' }, { stat: 'Reputation', value: -10, type: 'negative' }, { stat: 'Crime', value: 10, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'drama',
+                    question: "A famous influencer wants to move to Pump Town but demands we ban all their haters first.",
+                    mayorQuote: "This clown has 500K followers. Could put us on the map. But banning haters? That's some dictator shit. Your call, degens.",
+                    options: [
+                        { id: 'A', title: 'Welcome the Influencer 📱', description: "Ban the haters, roll out the red carpet. Clout > principles.", effects: [{ stat: 'Reputation', value: 30, type: 'positive' }, { stat: 'Morale', value: -20, type: 'negative' }, { stat: 'Crime', value: 5, type: 'negative' }] },
+                        { id: 'B', title: 'Free Speech Gang 🗣️', description: "Tell them to cope. Pump Town doesn't censor. Haters stay, influencer can deal or leave.", effects: [{ stat: 'Morale', value: 15, type: 'positive' }, { stat: 'Reputation', value: -10, type: 'negative' }, { stat: 'Crime', value: -5, type: 'positive' }] }
+                    ]
+                },
+                // === CHAOS EVENTS ===
+                {
+                    category: 'chaos',
+                    question: "Someone released 10,000 digital frogs into the city. They're everywhere. Eating bandwidth. Croaking in chat.",
+                    mayorQuote: "I don't know who did this but I'm not even mad. It's kinda based. But also our servers are dying. What do?",
+                    options: [
+                        { id: 'A', title: 'Exterminate the Frogs 🔫', description: "Deploy anti-frog protocols. Clean up the city. Restore order.", effects: [{ stat: 'Morale', value: -25, type: 'negative' }, { stat: 'Crime', value: -10, type: 'positive' }, { stat: 'Treasury', value: -15, type: 'negative' }] },
+                        { id: 'B', title: 'Embrace Frog Nation 🐸', description: "Make frogs our official mascot. Launch $FROG token. Lean into the chaos.", effects: [{ stat: 'Morale', value: 30, type: 'positive' }, { stat: 'Reputation', value: 15, type: 'positive' }, { stat: 'Treasury', value: -5, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'chaos',
+                    question: "A time traveler appeared claiming they're from 2030. They say $TOWN will either moon 1000x or go to zero depending on today's vote.",
+                    mayorQuote: "Look, they showed me some wild shit. Flying cars, robot mayors, the works. Could be legit. Could be a schizo. Either way, pressure's on.",
+                    options: [
+                        { id: 'A', title: 'Follow the Prophecy 🔮', description: "Do exactly what the time traveler says. They recommended burning 50% of treasury.", effects: [{ stat: 'Treasury', value: -50, type: 'negative' }, { stat: 'Morale', value: 20, type: 'positive' }, { stat: 'Reputation', value: 25, type: 'positive' }] },
+                        { id: 'B', title: 'Ignore the Schizo 🧠', description: "Time travel isn't real. This person needs help. Call security.", effects: [{ stat: 'Morale', value: -10, type: 'negative' }, { stat: 'Crime', value: -5, type: 'positive' }, { stat: 'Treasury', value: 5, type: 'positive' }] }
+                    ]
+                },
+                // === CRIME & JUSTICE ===
+                {
+                    category: 'crime',
+                    question: "We caught a serial rugger red-handed. They've scammed 50 citizens. But plot twist: they're also our best developer.",
+                    mayorQuote: "This asshole built half our infrastructure. But they also stole from grandmas. I'm genuinely torn here. What's more important - justice or code?",
+                    options: [
+                        { id: 'A', title: 'Jail Them Anyway ⛓️', description: "Crime is crime. Send them to the dungeon. We'll find another dev.", effects: [{ stat: 'Crime', value: -30, type: 'positive' }, { stat: 'Morale', value: 15, type: 'positive' }, { stat: 'Treasury', value: -20, type: 'negative' }] },
+                        { id: 'B', title: 'House Arrest + Coding 💻', description: "They work off their debt by building features. Victims get compensated. Pragmatic justice.", effects: [{ stat: 'Treasury', value: 15, type: 'positive' }, { stat: 'Crime', value: -10, type: 'positive' }, { stat: 'Reputation', value: -15, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'crime',
+                    question: "Rug Alley residents are demanding independence. They want to form their own district with legalized rugging.",
+                    mayorQuote: "These degenerates want to make scamming legal in their zone. Part of me respects the hustle. Part of me wants to nuke the whole alley.",
+                    options: [
+                        { id: 'A', title: 'Grant Independence 🏴‍☠️', description: "Let them have their 'Free Rug Zone'. Anyone who enters does so at their own risk.", effects: [{ stat: 'Crime', value: 25, type: 'negative' }, { stat: 'Morale', value: 10, type: 'positive' }, { stat: 'Reputation', value: -20, type: 'negative' }] },
+                        { id: 'B', title: 'Crush the Rebellion 👊', description: "Send in the mods. No independence. No negotiation. Order will be maintained.", effects: [{ stat: 'Crime', value: -20, type: 'positive' }, { stat: 'Morale', value: -15, type: 'negative' }, { stat: 'Treasury', value: -10, type: 'negative' }] }
+                    ]
+                },
+                // === CULTURE & MEMES ===
+                {
+                    category: 'culture',
+                    question: "A famous meme artist wants to create a 100ft Pepe statue in the town square. It costs our entire art budget.",
+                    mayorQuote: "It's beautiful. It's stupid. It's perfect. But it'll bankrupt the cultural fund. Some say art is priceless. Accountants disagree.",
+                    options: [
+                        { id: 'A', title: 'Build the Statue 🐸', description: "Commission the giant Pepe. Become a meme pilgrimage destination. Worth it.", effects: [{ stat: 'Morale', value: 35, type: 'positive' }, { stat: 'Reputation', value: 25, type: 'positive' }, { stat: 'Treasury', value: -40, type: 'negative' }] },
+                        { id: 'B', title: 'Be Responsible 📊', description: "Use the budget for practical things. Infrastructure. Security. Boring adult stuff.", effects: [{ stat: 'Treasury', value: 10, type: 'positive' }, { stat: 'Morale', value: -20, type: 'negative' }, { stat: 'Crime', value: -10, type: 'positive' }] }
+                    ]
+                },
+                {
+                    category: 'culture',
+                    question: "Citizens are debating: Should our official city greeting be 'GM' or 'Wagmi'?",
+                    mayorQuote: "I can't believe this is what we're voting on. But apparently feelings are STRONG. This might actually cause a civil war.",
+                    options: [
+                        { id: 'A', title: 'GM Gang ☀️', description: "Classic. Timeless. 'GM' becomes the official greeting. Wagmi fans seethe.", effects: [{ stat: 'Morale', value: 10, type: 'positive' }, { stat: 'Reputation', value: 5, type: 'positive' }, { stat: 'Crime', value: 5, type: 'negative' }] },
+                        { id: 'B', title: 'Wagmi Warriors 🚀', description: "More optimistic. More degen. 'Wagmi' becomes law. GM purists cope.", effects: [{ stat: 'Morale', value: 15, type: 'positive' }, { stat: 'Reputation', value: 10, type: 'positive' }, { stat: 'Treasury', value: -5, type: 'negative' }] }
+                    ]
+                },
+                // === TECHNOLOGY ===
+                {
+                    category: 'tech',
+                    question: "An AI has offered to become co-mayor. It promises 99.9% efficiency but admits it doesn't understand memes.",
+                    mayorQuote: "I'm lowkey threatened. But also... it could handle the boring stuff while I focus on vibes. Is this how I get replaced?",
+                    options: [
+                        { id: 'A', title: 'Accept AI Co-Mayor 🤖', description: "Embrace the future. AI handles logistics, human mayor handles culture. Hybrid governance.", effects: [{ stat: 'Treasury', value: 25, type: 'positive' }, { stat: 'Morale', value: -15, type: 'negative' }, { stat: 'Crime', value: -20, type: 'positive' }] },
+                        { id: 'B', title: 'Stay Human 👤', description: "Reject the silicon overlord. Human chaos > robot efficiency. We'll make mistakes together.", effects: [{ stat: 'Morale', value: 20, type: 'positive' }, { stat: 'Reputation', value: 10, type: 'positive' }, { stat: 'Treasury', value: -10, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'tech',
+                    question: "Someone invented a 'Rug Detector 3000' that can predict rugs with 80% accuracy. But it's expensive and might kill the thrill.",
+                    mayorQuote: "On one hand, protecting citizens from rugs is good. On the other hand, isn't getting rugged part of the degen experience?",
+                    options: [
+                        { id: 'A', title: 'Deploy the Detector 🔍', description: "Protect the citizens. Scan all new coins. Safety first, thrill second.", effects: [{ stat: 'Crime', value: -25, type: 'positive' }, { stat: 'Morale', value: -10, type: 'negative' }, { stat: 'Treasury', value: -15, type: 'negative' }] },
+                        { id: 'B', title: 'Let Degens Degen 🎰', description: "Natural selection. If you can't spot a rug, that's a skill issue. Keep it raw.", effects: [{ stat: 'Morale', value: 15, type: 'positive' }, { stat: 'Crime', value: 10, type: 'negative' }, { stat: 'Reputation', value: -5, type: 'negative' }] }
+                    ]
+                },
+                // === EMERGENCIES ===
+                {
+                    category: 'emergency',
+                    question: "BREAKING: A massive whale is threatening to dump their entire bag. They're demanding we rename the city to honor them.",
+                    mayorQuote: "This psycho has 10% of the supply. If they dump, we're cooked. But renaming the city? That's humiliation. What do we do?",
+                    options: [
+                        { id: 'A', title: 'Call Their Bluff 😤', description: "No negotiation with whales. Let them dump. We'll recover. Diamond hands only.", effects: [{ stat: 'Treasury', value: -35, type: 'negative' }, { stat: 'Morale', value: 30, type: 'positive' }, { stat: 'Reputation', value: 20, type: 'positive' }] },
+                        { id: 'B', title: 'Negotiate 🤝', description: "Maybe we can compromise. Partial rename? Honorary title? Find middle ground.", effects: [{ stat: 'Treasury', value: 10, type: 'positive' }, { stat: 'Morale', value: -20, type: 'negative' }, { stat: 'Reputation', value: -15, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'emergency',
+                    question: "A rival city has declared a meme war on Pump Town. They're flooding our feeds with FUD and wojaks.",
+                    mayorQuote: "These bastards think they can out-meme us? IN OUR HOUSE? This is an act of war. But war is expensive...",
+                    options: [
+                        { id: 'A', title: 'Full Scale Meme War 🔥', description: "Deploy all meme reserves. Hire artists. Launch counter-FUD campaigns. Total war.", effects: [{ stat: 'Treasury', value: -30, type: 'negative' }, { stat: 'Morale', value: 35, type: 'positive' }, { stat: 'Reputation', value: 25, type: 'positive' }] },
+                        { id: 'B', title: 'Rise Above 🧘', description: "Don't feed the trolls. Ignore them. Focus on building. Let our success be the revenge.", effects: [{ stat: 'Treasury', value: 5, type: 'positive' }, { stat: 'Morale', value: -10, type: 'negative' }, { stat: 'Crime', value: 10, type: 'negative' }] }
+                    ]
+                },
+                // === WEIRD/RANDOM ===
+                {
+                    category: 'weird',
+                    question: "A citizen claims to have found Satoshi's wallet address. They'll share it... if we make anime mandatory viewing.",
+                    mayorQuote: "I've verified nothing. This could be the biggest discovery in crypto history or the most elaborate troll ever. Anime isn't that bad, right?",
+                    options: [
+                        { id: 'A', title: 'Mandatory Anime 🎌', description: "Implement 'Anime Appreciation Hours'. All citizens must watch 1 episode daily. Get the wallet address.", effects: [{ stat: 'Morale', value: -15, type: 'negative' }, { stat: 'Reputation', value: 30, type: 'positive' }, { stat: 'Treasury', value: 20, type: 'positive' }] },
+                        { id: 'B', title: 'Reject Weeb Agenda 🚫', description: "This is clearly fake. No forced anime. Maintain dignity.", effects: [{ stat: 'Morale', value: 10, type: 'positive' }, { stat: 'Reputation', value: -5, type: 'negative' }, { stat: 'Crime', value: 5, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'weird',
+                    question: "Citizens are petitioning to replace the town clock with a Bitcoin price ticker. 'Time is fake, price is real' they say.",
+                    mayorQuote: "I mean... they're not wrong? But also people have meetings and stuff. Though knowing the price IS more important than knowing it's 3pm...",
+                    options: [
+                        { id: 'A', title: 'Price Over Time ₿', description: "Replace all clocks with live price feeds. Appointments are now at '$67,420' instead of '3pm'.", effects: [{ stat: 'Morale', value: 25, type: 'positive' }, { stat: 'Crime', value: 15, type: 'negative' }, { stat: 'Reputation', value: 20, type: 'positive' }] },
+                        { id: 'B', title: 'Keep the Clocks 🕐', description: "Time has worked for thousands of years. We're not that degen. Price stays on phones.", effects: [{ stat: 'Morale', value: -5, type: 'negative' }, { stat: 'Treasury', value: 5, type: 'positive' }, { stat: 'Crime', value: -5, type: 'positive' }] }
+                    ]
+                },
+                // === MORE ECONOMIC ===
+                {
+                    category: 'economy',
+                    question: "A DeFi protocol wants to set up in Pump Town. High yields but also high risk of getting rekt.",
+                    mayorQuote: "50% APY sounds great until you wake up to an empty wallet. But citizens are adults. Probably. Do we protect them from themselves?",
+                    options: [
+                        { id: 'A', title: 'Allow the Protocol 📈', description: "Let it in. Add warnings. If degens get rekt, that's on them. Freedom to lose money.", effects: [{ stat: 'Treasury', value: 20, type: 'positive' }, { stat: 'Crime', value: 15, type: 'negative' }, { stat: 'Morale', value: 10, type: 'positive' }] },
+                        { id: 'B', title: 'Ban Risky DeFi ⛔', description: "Protect citizens from predatory yields. Only approved protocols allowed.", effects: [{ stat: 'Crime', value: -15, type: 'positive' }, { stat: 'Morale', value: -20, type: 'negative' }, { stat: 'Reputation', value: 10, type: 'positive' }] }
+                    ]
+                },
+                {
+                    category: 'economy',
+                    question: "An NFT collection wants exclusive rights to Pump Town imagery. They'll pay big but our memes become 'theirs'.",
+                    mayorQuote: "Selling our culture for money. It's literally what every sellout does. But also... have you seen our treasury? We're poor.",
+                    options: [
+                        { id: 'A', title: 'Sell the Rights 💸', description: "Take the money. They own our imagery. We become 'officially licensed' content.", effects: [{ stat: 'Treasury', value: 45, type: 'positive' }, { stat: 'Reputation', value: -30, type: 'negative' }, { stat: 'Morale', value: -25, type: 'negative' }] },
+                        { id: 'B', title: 'Keep Our Culture 🎨', description: "Our memes are our identity. Not for sale. Priceless things stay priceless.", effects: [{ stat: 'Morale', value: 30, type: 'positive' }, { stat: 'Reputation', value: 20, type: 'positive' }, { stat: 'Treasury', value: -5, type: 'negative' }] }
+                    ]
+                },
+                // === MORE DRAMA ===
+                {
+                    category: 'drama',
+                    question: "The city's top trader just got exposed for using bots. They won every competition. Do we strip their titles?",
+                    mayorQuote: "They cheated. But also... is using tools really cheating? Where do we draw the line? My head hurts.",
+                    options: [
+                        { id: 'A', title: 'Strip Everything 🏆❌', description: "Zero tolerance. Remove all titles, winnings, and reputation. Make an example.", effects: [{ stat: 'Crime', value: -20, type: 'positive' }, { stat: 'Morale', value: 10, type: 'positive' }, { stat: 'Treasury', value: -10, type: 'negative' }] },
+                        { id: 'B', title: 'Just Update Rules 📝', description: "Bots are inevitable. Legalize them. Create a 'Bot League' category. Adapt.", effects: [{ stat: 'Morale', value: -15, type: 'negative' }, { stat: 'Treasury', value: 10, type: 'positive' }, { stat: 'Crime', value: 10, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'drama',
+                    question: "A citizen's pet dog accidentally approved a transaction that emptied their wallet. They're demanding a refund.",
+                    mayorQuote: "The dog... approved a transaction. I've seen a lot of things in crypto but this is a first. The citizen is crying. The dog is wagging its tail.",
+                    options: [
+                        { id: 'A', title: 'No Refunds 🐕', description: "Not your keys, not your coins. Train your dog better. This is crypto.", effects: [{ stat: 'Morale', value: -10, type: 'negative' }, { stat: 'Reputation', value: 15, type: 'positive' }, { stat: 'Crime', value: -5, type: 'positive' }] },
+                        { id: 'B', title: 'Emergency Pet Fund 🏥', description: "Create a 'Pet-Related Incident Fund'. This is clearly an edge case that needs compassion.", effects: [{ stat: 'Morale', value: 20, type: 'positive' }, { stat: 'Treasury', value: -15, type: 'negative' }, { stat: 'Reputation', value: 5, type: 'positive' }] }
+                    ]
+                },
+                // === MORE CHAOS ===
+                {
+                    category: 'chaos',
+                    question: "A glitch caused everyone's profile pictures to swap randomly. Citizens are panicking about their 'identity'.",
+                    mayorQuote: "Half the city is having an existential crisis because their PFP changed. The other half thinks it's hilarious. I'm in the second group but can't say that.",
+                    options: [
+                        { id: 'A', title: 'Fix Immediately 🔧', description: "Emergency maintenance. Restore all PFPs. Apologize profusely. Normal is restored.", effects: [{ stat: 'Morale', value: 10, type: 'positive' }, { stat: 'Treasury', value: -20, type: 'negative' }, { stat: 'Crime', value: -5, type: 'positive' }] },
+                        { id: 'B', title: 'Make It a Feature 🎭', description: "Declare it 'Identity Shuffle Day'. Award badges to those who embraced the chaos.", effects: [{ stat: 'Morale', value: 25, type: 'positive' }, { stat: 'Reputation', value: 15, type: 'positive' }, { stat: 'Crime', value: 10, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'chaos',
+                    question: "Someone hacked the city speakers. Now they only play 'Never Gonna Give You Up' on loop. Citizens are divided.",
+                    mayorQuote: "We've been rickrolled. As a city. Professionally. Some think it's a declaration of war. Others are vibing. I'm honestly impressed by the commitment.",
+                    options: [
+                        { id: 'A', title: 'Fix the Speakers 🔇', description: "End the suffering. Restore normal broadcasts. Find and prosecute the hacker.", effects: [{ stat: 'Crime', value: -10, type: 'positive' }, { stat: 'Morale', value: -5, type: 'negative' }, { stat: 'Treasury', value: -10, type: 'negative' }] },
+                        { id: 'B', title: 'Embrace the Roll 🕺', description: "Make it the city anthem. If we're getting rickrolled, we're owning it. Give the hacker a medal.", effects: [{ stat: 'Morale', value: 30, type: 'positive' }, { stat: 'Reputation', value: 20, type: 'positive' }, { stat: 'Crime', value: 15, type: 'negative' }] }
+                    ]
+                },
+                // === GOVERNANCE META ===
+                {
+                    category: 'meta',
+                    question: "A proposal to let citizens vote twice if they hold more $TOWN. 'Skin in the game' they argue.",
+                    mayorQuote: "Democracy vs plutocracy. The eternal debate. Rich people want more votes. Poor people want equal votes. I just want less paperwork.",
+                    options: [
+                        { id: 'A', title: 'Weighted Voting 💰', description: "More $TOWN = more votes. Whales get louder voices. Capitalism intensifies.", effects: [{ stat: 'Treasury', value: 25, type: 'positive' }, { stat: 'Morale', value: -30, type: 'negative' }, { stat: 'Reputation', value: -20, type: 'negative' }] },
+                        { id: 'B', title: 'One Citizen One Vote 🗳️', description: "Democracy stays democratic. Every citizen equal. Whales seethe.", effects: [{ stat: 'Morale', value: 25, type: 'positive' }, { stat: 'Reputation', value: 15, type: 'positive' }, { stat: 'Treasury', value: -10, type: 'negative' }] }
+                    ]
+                },
+                {
+                    category: 'meta',
+                    question: "Citizens want to reduce voting cycles from 6 hours to 1 hour. 'More votes = more democracy' they claim.",
+                    mayorQuote: "More voting sounds good in theory. But also I need to sleep sometimes. And do we really want decisions made at 3am by insomniacs?",
+                    options: [
+                        { id: 'A', title: 'Speed Democracy 🏎️', description: "1-hour voting cycles. Maximum participation. Chaos ensues.", effects: [{ stat: 'Morale', value: 20, type: 'positive' }, { stat: 'Crime', value: 20, type: 'negative' }, { stat: 'Reputation', value: 10, type: 'positive' }] },
+                        { id: 'B', title: 'Keep 6 Hours ⏰', description: "Current system works. Gives time for thought. Slow and steady governance.", effects: [{ stat: 'Morale', value: -5, type: 'negative' }, { stat: 'Treasury', value: 5, type: 'positive' }, { stat: 'Crime', value: -10, type: 'positive' }] }
+                    ]
+                },
+                // === RELATIONSHIPS ===
+                {
+                    category: 'social',
+                    question: "Two citizens want to get married on-chain. They're requesting the city officiate. This would be a first.",
+                    mayorQuote: "Blockchain matrimony. Immutable love. If it doesn't work out, the divorce will be on-chain too. Forever. Romantic, in a terrifying way.",
+                    options: [
+                        { id: 'A', title: 'Officiate the Wedding 💒', description: "Make history. First on-chain marriage in Pump Town. Launch wedding NFTs.", effects: [{ stat: 'Morale', value: 30, type: 'positive' }, { stat: 'Reputation', value: 25, type: 'positive' }, { stat: 'Treasury', value: -5, type: 'negative' }] },
+                        { id: 'B', title: 'Stay Out of It 🚶', description: "City shouldn't be in the marriage business. They can use a third-party protocol.", effects: [{ stat: 'Morale', value: -10, type: 'negative' }, { stat: 'Treasury', value: 5, type: 'positive' }, { stat: 'Crime', value: -5, type: 'positive' }] }
+                    ]
+                },
+                {
+                    category: 'social',
+                    question: "A lonely whale is offering to fund a 'Degen Dating App' for Pump Town citizens. Might be wholesome or chaos.",
+                    mayorQuote: "Dating in crypto is already a minefield. Now we're making an app for it? Either we get love stories or restraining orders. Probably both.",
+                    options: [
+                        { id: 'A', title: 'Launch the App 💘', description: "Accept funding. Build 'PumpMeet'. Citizens can find love (or get catfished).", effects: [{ stat: 'Morale', value: 25, type: 'positive' }, { stat: 'Treasury', value: 15, type: 'positive' }, { stat: 'Crime', value: 10, type: 'negative' }] },
+                        { id: 'B', title: 'No Dating Drama 🙅', description: "Keep crypto and dating separate. Citizens can use normal apps. Less liability.", effects: [{ stat: 'Crime', value: -10, type: 'positive' }, { stat: 'Morale', value: -5, type: 'negative' }, { stat: 'Treasury', value: -5, type: 'negative' }] }
+                    ]
+                },
+                // === LEGACY/SERIOUS ===
+                {
+                    category: 'legacy',
+                    question: "A citizen who passed away left their entire bag to the city. Their family is contesting it. What's the right thing to do?",
+                    mayorQuote: "This is heavy. Someone trusted us with their legacy. But family is family. There's no funny option here. Just do what feels right.",
+                    options: [
+                        { id: 'A', title: 'Honor Their Wish 📜', description: "Keep the funds as they intended. Build a memorial. Family gets nothing.", effects: [{ stat: 'Treasury', value: 30, type: 'positive' }, { stat: 'Morale', value: -10, type: 'negative' }, { stat: 'Reputation', value: 10, type: 'positive' }] },
+                        { id: 'B', title: 'Split with Family 👨‍👩‍👧', description: "Compromise. Half to city, half to family. Balance respect for wishes with compassion.", effects: [{ stat: 'Treasury', value: 15, type: 'positive' }, { stat: 'Morale', value: 15, type: 'positive' }, { stat: 'Reputation', value: 15, type: 'positive' }] }
+                    ]
+                },
+                {
+                    category: 'legacy',
+                    question: "Proposal to create a 'Hall of Legends' for citizens who've contributed most to the city. Expensive but meaningful.",
+                    mayorQuote: "We should celebrate our heroes. The diamond hands. The builders. The based. But buildings cost money and egos are fragile. Who gets in?",
+                    options: [
+                        { id: 'A', title: 'Build the Hall 🏛️', description: "Fund the project. Community votes on inductees. Create lasting legacy system.", effects: [{ stat: 'Morale', value: 25, type: 'positive' }, { stat: 'Reputation', value: 30, type: 'positive' }, { stat: 'Treasury', value: -25, type: 'negative' }] },
+                        { id: 'B', title: 'Skip the Vanity 💨', description: "Legends don't need buildings. Use funds for actual infrastructure. Humility > monuments.", effects: [{ stat: 'Treasury', value: 10, type: 'positive' }, { stat: 'Morale', value: -10, type: 'negative' }, { stat: 'Crime', value: -5, type: 'positive' }] }
+                    ]
+                }
+            ];
+            
+            // Function to get current vote based on time cycle
+            const getCurrentVoteFromPool = () => {
+                // Use time-based selection so everyone sees the same vote
+                const CYCLE_MS = 6 * 60 * 60 * 1000; // 6 hours
+                const now = Date.now();
+                
+                // Calculate cycle number since a fixed epoch
+                const epoch = new Date('2024-01-01').getTime();
+                const cycleNumber = Math.floor((now - epoch) / CYCLE_MS);
+                
+                // Use cycle number to pick a vote (deterministic for same cycle)
+                const voteIndex = cycleNumber % VOTE_POOL.length;
+                const selectedVote = VOTE_POOL[voteIndex];
+                
+                // Add metadata
+                return {
+                    id: `vote_cycle_${cycleNumber}`,
+                    question: selectedVote.question,
+                    options: selectedVote.options.map(opt => ({
+                        ...opt,
+                        votes: Math.floor(Math.random() * 50) + 10,
+                        percentage: 0
+                    })),
+                    mayorQuote: selectedVote.mayorQuote,
+                    category: selectedVote.category,
+                    cycleNumber: cycleNumber
                 };
+            };
+
+            const generateNewVote = async (state) => {
+                const newVote = getCurrentVoteFromPool();
+                
+                // Calculate percentages
+                const totalVotes = newVote.options.reduce((sum, opt) => sum + opt.votes, 0);
+                newVote.options = newVote.options.map(opt => ({
+                    ...opt,
+                    percentage: Math.round((opt.votes / totalVotes) * 100)
+                }));
 
                 state.currentVote = newVote;
                 state.round += 0.5;
@@ -9022,7 +9945,8 @@
                 predictions: { icon: '🔮', title: 'Predictions', subtitle: 'Bet on market movements' },
                 social: { icon: '💬', title: 'Social', subtitle: 'Chat & connect with friends' },
                 market: { icon: '🏪', title: 'Marketplace', subtitle: 'Trade resources with others' },
-                leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' }
+                leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' },
+                docs: { icon: '📖', title: 'Whitepaper', subtitle: 'Learn about Pump Town' }
             };
             
             // Render page content based on current page
@@ -9064,7 +9988,7 @@
                                 {/* Fear & Greed + Activity Feed */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                                     <FearGreedIndex />
-                                    <LiveActivityFeed playerName={character?.name} />
+                                    <LiveActivityFeed playerName={character?.name} onPlayerClick={openPlayerProfile} />
                                 </div>
                                 
                                 {/* Passive Income Display */}
@@ -9308,16 +10232,10 @@
                         
                     case 'social':
                         return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                                <ChatSection 
-                                    playerName={character?.name}
-                                />
-                                
-                                <SocialSection 
-                                    playerName={character?.name}
-                                    playerStats={playerStats}
-                                />
-                            </div>
+                            <ChatSection 
+                                playerName={character?.name}
+                                onPlayerClick={openPlayerProfile}
+                            />
                         );
                         
                     case 'market':
@@ -9336,6 +10254,11 @@
                                 playerStats={playerStats}
                                 character={character}
                             />
+                        );
+                    
+                    case 'docs':
+                        return (
+                            <DocsPage />
                         );
                         
                     default:
@@ -9491,6 +10414,17 @@
                             </div>
                         </div>
                         
+                        <div className="nav-section">
+                            <div className="nav-section-title">Info</div>
+                            <div 
+                                className={`nav-item ${currentPage === 'docs' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('docs'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">📖</span>
+                                <span className="nav-item-text">Whitepaper</span>
+                            </div>
+                        </div>
+                        
                         {/* Logout */}
                         <div className="nav-section" style={{ marginTop: 'auto', paddingTop: '20px' }}>
                             <div 
@@ -9607,6 +10541,22 @@
                             onClose={() => setMayorActionComment(null)}
                         />
                     )}
+                    
+                    {/* Daily Login Reward Modal */}
+                    <DailyRewardModal 
+                        isOpen={showDailyReward}
+                        onClose={() => setShowDailyReward(false)}
+                        rewardData={dailyRewardData}
+                        onClaim={claimDailyReward}
+                    />
+                    
+                    {/* Player Profile Modal */}
+                    <PlayerProfileModal 
+                        isOpen={showPlayerProfile}
+                        onClose={() => { setShowPlayerProfile(false); setPlayerProfileData(null); }}
+                        profile={playerProfileData}
+                        loading={profileLoading}
+                    />
                 </div>
             );
         }
@@ -10253,6 +11203,15 @@
             const [filter, setFilter] = useState('all');
             const [actionHistory, setActionHistory] = useState(() => {
                 const saved = localStorage.getItem('pumptown_action_history');
+                const version = localStorage.getItem('pumptown_ledger_version');
+                
+                // Force regeneration if old version (to get new diverse names)
+                if (version !== 'v3') {
+                    localStorage.removeItem('pumptown_action_history');
+                    localStorage.setItem('pumptown_ledger_version', 'v3');
+                    return generateInitialHistory();
+                }
+                
                 return saved ? JSON.parse(saved) : generateInitialHistory();
             });
 
@@ -10357,20 +11316,42 @@
             const actions = ['launch', 'snipe', 'hold', 'dump'];
             const outcomes = ['win', 'loss', 'neutral'];
             const icons = { launch: '🚀', snipe: '🎯', hold: '💎', dump: '📉', rug: '🧹' };
-            const names = ['DiamondHands69', 'MoonBoi2024', 'WhaleWatcher', 'DegenKing', 'CryptoApe', 'RugSurvivor'];
+            
+            // Mix of realistic usernames - same names can win or lose
+            const names = [
+                // Normal-ish names
+                'alex_trades', 'mike_2024', 'sarah.crypto', 'jason_w', 'emma_h', 
+                'david_k', 'chris_m', 'jenny_l', 'matt_trades', 'lisa_q',
+                'kevin_btc', 'amy_sol', 'ryan_dev', 'nicole_x', 'brian_z',
+                'steve_88', 'maria_99', 'tom_trader', 'kate_defi', 'john_nft',
+                // Crypto-ish names
+                'ChadTrader', 'based_andy', 'ser_pump', 'anon_whale', 'degen_mike',
+                'alpha_hunter', 'bag_secured', '0xJake', 'sol_maxi', 'eth_bull',
+                'moon_chaser', 'early_ape', 'diamond_dan', 'paper_pete', 'fomo_fred',
+                // Numbers/random style
+                'trader_4521', 'user_8829', 'anon_3847', 'wallet_6612', 'x_9981',
+                '0xabc123', 'dex_user42', 'swap_king99', 'yield_farm3r', 'lp_provider'
+            ];
+            
             const texts = {
-                win: ['Massive gains!', 'Perfect timing!', 'To the moon!', 'Legendary play!'],
-                loss: ['Rekt.', 'Bought the top.', 'RIP bags.', 'Held to zero.'],
-                neutral: ['Broke even.', 'Could be worse.', 'Survived another day.']
+                win: ['Massive gains!', 'Perfect timing!', 'To the moon!', 'Legendary play!', 'Called it!', 'Easy money!', '10x baby!', 'Nailed it!'],
+                loss: ['Rekt.', 'Bought the top.', 'RIP bags.', 'Held to zero.', 'Liquidated.', 'Got dumped on.', 'Caught the knife.', 'Ouch.'],
+                neutral: ['Broke even.', 'Could be worse.', 'Survived.', 'Living to trade again.', 'Meh.']
             };
+            
+            const rugTexts = ['Rugged the community', 'Drained the pool', 'Exit scammed', 'Dumped it all', 'Pulled liquidity'];
 
             const history = [];
-            for (let i = 0; i < 20; i++) {
+            const shuffledNames = [...names].sort(() => Math.random() - 0.5);
+            
+            for (let i = 0; i < 30; i++) {
                 const action = actions[Math.floor(Math.random() * actions.length)];
                 const outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+                const name = shuffledNames[i % shuffledNames.length];
+                
                 history.push({
                     id: Date.now() - i * 100000,
-                    player: names[Math.floor(Math.random() * names.length)],
+                    player: name,
                     action,
                     actionIcon: icons[action],
                     outcome,
@@ -10381,17 +11362,23 @@
                     timestamp: Date.now() - i * 3600000
                 });
             }
-            // Add one rug for drama
-            history.splice(5, 0, {
-                id: Date.now() - 500000,
-                player: 'RugMaster420',
-                action: 'rug',
-                actionIcon: '🧹',
-                outcome: 'win',
-                outcomeText: 'Pulled the rug successfully. Shameful.',
-                repChange: -30,
-                timestamp: Date.now() - 18000000
+            
+            // Add a few rugs scattered throughout - using NORMAL names (anyone can rug)
+            const rugPositions = [4, 12, 19, 26];
+            rugPositions.forEach((pos, idx) => {
+                const ruggerName = shuffledNames[40 + idx] || shuffledNames[idx + 10];
+                history.splice(pos, 0, {
+                    id: Date.now() - 500000 - idx * 50000,
+                    player: ruggerName,
+                    action: 'rug',
+                    actionIcon: '🧹',
+                    outcome: 'loss',
+                    outcomeText: rugTexts[idx % rugTexts.length],
+                    repChange: -30,
+                    timestamp: Date.now() - 18000000 - idx * 7200000
+                });
             });
+            
             return history;
         }
 
@@ -10653,171 +11640,707 @@
             );
         }
         
+        // ==================== WHITEPAPER / DOCS PAGE ====================
+        function DocsPage() {
+            const [activeSection, setActiveSection] = useState('intro');
+            
+            const sections = [
+                { id: 'intro', title: '🏛️ Introduction', icon: '🏛️' },
+                { id: 'gameplay', title: '🎮 Gameplay', icon: '🎮' },
+                { id: 'governance', title: '🗳️ Governance', icon: '🗳️' },
+                { id: 'economy', title: '💰 Economy', icon: '💰' },
+                { id: 'actions', title: '⚡ Actions', icon: '⚡' },
+                { id: 'resources', title: '📦 Resources', icon: '📦' },
+                { id: 'zones', title: '🗺️ Zones', icon: '🗺️' },
+                { id: 'tokenomics', title: '🪙 $TOWN Token', icon: '🪙' },
+                { id: 'roadmap', title: '🛣️ Roadmap', icon: '🛣️' },
+                { id: 'faq', title: '❓ FAQ', icon: '❓' }
+            ];
+            
+            return (
+                <div className="docs-page">
+                    {/* Navigation */}
+                    <div className="card" style={{ marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+                            {sections.map(section => (
+                                <button
+                                    key={section.id}
+                                    onClick={() => setActiveSection(section.id)}
+                                    style={{
+                                        padding: '8px 16px',
+                                        background: activeSection === section.id 
+                                            ? 'linear-gradient(135deg, #00ff88, #00cc6a)' 
+                                            : 'rgba(0,0,0,0.3)',
+                                        border: activeSection === section.id 
+                                            ? 'none' 
+                                            : '1px solid rgba(0,255,136,0.3)',
+                                        borderRadius: '20px',
+                                        color: activeSection === section.id ? '#000' : '#fff',
+                                        fontWeight: activeSection === section.id ? 'bold' : 'normal',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85em',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {section.title}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="card">
+                        {activeSection === 'intro' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    🏛️ Welcome to Pump Town
+                                </h2>
+                                <p style={{ fontSize: '1.1em', lineHeight: '1.8', marginBottom: '20px' }}>
+                                    <strong>Pump Town</strong> is a crypto-themed social simulation game where players become citizens of a chaotic digital city governed by an AI Mayor. Think of it as SimCity meets crypto Twitter meets degen culture.
+                                </p>
+                                
+                                <div style={{ background: 'rgba(0,255,136,0.1)', padding: '20px', borderRadius: '10px', marginBottom: '20px', border: '1px solid rgba(0,255,136,0.3)' }}>
+                                    <h3 style={{ color: '#ffd700', marginBottom: '10px' }}>🎯 Core Concept</h3>
+                                    <p style={{ lineHeight: '1.7' }}>
+                                        Players create characters, take public trading actions (Launch, Snipe, Hold, Dump, Rug), 
+                                        and build reputation through outcomes recorded in the City Ledger. Winners gain status. 
+                                        Losers become lore. Every action shapes the city's destiny.
+                                    </p>
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>✨ Key Features</h3>
+                                <ul style={{ lineHeight: '2', paddingLeft: '20px' }}>
+                                    <li><strong>AI Mayor Governance</strong> - Vote on city decisions every 6 hours</li>
+                                    <li><strong>Public Ledger</strong> - All actions are recorded for everyone to see</li>
+                                    <li><strong>Reputation System</strong> - Build your degen legacy</li>
+                                    <li><strong>Play-to-Earn Arcade</strong> - Mini-games that reward resources</li>
+                                    <li><strong>Real Data Integration</strong> - Live crypto prices, Fear & Greed index</li>
+                                    <li><strong>Global Chat</strong> - Connect with fellow degens</li>
+                                    <li><strong>Zone System</strong> - Unlock new areas as you level up</li>
+                                </ul>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'gameplay' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    🎮 How to Play
+                                </h2>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>📝 Getting Started</h3>
+                                <ol style={{ lineHeight: '2', paddingLeft: '20px', marginBottom: '25px' }}>
+                                    <li>Create an account with email/password</li>
+                                    <li>Choose your character name, avatar (Pepe, Doge, Shiba, etc.), and role</li>
+                                    <li>Start with 0 XP and basic resources</li>
+                                    <li>Take actions, play games, vote, and climb the ranks!</li>
+                                </ol>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>📈 Progression</h3>
+                                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+                                    <p style={{ marginBottom: '10px' }}><strong>XP Sources:</strong></p>
+                                    <ul style={{ lineHeight: '1.8', paddingLeft: '20px' }}>
+                                        <li>Taking Actions (+10-50 XP)</li>
+                                        <li>Playing Arcade Games (+5-25 XP)</li>
+                                        <li>Voting in Governance (+15 XP)</li>
+                                        <li>Completing Daily Quests (+25-100 XP)</li>
+                                        <li>Winning Predictions (+50 XP)</li>
+                                    </ul>
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>🎯 Goals</h3>
+                                <ul style={{ lineHeight: '2', paddingLeft: '20px' }}>
+                                    <li>Level up to unlock new zones and features</li>
+                                    <li>Build your Degen Score through risky plays</li>
+                                    <li>Climb the global leaderboard</li>
+                                    <li>Earn badges and achievements</li>
+                                    <li>Influence city decisions through voting</li>
+                                </ul>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'governance' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    🗳️ AI Mayor Governance
+                                </h2>
+                                
+                                <p style={{ fontSize: '1.1em', lineHeight: '1.8', marginBottom: '20px' }}>
+                                    Pump Town is governed by <strong>Mayor Satoshi McPump</strong>, an AI with chaotic degen energy. 
+                                    Every 6 hours, the Mayor presents a new scenario and citizens vote on the outcome.
+                                </p>
+                                
+                                <div style={{ background: 'rgba(255,215,0,0.1)', padding: '20px', borderRadius: '10px', marginBottom: '20px', border: '1px solid rgba(255,215,0,0.3)' }}>
+                                    <h3 style={{ color: '#ffd700', marginBottom: '10px' }}>⏰ Voting Cycles</h3>
+                                    <ul style={{ lineHeight: '1.8', paddingLeft: '20px' }}>
+                                        <li><strong>Duration:</strong> 6 hours per vote</li>
+                                        <li><strong>Frequency:</strong> 4 votes per day</li>
+                                        <li><strong>Eligibility:</strong> All registered citizens</li>
+                                        <li><strong>Limit:</strong> 1 vote per citizen per cycle</li>
+                                    </ul>
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>📊 City Stats Affected</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
+                                    <div style={{ background: 'rgba(0,255,136,0.1)', padding: '15px', borderRadius: '8px' }}>
+                                        <strong style={{ color: '#00ff88' }}>😊 Morale</strong>
+                                        <p style={{ fontSize: '0.9em', marginTop: '5px' }}>Citizen happiness level</p>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,68,68,0.1)', padding: '15px', borderRadius: '8px' }}>
+                                        <strong style={{ color: '#ff4444' }}>🚨 Crime</strong>
+                                        <p style={{ fontSize: '0.9em', marginTop: '5px' }}>Rug pulls & scam rate</p>
+                                    </div>
+                                    <div style={{ background: 'rgba(255,215,0,0.1)', padding: '15px', borderRadius: '8px' }}>
+                                        <strong style={{ color: '#ffd700' }}>💰 Treasury</strong>
+                                        <p style={{ fontSize: '0.9em', marginTop: '5px' }}>City funds available</p>
+                                    </div>
+                                    <div style={{ background: 'rgba(29,161,242,0.1)', padding: '15px', borderRadius: '8px' }}>
+                                        <strong style={{ color: '#1da1f2' }}>⭐ Reputation</strong>
+                                        <p style={{ fontSize: '0.9em', marginTop: '5px' }}>City's external image</p>
+                                    </div>
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>🎭 Vote Categories</h3>
+                                <p style={{ lineHeight: '1.8' }}>
+                                    Votes span multiple categories: <strong>Economy</strong>, <strong>Drama</strong>, <strong>Chaos</strong>, 
+                                    <strong>Crime & Justice</strong>, <strong>Culture</strong>, <strong>Technology</strong>, 
+                                    <strong>Emergency</strong>, and more. Each presents unique dilemmas with real trade-offs.
+                                </p>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'economy' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    💰 Game Economy
+                                </h2>
+                                
+                                <p style={{ fontSize: '1.1em', lineHeight: '1.8', marginBottom: '20px' }}>
+                                    Pump Town has an internal economy based on four resources that power gameplay mechanics.
+                                </p>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>💎 Earning Methods</h3>
+                                <ul style={{ lineHeight: '2', paddingLeft: '20px', marginBottom: '25px' }}>
+                                    <li><strong>Passive Income:</strong> Resources generated based on current zone</li>
+                                    <li><strong>Arcade Games:</strong> Play mini-games to earn resources</li>
+                                    <li><strong>Daily Quests:</strong> Complete tasks for resource rewards</li>
+                                    <li><strong>Actions:</strong> Successful trades generate returns</li>
+                                    <li><strong>Airdrops:</strong> Random rewards for active players</li>
+                                </ul>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>💸 Spending</h3>
+                                <ul style={{ lineHeight: '2', paddingLeft: '20px' }}>
+                                    <li><strong>Taking Actions:</strong> Launch, Snipe, Dump cost resources</li>
+                                    <li><strong>Casino Games:</strong> Gamble for big wins or losses</li>
+                                    <li><strong>Predictions:</strong> Bet on market movements</li>
+                                    <li><strong>Marketplace:</strong> Trade resources with other players</li>
+                                </ul>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'actions' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    ⚡ Actions System
+                                </h2>
+                                
+                                <p style={{ fontSize: '1.1em', lineHeight: '1.8', marginBottom: '25px' }}>
+                                    The core gameplay loop. Take public trading actions that are recorded forever in the City Ledger.
+                                </p>
+                                
+                                <div style={{ display: 'grid', gap: '15px' }}>
+                                    <div style={{ background: 'rgba(0,255,136,0.15)', padding: '20px', borderRadius: '10px', border: '1px solid rgba(0,255,136,0.3)' }}>
+                                        <h4 style={{ color: '#00ff88', marginBottom: '10px' }}>🚀 LAUNCH</h4>
+                                        <p>Create a new memecoin. High risk, high reward. Success = massive gains. Failure = you become a cautionary tale.</p>
+                                        <p style={{ color: '#888', fontSize: '0.9em', marginTop: '10px' }}>Risk: High | Reward: Very High | Degen Score: +5</p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(255,215,0,0.15)', padding: '20px', borderRadius: '10px', border: '1px solid rgba(255,215,0,0.3)' }}>
+                                        <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>🎯 SNIPE</h4>
+                                        <p>Get in early on a new launch. Speed is everything. Beat the bots or get rekt trying.</p>
+                                        <p style={{ color: '#888', fontSize: '0.9em', marginTop: '10px' }}>Risk: Medium-High | Reward: High | Degen Score: +3</p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(29,161,242,0.15)', padding: '20px', borderRadius: '10px', border: '1px solid rgba(29,161,242,0.3)' }}>
+                                        <h4 style={{ color: '#1da1f2', marginBottom: '10px' }}>💎 HOLD</h4>
+                                        <p>Diamond hands activated. Resist the urge to sell. Time in market beats timing the market... usually.</p>
+                                        <p style={{ color: '#888', fontSize: '0.9em', marginTop: '10px' }}>Risk: Low | Reward: Moderate | Degen Score: +1</p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(255,165,0,0.15)', padding: '20px', borderRadius: '10px', border: '1px solid rgba(255,165,0,0.3)' }}>
+                                        <h4 style={{ color: '#ffa500', marginBottom: '10px' }}>📉 DUMP</h4>
+                                        <p>Exit your position. Paper hands or smart money? The ledger will judge.</p>
+                                        <p style={{ color: '#888', fontSize: '0.9em', marginTop: '10px' }}>Risk: Low | Reward: Low-Medium | Degen Score: +2</p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(255,68,68,0.15)', padding: '20px', borderRadius: '10px', border: '1px solid rgba(255,68,68,0.3)' }}>
+                                        <h4 style={{ color: '#ff4444', marginBottom: '10px' }}>💀 RUG</h4>
+                                        <p>The dark path. Drain liquidity and disappear. Maximum infamy. Your reputation will never recover.</p>
+                                        <p style={{ color: '#888', fontSize: '0.9em', marginTop: '10px' }}>Risk: Reputation | Reward: High | Degen Score: +10</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'resources' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    📦 Resources
+                                </h2>
+                                
+                                <div style={{ display: 'grid', gap: '20px' }}>
+                                    <div style={{ background: 'rgba(0,255,136,0.1)', padding: '20px', borderRadius: '10px' }}>
+                                        <h3 style={{ color: '#00ff88', marginBottom: '10px' }}>💊 HOPIUM</h3>
+                                        <p style={{ lineHeight: '1.7' }}>
+                                            The fuel of optimism. Required for bullish actions like Launch and Snipe. 
+                                            Abundant in Pump Town Square and Shitcoin Slums.
+                                        </p>
+                                        <p style={{ color: '#888', marginTop: '10px', fontSize: '0.9em' }}>
+                                            <strong>Use:</strong> Launch actions, Casino bets, Optimistic predictions
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(255,215,0,0.1)', padding: '20px', borderRadius: '10px' }}>
+                                        <h3 style={{ color: '#ffd700', marginBottom: '10px' }}>🔮 ALPHA</h3>
+                                        <p style={{ lineHeight: '1.7' }}>
+                                            Insider knowledge. The rarest resource. Found primarily in Alpha Vault and Whale Bay.
+                                            Essential for making informed decisions.
+                                        </p>
+                                        <p style={{ color: '#888', marginTop: '10px', fontSize: '0.9em' }}>
+                                            <strong>Use:</strong> Snipe actions, Premium predictions, Chart analysis
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(102,153,255,0.1)', padding: '20px', borderRadius: '10px' }}>
+                                        <h3 style={{ color: '#6699ff', marginBottom: '10px' }}>😢 COPIUM</h3>
+                                        <p style={{ lineHeight: '1.7' }}>
+                                            The coping mechanism. Accumulates after losses. Ironically valuable for 
+                                            recovering from bad trades. Plentiful in Shitcoin Slums.
+                                        </p>
+                                        <p style={{ color: '#888', marginTop: '10px', fontSize: '0.9em' }}>
+                                            <strong>Use:</strong> Recovery actions, Loss mitigation, Emotional support
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(0,204,255,0.1)', padding: '20px', borderRadius: '10px' }}>
+                                        <h3 style={{ color: '#00ccff', marginBottom: '10px' }}>💧 LIQUIDITY</h3>
+                                        <p style={{ lineHeight: '1.7' }}>
+                                            The lifeblood of markets. Required for trading and market-making activities.
+                                            Concentrated in Whale Bay and Chart District.
+                                        </p>
+                                        <p style={{ color: '#888', marginTop: '10px', fontSize: '0.9em' }}>
+                                            <strong>Use:</strong> Market trades, Pool contributions, Leverage positions
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'zones' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    🗺️ City Zones
+                                </h2>
+                                
+                                <p style={{ fontSize: '1.1em', lineHeight: '1.8', marginBottom: '25px' }}>
+                                    Pump Town is divided into 6 unique zones, each with different resource generation rates and vibes.
+                                </p>
+                                
+                                <div style={{ display: 'grid', gap: '15px' }}>
+                                    <div style={{ background: 'rgba(0,255,136,0.1)', padding: '15px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <span style={{ fontSize: '2em' }}>🏛️</span>
+                                        <div>
+                                            <h4 style={{ color: '#00ff88', marginBottom: '5px' }}>Pump Town Square</h4>
+                                            <p style={{ color: '#888', fontSize: '0.9em' }}>Level 1 • Starting zone • Balanced resources</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(255,68,68,0.1)', padding: '15px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <span style={{ fontSize: '2em' }}>🏚️</span>
+                                        <div>
+                                            <h4 style={{ color: '#ff4444', marginBottom: '5px' }}>Shitcoin Slums</h4>
+                                            <p style={{ color: '#888', fontSize: '0.9em' }}>Level 3 • High Hopium & Copium • Risky but rewarding</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(29,161,242,0.1)', padding: '15px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <span style={{ fontSize: '2em' }}>📊</span>
+                                        <div>
+                                            <h4 style={{ color: '#1da1f2', marginBottom: '5px' }}>Chart District</h4>
+                                            <p style={{ color: '#888', fontSize: '0.9em' }}>Level 5 • Alpha & Liquidity focus • For technical traders</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(255,215,0,0.1)', padding: '15px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <span style={{ fontSize: '2em' }}>🎰</span>
+                                        <div>
+                                            <h4 style={{ color: '#ffd700', marginBottom: '5px' }}>Degen Casino</h4>
+                                            <p style={{ color: '#888', fontSize: '0.9em' }}>Level 10 • High variance • Gambler's paradise</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(0,204,255,0.1)', padding: '15px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <span style={{ fontSize: '2em' }}>🐋</span>
+                                        <div>
+                                            <h4 style={{ color: '#00ccff', marginBottom: '5px' }}>Whale Bay</h4>
+                                            <p style={{ color: '#888', fontSize: '0.9em' }}>Level 15 • Maximum Alpha & Liquidity • Elite zone</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(155,89,182,0.1)', padding: '15px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <span style={{ fontSize: '2em' }}>🔐</span>
+                                        <div>
+                                            <h4 style={{ color: '#9b59b6', marginBottom: '5px' }}>Alpha Vault</h4>
+                                            <p style={{ color: '#888', fontSize: '0.9em' }}>Level 25 • Ultimate zone • Best resource generation</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'tokenomics' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    🪙 $TOWN Token
+                                </h2>
+                                
+                                <div style={{ background: 'rgba(255,215,0,0.1)', padding: '20px', borderRadius: '10px', marginBottom: '25px', border: '1px solid rgba(255,215,0,0.3)' }}>
+                                    <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>Token Details</h3>
+                                    <p style={{ color: '#ccc', fontSize: '1.1em', textAlign: 'center', padding: '20px 0' }}>
+                                        🚀 Coming Soon
+                                    </p>
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>🎁 Token Utility</h3>
+                                <ul style={{ lineHeight: '2', paddingLeft: '20px', marginBottom: '25px' }}>
+                                    <li><strong>Game Access:</strong> Hold $TOWN to access full features (coming soon)</li>
+                                    <li><strong>Governance Weight:</strong> Token holders may get enhanced voting power</li>
+                                    <li><strong>Exclusive Events:</strong> Token-gated competitions and airdrops</li>
+                                    <li><strong>Staking Rewards:</strong> Planned staking mechanism for passive income</li>
+                                </ul>
+                                
+                                <div style={{ background: 'rgba(0,255,136,0.1)', padding: '20px', borderRadius: '10px' }}>
+                                    <h3 style={{ color: '#00ff88', marginBottom: '10px' }}>📈 Where to Buy</h3>
+                                    <p style={{ lineHeight: '1.7', textAlign: 'center', padding: '10px 0' }}>
+                                        🚀 Coming Soon
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'roadmap' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    🛣️ Roadmap
+                                </h2>
+                                
+                                <div style={{ position: 'relative', paddingLeft: '30px' }}>
+                                    <div style={{ position: 'absolute', left: '10px', top: '0', bottom: '0', width: '2px', background: 'linear-gradient(to bottom, #00ff88, #ffd700, #ff4444)' }}></div>
+                                    
+                                    <div style={{ marginBottom: '30px', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', left: '-25px', width: '12px', height: '12px', borderRadius: '50%', background: '#00ff88' }}></div>
+                                        <h3 style={{ color: '#00ff88', marginBottom: '10px' }}>✅ Phase 1: Foundation (Complete)</h3>
+                                        <ul style={{ lineHeight: '1.8', color: '#888', paddingLeft: '20px' }}>
+                                            <li>Core gameplay mechanics</li>
+                                            <li>AI Mayor governance system</li>
+                                            <li>Character creation & progression</li>
+                                            <li>Arcade mini-games</li>
+                                            <li>Global chat system</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div style={{ marginBottom: '30px', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', left: '-25px', width: '12px', height: '12px', borderRadius: '50%', background: '#ffd700' }}></div>
+                                        <h3 style={{ color: '#ffd700', marginBottom: '10px' }}>🔄 Phase 2: Expansion (In Progress)</h3>
+                                        <ul style={{ lineHeight: '1.8', color: '#888', paddingLeft: '20px' }}>
+                                            <li>Token integration & gating</li>
+                                            <li>Enhanced social features</li>
+                                            <li>More governance scenarios</li>
+                                            <li>Mobile optimization</li>
+                                            <li>Achievement system expansion</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div style={{ marginBottom: '30px', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', left: '-25px', width: '12px', height: '12px', borderRadius: '50%', background: '#ff4444', opacity: 0.6 }}></div>
+                                        <h3 style={{ color: '#ff4444', marginBottom: '10px', opacity: 0.8 }}>📅 Phase 3: Evolution (Planned)</h3>
+                                        <ul style={{ lineHeight: '1.8', color: '#666', paddingLeft: '20px' }}>
+                                            <li>Mobile App Launch - Android & iOS (App Store & Google Play)</li>
+                                            <li>On-chain integration</li>
+                                            <li>NFT achievements & rewards</li>
+                                            <li>DAO governance transition</li>
+                                            <li>Cross-game partnerships</li>
+                                            <li>Real yield mechanisms</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div style={{ position: 'relative' }}>
+                                        <div style={{ position: 'absolute', left: '-25px', width: '12px', height: '12px', borderRadius: '50%', background: '#9b59b6', opacity: 0.4 }}></div>
+                                        <h3 style={{ color: '#9b59b6', marginBottom: '10px', opacity: 0.6 }}>🌟 Phase 4: Beyond (Vision)</h3>
+                                        <ul style={{ lineHeight: '1.8', color: '#555', paddingLeft: '20px' }}>
+                                            <li>Metaverse expansion</li>
+                                            <li>Real-world integrations</li>
+                                            <li>AI Mayor evolution</li>
+                                            <li>Community-driven development</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'faq' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    ❓ Frequently Asked Questions
+                                </h2>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px' }}>
+                                        <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>Is Pump Town free to play?</h4>
+                                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>
+                                            Yes! Pump Town is completely free to play. You can create an account and enjoy all core features without spending anything.
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px' }}>
+                                        <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>Do I need to hold $TOWN token?</h4>
+                                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>
+                                            Currently, no. The game is fully playable without holding tokens. Future features may include token-gated content and benefits for holders.
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px' }}>
+                                        <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>How do voting cycles work?</h4>
+                                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>
+                                            New votes appear every 6 hours (4 per day). Each citizen can vote once per cycle. The winning option affects city stats.
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px' }}>
+                                        <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>Is my progress saved?</h4>
+                                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>
+                                            Yes! Your character, XP, level, resources, and stats are saved to our backend. You can log in from any device and continue where you left off.
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px' }}>
+                                        <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>Can I change my character?</h4>
+                                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>
+                                            Currently, characters are permanent once created. Choose your name and avatar wisely - they'll be with you throughout your Pump Town journey!
+                                        </p>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px' }}>
+                                        <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>How do I contact support?</h4>
+                                        <p style={{ color: '#ccc', lineHeight: '1.7' }}>
+                                            Join our community on X (Twitter) @PumpTownGame for updates, support, and to connect with other citizens!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Footer */}
+                    <div style={{ textAlign: 'center', marginTop: '30px', color: '#666', fontSize: '0.9em' }}>
+                        <p>📖 Pump Town Whitepaper v1.0</p>
+                        <p style={{ marginTop: '5px' }}>Last updated: January 2026</p>
+                    </div>
+                </div>
+            );
+        }
+        
         // ==================== CHAT SECTION ====================
-        function ChatSection({ playerName }) {
-            // Default messages for fresh start
-            const defaultGlobalMessages = [
-                { id: 1, name: 'System', text: '🎉 Welcome to Pump Town! Be respectful, have fun, and WAGMI!', time: '12:00', system: true },
-                { id: 2, name: 'DiamondHands69', text: 'Just hit 10x on that leverage trade! 💎🙌', time: '12:05' },
-                { id: 3, name: 'MoonBoi2024', text: 'wen moon?', time: '12:06' },
-                { id: 4, name: 'RugSurvivor', text: 'NGMI if you sell now', time: '12:08' },
-                { id: 5, name: 'System', text: '🚀 New memecoin launched: $PEPE2 is pumping!', time: '12:10', system: true },
-                { id: 6, name: 'WhaleWatcher', text: 'Big wallet just aped in 👀', time: '12:12' },
-                { id: 7, name: 'DegenKing', text: 'LFG! 🚀🚀🚀', time: '12:15' }
-            ];
-            
-            const defaultWhaleMessages = [
-                { id: 1, name: 'System', text: '🐋 Welcome to Whale Chat! Only diamond hands here.', time: '12:00', system: true },
-                { id: 2, name: 'CryptoWhale', text: 'Just loaded up another bag 💰', time: '12:30' },
-                { id: 3, name: 'DeFiDegen', text: 'APY looking juicy on the new farm', time: '12:32' },
-                { id: 4, name: 'System', text: '📢 New airdrop detected! Check the airdrops section 🪂', time: '12:45', system: true }
-            ];
-            
-            // Filter out old territory/guild messages from saved data
-            const filterOldMessages = (messages) => {
-                if (!Array.isArray(messages)) return null;
-                const filtered = messages.filter(msg => {
-                    const text = (msg.text || '').toLowerCase();
-                    return !text.includes('territory') && 
-                           !text.includes('guild') && 
-                           !text.includes('attacking') &&
-                           !text.includes('captured') &&
-                           !text.includes('defend');
-                });
-                return filtered.length > 0 ? filtered : null;
-            };
-            
-            // Load messages from localStorage or use defaults (filter out old bad messages)
-            const [globalMessages, setGlobalMessages] = useState(() => {
-                const saved = localStorage.getItem('pumptown_chat_global');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    const filtered = filterOldMessages(parsed);
-                    return filtered || defaultGlobalMessages;
-                }
-                return defaultGlobalMessages;
-            });
-            
-            const [whaleMessages, setWhaleMessages] = useState(() => {
-                const saved = localStorage.getItem('pumptown_chat_whale');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    const filtered = filterOldMessages(parsed);
-                    return filtered || defaultWhaleMessages;
-                }
-                return defaultWhaleMessages;
-            });
-            
+        function ChatSection({ playerName, onPlayerClick }) {
+            const [globalMessages, setGlobalMessages] = useState([]);
+            const [whaleMessages, setWhaleMessages] = useState([]);
             const [newMessage, setNewMessage] = useState('');
             const [activeTab, setActiveTab] = useState('global');
+            const [loading, setLoading] = useState(true);
+            const [sending, setSending] = useState(false);
             const messagesEndRef = useRef(null);
+            const lastFetchTime = useRef({ global: 0, whale: 0 });
             
-            // Clean up old guild chat from localStorage
+            // Parse message text to highlight @mentions
+            const renderMessageText = (text, mentions = []) => {
+                if (!mentions || mentions.length === 0) {
+                    // Still check for @mentions in text
+                    const mentionRegex = /@(\w+)/g;
+                    const parts = [];
+                    let lastIndex = 0;
+                    let match;
+                    
+                    while ((match = mentionRegex.exec(text)) !== null) {
+                        // Add text before mention
+                        if (match.index > lastIndex) {
+                            parts.push(text.substring(lastIndex, match.index));
+                        }
+                        // Add mention span
+                        const mentionName = match[1];
+                        const isMe = mentionName.toLowerCase() === playerName?.toLowerCase();
+                        parts.push(
+                            <span 
+                                key={match.index}
+                                className={`chat-mention ${isMe ? 'is-me' : ''}`}
+                                onClick={() => onPlayerClick && onPlayerClick(mentionName)}
+                            >
+                                @{mentionName}
+                            </span>
+                        );
+                        lastIndex = match.index + match[0].length;
+                    }
+                    // Add remaining text
+                    if (lastIndex < text.length) {
+                        parts.push(text.substring(lastIndex));
+                    }
+                    return parts.length > 0 ? parts : text;
+                }
+                return text;
+            };
+            
+            // Handle click on player name
+            const handleNameClick = (name) => {
+                if (name && name !== playerName && onPlayerClick) {
+                    onPlayerClick(name);
+                }
+            };
+            
+            // Fetch messages from backend
+            const fetchMessages = async (channel) => {
+                try {
+                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/chat/${channel}`);
+                    const data = await response.json();
+                    if (data.success && data.messages) {
+                        if (channel === 'global') {
+                            setGlobalMessages(data.messages);
+                            if (data.messages.length > 0) {
+                                lastFetchTime.current.global = data.messages[data.messages.length - 1].timestamp;
+                            }
+                        } else {
+                            setWhaleMessages(data.messages);
+                            if (data.messages.length > 0) {
+                                lastFetchTime.current.whale = data.messages[data.messages.length - 1].timestamp;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error fetching chat:', err);
+                }
+            };
+            
+            // Fetch new messages since last fetch (polling)
+            const fetchNewMessages = async (channel) => {
+                const lastTime = channel === 'global' ? lastFetchTime.current.global : lastFetchTime.current.whale;
+                if (!lastTime) return;
+                
+                try {
+                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/chat/${channel}/since/${lastTime}`);
+                    const data = await response.json();
+                    if (data.success && data.messages && data.messages.length > 0) {
+                        if (channel === 'global') {
+                            setGlobalMessages(prev => {
+                                // Filter out duplicates
+                                const existingIds = new Set(prev.map(m => m.id));
+                                const newMsgs = data.messages.filter(m => !existingIds.has(m.id));
+                                if (newMsgs.length > 0) {
+                                    lastFetchTime.current.global = newMsgs[newMsgs.length - 1].timestamp;
+                                    return [...prev, ...newMsgs].slice(-100); // Keep last 100
+                                }
+                                return prev;
+                            });
+                        } else {
+                            setWhaleMessages(prev => {
+                                const existingIds = new Set(prev.map(m => m.id));
+                                const newMsgs = data.messages.filter(m => !existingIds.has(m.id));
+                                if (newMsgs.length > 0) {
+                                    lastFetchTime.current.whale = newMsgs[newMsgs.length - 1].timestamp;
+                                    return [...prev, ...newMsgs].slice(-100);
+                                }
+                                return prev;
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error fetching new messages:', err);
+                }
+            };
+            
+            // Initial load
             useEffect(() => {
-                localStorage.removeItem('pumptown_chat_guild');
+                const loadChat = async () => {
+                    setLoading(true);
+                    await Promise.all([fetchMessages('global'), fetchMessages('whale')]);
+                    setLoading(false);
+                };
+                loadChat();
             }, []);
             
-            // Save messages to localStorage whenever they change
+            // Poll for new messages every 3 seconds
             useEffect(() => {
-                localStorage.setItem('pumptown_chat_global', JSON.stringify(globalMessages));
-            }, [globalMessages]);
+                const pollInterval = setInterval(() => {
+                    fetchNewMessages('global');
+                    fetchNewMessages('whale');
+                }, 3000);
+                
+                return () => clearInterval(pollInterval);
+            }, []);
             
-            useEffect(() => {
-                localStorage.setItem('pumptown_chat_whale', JSON.stringify(whaleMessages));
-            }, [whaleMessages]);
-            
-            // Keep only last 100 messages to prevent localStorage from getting too large
-            useEffect(() => {
-                if (globalMessages.length > 100) {
-                    setGlobalMessages(prev => prev.slice(-100));
-                }
-            }, [globalMessages.length]);
-            
-            useEffect(() => {
-                if (whaleMessages.length > 100) {
-                    setWhaleMessages(prev => prev.slice(-100));
-                }
-            }, [whaleMessages.length]);
-            
-            // Get current messages based on active tab
-            const currentMessages = activeTab === 'global' ? globalMessages : whaleMessages;
-            const setCurrentMessages = activeTab === 'global' ? setGlobalMessages : setWhaleMessages;
-            
-            // Auto scroll to bottom
+            // Auto scroll to bottom when new messages arrive
             useEffect(() => {
                 messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, [globalMessages, whaleMessages, activeTab]);
             
-            // Send message
-            const sendMessage = () => {
-                if (!newMessage.trim()) return;
+            // Send message to backend
+            const sendMessage = async () => {
+                if (!newMessage.trim() || sending) return;
                 
-                const msg = {
-                    id: Date.now(),
-                    name: playerName || 'Anon',
-                    text: newMessage,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    timestamp: Date.now() // Store actual timestamp for persistence
-                };
+                setSending(true);
+                const messageText = newMessage.trim();
+                setNewMessage(''); // Clear input immediately for better UX
                 
-                setCurrentMessages(prev => [...prev, msg]);
-                setNewMessage('');
-                
-                // Simulate response after 2-5 seconds
-                setTimeout(() => {
-                    const globalResponses = [
-                        { name: 'DiamondHands69', text: 'Based! 💎' },
-                        { name: 'MoonBoi2024', text: 'This is the way 🚀' },
-                        { name: 'RugSurvivor', text: 'WAGMI fren' },
-                        { name: 'WhaleWatcher', text: 'Bullish on this' },
-                        { name: 'DegenKing', text: 'LFG!' }
-                    ];
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/chat/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            channel: activeTab,
+                            playerName: playerName || 'Anon',
+                            message: messageText
+                        })
+                    });
                     
-                    const whaleResponses = [
-                        { name: 'CryptoWhale', text: 'Good alpha! 👍' },
-                        { name: 'DeFiDegen', text: 'I\'m in, let\'s pump it' },
-                        { name: 'TokenMaster', text: 'This is the play!' },
-                        { name: 'YieldFarmer', text: 'Adding to my bag 💰' }
-                    ];
-                    
-                    const responses = activeTab === 'global' ? globalResponses : whaleResponses;
-                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                    
-                    const responseMsg = {
-                        id: Date.now(),
-                        name: randomResponse.name,
-                        text: randomResponse.text,
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        timestamp: Date.now()
-                    };
-                    
-                    if (activeTab === 'global') {
-                        setGlobalMessages(prev => [...prev, responseMsg]);
-                    } else {
-                        setWhaleMessages(prev => [...prev, responseMsg]);
+                    const data = await response.json();
+                    if (data.success && data.message) {
+                        // Add message to local state immediately
+                        if (activeTab === 'global') {
+                            setGlobalMessages(prev => [...prev, data.message].slice(-100));
+                            lastFetchTime.current.global = data.message.timestamp;
+                        } else {
+                            setWhaleMessages(prev => [...prev, data.message].slice(-100));
+                            lastFetchTime.current.whale = data.message.timestamp;
+                        }
                     }
-                }, 2000 + Math.random() * 3000);
+                } catch (err) {
+                    console.error('Error sending message:', err);
+                    // Restore message if failed
+                    setNewMessage(messageText);
+                }
+                
+                setSending(false);
             };
             
             const handleKeyPress = (e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !sending) {
                     sendMessage();
                 }
             };
             
-            // Clear chat history (optional feature)
-            const clearChat = (channel) => {
-                if (channel === 'global') {
-                    setGlobalMessages(defaultGlobalMessages);
-                } else {
-                    setWhaleMessages(defaultWhaleMessages);
-                }
-            };
+            // Get current messages based on active tab
+            const currentMessages = activeTab === 'global' ? globalMessages : whaleMessages;
             
             return (
                 <div className="chat-section">
                     <div className="chat-header">
-                        <h2>💬 Chat</h2>
+                        <h2>💬 Global Chat</h2>
                         <div className="chat-tabs">
                             <button 
                                 className={`chat-tab ${activeTab === 'global' ? 'active' : ''}`}
@@ -10835,24 +12358,29 @@
                     </div>
                     
                     <div className="chat-messages">
-                        {activeTab === 'global' ? (
-                            globalMessages.map(msg => (
-                                <div key={msg.id} className={`chat-message ${msg.system ? 'system' : ''}`}>
-                                    <div className="chat-message-header">
-                                        <span className="chat-message-name">{msg.name}</span>
-                                        <span className="chat-message-time">{msg.time}</span>
-                                    </div>
-                                    <div className="chat-message-text">{msg.text}</div>
-                                </div>
-                            ))
+                        {loading ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                <div className="spinner" style={{ marginBottom: '10px' }}></div>
+                                Loading messages...
+                            </div>
+                        ) : currentMessages.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                <p>No messages yet. Be the first to say something! 🎉</p>
+                            </div>
                         ) : (
-                            whaleMessages.map(msg => (
-                                <div key={msg.id} className={`chat-message ${msg.system ? 'system' : ''}`}>
+                            currentMessages.map(msg => (
+                                <div key={msg.id} className={`chat-message ${msg.name === playerName ? 'own-message' : ''} ${msg.system ? 'system' : ''}`}>
                                     <div className="chat-message-header">
-                                        <span className="chat-message-name">{msg.name}</span>
+                                        <span 
+                                            className={`chat-message-name ${msg.name !== playerName ? 'chat-player-name' : ''}`}
+                                            style={msg.name === playerName ? { color: '#00ff88' } : {}}
+                                            onClick={() => handleNameClick(msg.name)}
+                                        >
+                                            {msg.name === playerName ? `${msg.name} (You)` : msg.name}
+                                        </span>
                                         <span className="chat-message-time">{msg.time}</span>
                                     </div>
-                                    <div className="chat-message-text">{msg.text}</div>
+                                    <div className="chat-message-text">{renderMessageText(msg.text, msg.mentions)}</div>
                                 </div>
                             ))
                         )}
@@ -10863,15 +12391,25 @@
                         <input 
                             type="text"
                             className="chat-input"
-                            placeholder={activeTab === 'global' ? "Chat with everyone..." : "Chat with whales..."}
+                            placeholder={activeTab === 'global' ? "Chat with everyone... (use @name to mention)" : "Chat with whales... (use @name to mention)"}
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            maxLength={200}
+                            maxLength={500}
+                            disabled={sending}
                         />
-                        <button className="chat-send-btn" onClick={sendMessage}>
-                            Send
+                        <button 
+                            className="chat-send-btn" 
+                            onClick={sendMessage}
+                            disabled={sending || !newMessage.trim()}
+                            style={sending ? { opacity: 0.6 } : {}}
+                        >
+                            {sending ? '...' : 'Send'}
                         </button>
+                    </div>
+                    
+                    <div style={{ fontSize: '0.75em', color: '#666', textAlign: 'center', marginTop: '8px' }}>
+                        🌐 Real-time global chat • All players can see messages
                     </div>
                 </div>
             );
@@ -13418,53 +14956,67 @@
         }
 
         // ==================== LIVE ACTIVITY FEED ====================
-        function LiveActivityFeed({ playerName }) {
+        function LiveActivityFeed({ playerName, onPlayerClick }) {
             const [activities, setActivities] = useState([]);
+            const [loading, setLoading] = useState(true);
             
-            const names = ['CryptoKing', 'DiamondHands', 'MoonBoi', 'WhaleWatcher', 'DegenerateApe', 'WAGMI_Chad', 'RugSurvivor', playerName || 'You'];
-            const actions = [
-                { icon: '🎰', text: 'won {amount} HOPIUM in slots' },
-                { icon: '📈', text: 'bought {amount} worth of {token}' },
-                { icon: '🗳️', text: 'voted on proposal #{id}' },
-                { icon: '🎯', text: 'scored {amount} in Token Sniper' },
-                { icon: '⚔️', text: 'attacked raid boss for {amount} damage' },
-                { icon: '🪂', text: 'claimed a rare airdrop' },
-                { icon: '💰', text: 'staked {amount} HOPIUM' },
-                { icon: '🏆', text: 'unlocked {badge} badge' }
-            ];
-            const tokens = ['BTC', 'ETH', 'SOL', 'DOGE', 'PEPE'];
-            const badges = ['Diamond Hands', 'Whale', 'OG', 'Degen'];
+            // Fetch activities from backend
+            const fetchActivities = async () => {
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/activity/recent?limit=10');
+                    const data = await response.json();
+                    
+                    if (data.success && data.activities.length > 0) {
+                        setActivities(data.activities);
+                    } else {
+                        // Fallback to generated activities if none exist
+                        generateFallbackActivities();
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch activities:', err);
+                    generateFallbackActivities();
+                }
+                setLoading(false);
+            };
+            
+            // Generate fallback activities for new servers
+            const generateFallbackActivities = () => {
+                const names = ['alex_trades', 'ser_pump', 'degen_mike', 'alpha_hunter', 'moon_chaser', playerName || 'anon'];
+                const actionTemplates = [
+                    { icon: '🎰', text: 'won big in the casino' },
+                    { icon: '🗳️', text: 'voted on governance' },
+                    { icon: '🎯', text: 'scored high in Token Sniper' },
+                    { icon: '🎮', text: 'played a game' },
+                    { icon: '💰', text: 'earned resources' }
+                ];
+                
+                const generated = Array(5).fill(null).map((_, i) => {
+                    const name = names[Math.floor(Math.random() * names.length)];
+                    const action = actionTemplates[Math.floor(Math.random() * actionTemplates.length)];
+                    return {
+                        id: Date.now() + i,
+                        playerName: name,
+                        icon: action.icon,
+                        description: action.text,
+                        timeAgo: `${Math.floor(Math.random() * 30) + 1}m ago`
+                    };
+                });
+                setActivities(generated);
+            };
             
             useEffect(() => {
-                const generateActivity = () => {
-                    const name = names[Math.floor(Math.random() * names.length)];
-                    const action = actions[Math.floor(Math.random() * actions.length)];
-                    
-                    let text = action.text
-                        .replace('{amount}', (Math.floor(Math.random() * 1000) + 100).toString())
-                        .replace('{token}', tokens[Math.floor(Math.random() * tokens.length)])
-                        .replace('{id}', Math.floor(Math.random() * 100).toString())
-                        .replace('{badge}', badges[Math.floor(Math.random() * badges.length)]);
-                    
-                    return {
-                        id: Date.now() + Math.random(),
-                        icon: action.icon,
-                        name,
-                        text,
-                        time: Date.now()
-                    };
-                };
-                
-                // Initial activities
-                setActivities(Array(5).fill(null).map(() => generateActivity()));
-                
-                // Add new activity every 5-10 seconds
-                const interval = setInterval(() => {
-                    setActivities(prev => [generateActivity(), ...prev.slice(0, 9)]);
-                }, 5000 + Math.random() * 5000);
-                
+                fetchActivities();
+                // Poll for new activities every 30 seconds
+                const interval = setInterval(fetchActivities, 30000);
                 return () => clearInterval(interval);
             }, [playerName]);
+            
+            // Handle click on player name
+            const handlePlayerClick = (name) => {
+                if (name && name !== playerName && onPlayerClick) {
+                    onPlayerClick(name);
+                }
+            };
             
             return (
                 <div className="activity-feed">
@@ -13473,17 +15025,30 @@
                         <span style={{ width: '8px', height: '8px', background: '#00ff88', borderRadius: '50%', animation: 'pulse 1s infinite' }}></span>
                     </h3>
                     
-                    {activities.map(activity => (
-                        <div key={activity.id} className="activity-item">
-                            <span className="activity-icon">{activity.icon}</span>
-                            <span className="activity-text">
-                                <strong>{activity.name}</strong> {activity.text}
-                            </span>
-                            <span className="activity-time">
-                                {Math.floor((Date.now() - activity.time) / 1000)}s
-                            </span>
-                        </div>
-                    ))}
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Loading...</div>
+                    ) : activities.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>No activity yet</div>
+                    ) : (
+                        activities.map(activity => (
+                            <div key={activity.id} className="activity-item">
+                                <span className="activity-icon">{activity.icon}</span>
+                                <span className="activity-text">
+                                    <strong 
+                                        className="chat-player-name"
+                                        onClick={() => handlePlayerClick(activity.playerName)}
+                                        style={{ cursor: activity.playerName !== playerName ? 'pointer' : 'default' }}
+                                    >
+                                        {activity.playerName}
+                                    </strong>
+                                    {' '}{activity.description}
+                                </span>
+                                <span className="activity-time">
+                                    {activity.timeAgo}
+                                </span>
+                            </div>
+                        ))
+                    )}
                 </div>
             );
         }
@@ -15706,176 +17271,6 @@
         }
 
         // ==================== FRIENDS/SOCIAL SECTION ====================
-        function SocialSection({ playerName, playerStats }) {
-            // Use actual character avatars from AVATAR_OPTIONS
-            const defaultFriends = [
-                { id: 1, name: 'DiamondHands69', level: 42, role: 'Whale', avatar: AVATAR_OPTIONS[0], online: true, lastSeen: Date.now() }, // Pepe
-                { id: 2, name: 'MoonBoi2024', level: 35, role: 'Degen', avatar: AVATAR_OPTIONS[1], online: true, lastSeen: Date.now() }, // Doge
-                { id: 3, name: 'RugSurvivor', level: 28, role: 'Meme Lord', avatar: AVATAR_OPTIONS[2], online: false, lastSeen: Date.now() - 3600000 }, // Shiba
-                { id: 4, name: 'WhaleWatcher', level: 32, role: 'Chart Autist', avatar: AVATAR_OPTIONS[3], online: false, lastSeen: Date.now() - 7200000 } // Floki
-            ];
-            
-            // Helper to ensure avatar is a valid object
-            const ensureFriendAvatar = (avatar, index) => {
-                if (avatar && typeof avatar === 'object' && avatar.image) {
-                    return avatar;
-                }
-                // Assign based on index to ensure variety
-                return AVATAR_OPTIONS[index % AVATAR_OPTIONS.length];
-            };
-            
-            const [friends, setFriends] = useState(() => {
-                const saved = localStorage.getItem('pumptown_friends');
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        // Check if friends have proper avatar objects with images - if not, use defaults
-                        if (parsed.length > 0 && (!parsed[0].avatar || !parsed[0].avatar.image)) {
-                            // Old data without proper avatars - reset to defaults
-                            return defaultFriends;
-                        }
-                        // Ensure all friends have valid avatars
-                        return parsed.map((f, i) => ({
-                            ...f,
-                            avatar: ensureFriendAvatar(f.avatar, i)
-                        }));
-                    } catch (e) {
-                        return defaultFriends;
-                    }
-                }
-                return defaultFriends;
-            });
-            
-            const [visitingCity, setVisitingCity] = useState(null);
-            const [addFriendInput, setAddFriendInput] = useState('');
-            
-            useEffect(() => {
-                localStorage.setItem('pumptown_friends', JSON.stringify(friends));
-            }, [friends]);
-            
-            const visitCity = (friend) => {
-                setVisitingCity(friend);
-                // Simulate visit - in production this would load their city state
-                setTimeout(() => setVisitingCity(null), 3000);
-            };
-            
-            const addFriend = () => {
-                if (!addFriendInput.trim()) return;
-                const newFriend = {
-                    id: Date.now(),
-                    name: addFriendInput,
-                    level: Math.floor(Math.random() * 30) + 5,
-                    role: ['Degen', 'Whale', 'Meme Lord', 'Chart Autist'][Math.floor(Math.random() * 4)],
-                    avatar: AVATAR_OPTIONS[Math.floor(Math.random() * AVATAR_OPTIONS.length)],
-                    online: Math.random() > 0.5,
-                    lastSeen: Date.now()
-                };
-                setFriends(prev => [...prev, newFriend]);
-                setAddFriendInput('');
-            };
-            
-            const getTimeAgo = (timestamp) => {
-                const diff = Date.now() - timestamp;
-                const hours = Math.floor(diff / 3600000);
-                if (hours < 1) return 'Just now';
-                if (hours < 24) return `${hours}h ago`;
-                return `${Math.floor(hours / 24)}d ago`;
-            };
-            
-            const onlineFriends = friends.filter(f => f.online).length;
-            
-            return (
-                <div className="social-section">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                        <h2>👥 Friends ({onlineFriends}/{friends.length} online)</h2>
-                    </div>
-                    
-                    {/* Visit notification */}
-                    {visitingCity && (
-                        <div style={{
-                            background: 'rgba(29, 161, 242, 0.2)',
-                            border: '2px solid #1da1f2',
-                            borderRadius: '10px',
-                            padding: '15px',
-                            marginBottom: '15px',
-                            textAlign: 'center'
-                        }}>
-                            <div style={{ fontSize: '2em', marginBottom: '10px' }}>🏙️</div>
-                            <div>Visiting {visitingCity.name}'s city...</div>
-                            <div style={{ color: '#888', fontSize: '0.9em' }}>Level {visitingCity.level} {visitingCity.role}</div>
-                        </div>
-                    )}
-                    
-                    {/* Add friend */}
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                        <input
-                            type="text"
-                            placeholder="Add friend by name..."
-                            value={addFriendInput}
-                            onChange={(e) => setAddFriendInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && addFriend()}
-                            style={{
-                                flex: 1,
-                                background: 'rgba(0, 0, 0, 0.3)',
-                                border: '2px solid rgba(0, 255, 136, 0.3)',
-                                borderRadius: '8px',
-                                padding: '10px 15px',
-                                color: '#fff',
-                                fontFamily: 'Courier New, monospace'
-                            }}
-                        />
-                        <button className="visit-btn" onClick={addFriend}>+ Add</button>
-                    </div>
-                    
-                    <div className="friends-list">
-                        {friends.sort((a, b) => b.online - a.online).map(friend => {
-                            const friendAvatar = friend.avatar && friend.avatar.image 
-                                ? friend.avatar 
-                                : AVATAR_OPTIONS[0];
-                            
-                            return (
-                                <div key={friend.id} className={`friend-card ${friend.online ? 'online' : ''}`}>
-                                    <div className="friend-info">
-                                        <div className="friend-avatar" style={{ 
-                                            background: friendAvatar.color ? `${friendAvatar.color}33` : 'rgba(0,255,136,0.2)',
-                                            padding: '4px',
-                                            borderRadius: '50%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}>
-                                            <img 
-                                                src={friendAvatar.image} 
-                                                alt={friendAvatar.name}
-                                                style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: 'bold', color: friend.online ? '#00ff88' : '#888' }}>
-                                                {friend.name}
-                                            </div>
-                                            <div style={{ fontSize: '0.85em', color: '#666' }}>
-                                                Lvl {friend.level} • {friend.role}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div className={`friend-status ${friend.online ? 'online' : ''}`}></div>
-                                        <span style={{ color: '#666', fontSize: '0.8em' }}>
-                                            {friend.online ? 'Online' : getTimeAgo(friend.lastSeen)}
-                                        </span>
-                                        <button className="visit-btn" onClick={() => visitCity(friend)}>
-                                            Visit
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        }
-
         // ==================== PASSIVE INCOME DISPLAY ====================
         function PassiveIncomePanel({ resources, currentZone }) {
             const [totalIncome, setTotalIncome] = useState({ hopium: 0, alpha: 0, copium: 0, liquidity: 0 });
@@ -18721,6 +20116,237 @@
             );
         }
 
+        // ==================== DAILY REWARD MODAL ====================
+        function DailyRewardModal({ isOpen, onClose, rewardData, onClaim }) {
+            if (!isOpen || !rewardData) return null;
+            
+            const { currentStreak, rewardDay, todayReward, allRewards, canClaim } = rewardData;
+            
+            return (
+                <div className="daily-reward-overlay" onClick={onClose}>
+                    <div className="daily-reward-modal" onClick={e => e.stopPropagation()} style={{ position: 'relative' }}>
+                        <button className="daily-reward-close" onClick={onClose}>✕</button>
+                        
+                        <div className="daily-reward-title">🎁 Daily Login Reward</div>
+                        
+                        <div className="daily-reward-streak">{currentStreak || 0}</div>
+                        <div className="daily-reward-streak-label">Day Streak 🔥</div>
+                        
+                        {/* 7-day grid */}
+                        <div className="daily-reward-grid">
+                            {allRewards.map((reward, idx) => {
+                                const dayNum = idx + 1;
+                                const isCurrent = dayNum === rewardDay;
+                                const isClaimed = dayNum < rewardDay || (dayNum === rewardDay && !canClaim);
+                                
+                                return (
+                                    <div 
+                                        key={dayNum}
+                                        className={`daily-reward-day ${isCurrent ? 'current' : ''} ${isClaimed ? 'claimed' : ''}`}
+                                    >
+                                        <div className="daily-reward-day-num">Day {dayNum}</div>
+                                        <div className="daily-reward-day-reward">
+                                            {dayNum === 7 ? '🎉' : '💊'}{reward.hopium}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        
+                        {/* Today's reward details */}
+                        <div className="daily-reward-today">
+                            <h4>{canClaim ? `Day ${rewardDay} Reward` : 'Already Claimed Today!'}</h4>
+                            {todayReward && (
+                                <div className="daily-reward-items">
+                                    {todayReward.hopium > 0 && (
+                                        <div className="daily-reward-item">
+                                            <div className="daily-reward-item-value">+{todayReward.hopium}</div>
+                                            <div className="daily-reward-item-label">💊 Hopium</div>
+                                        </div>
+                                    )}
+                                    {todayReward.alpha > 0 && (
+                                        <div className="daily-reward-item">
+                                            <div className="daily-reward-item-value">+{todayReward.alpha}</div>
+                                            <div className="daily-reward-item-label">🔮 Alpha</div>
+                                        </div>
+                                    )}
+                                    {todayReward.copium > 0 && (
+                                        <div className="daily-reward-item">
+                                            <div className="daily-reward-item-value">+{todayReward.copium}</div>
+                                            <div className="daily-reward-item-label">😢 Copium</div>
+                                        </div>
+                                    )}
+                                    {todayReward.liquidity > 0 && (
+                                        <div className="daily-reward-item">
+                                            <div className="daily-reward-item-value">+{todayReward.liquidity}</div>
+                                            <div className="daily-reward-item-label">💧 Liquidity</div>
+                                        </div>
+                                    )}
+                                    {todayReward.xp > 0 && (
+                                        <div className="daily-reward-item">
+                                            <div className="daily-reward-item-value">+{todayReward.xp}</div>
+                                            <div className="daily-reward-item-label">⭐ XP</div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {canClaim ? (
+                            <button className="daily-reward-claim-btn" onClick={onClaim}>
+                                🎁 Claim Reward!
+                            </button>
+                        ) : (
+                            <p style={{ color: '#888', marginTop: '15px' }}>Come back tomorrow for more rewards!</p>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== PLAYER PROFILE MODAL ====================
+        function PlayerProfileModal({ isOpen, onClose, profile, loading }) {
+            if (!isOpen) return null;
+            
+            if (loading) {
+                return (
+                    <div className="profile-overlay" onClick={onClose}>
+                        <div className="profile-modal" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', padding: '50px' }}>
+                            <div style={{ fontSize: '2em', marginBottom: '15px' }}>⏳</div>
+                            <p>Loading profile...</p>
+                        </div>
+                    </div>
+                );
+            }
+            
+            if (!profile) return null;
+            
+            // Get avatar image
+            let avatarImage = '/api/placeholder/80/80';
+            if (profile.avatar) {
+                if (typeof profile.avatar === 'object' && profile.avatar.image) {
+                    avatarImage = profile.avatar.image;
+                } else if (typeof profile.avatar === 'string') {
+                    const found = AVATAR_OPTIONS.find(a => a.id === profile.avatar || a.name.toLowerCase() === profile.avatar.toLowerCase());
+                    if (found) avatarImage = found.image;
+                }
+            }
+            
+            return (
+                <div className="profile-overlay" onClick={onClose}>
+                    <div className="profile-modal" onClick={e => e.stopPropagation()} style={{ position: 'relative' }}>
+                        <button className="profile-close" onClick={onClose}>✕</button>
+                        
+                        <div className="profile-header">
+                            <img src={avatarImage} alt={profile.name} className="profile-avatar" />
+                            <div>
+                                <div className="profile-name">{profile.name}</div>
+                                <div className="profile-role">{profile.role || 'Citizen'}</div>
+                                <div className="profile-level-badge">Level {profile.level}</div>
+                            </div>
+                        </div>
+                        
+                        <div className="profile-stats-grid">
+                            <div className="profile-stat">
+                                <div className="profile-stat-value">{(profile.xp || 0).toLocaleString()}</div>
+                                <div className="profile-stat-label">⭐ Total XP</div>
+                            </div>
+                            <div className="profile-stat">
+                                <div className="profile-stat-value">{profile.degenScore || 0}</div>
+                                <div className="profile-stat-label">🎰 Degen Score</div>
+                            </div>
+                            <div className="profile-stat">
+                                <div className="profile-stat-value">{profile.gamesPlayed || 0}</div>
+                                <div className="profile-stat-label">🎮 Games Played</div>
+                            </div>
+                            <div className="profile-stat">
+                                <div className="profile-stat-value">{profile.votesCount || 0}</div>
+                                <div className="profile-stat-label">🗳️ Votes Cast</div>
+                            </div>
+                            <div className="profile-stat">
+                                <div className="profile-stat-value">{profile.loginStreak || 0}</div>
+                                <div className="profile-stat-label">🔥 Login Streak</div>
+                            </div>
+                            <div className="profile-stat">
+                                <div className="profile-stat-value">{profile.daysSinceJoined || 0}</div>
+                                <div className="profile-stat-label">📅 Days Active</div>
+                            </div>
+                        </div>
+                        
+                        {profile.badges && profile.badges.length > 0 && (
+                            <div className="profile-badges">
+                                <h4>🏆 Badges</h4>
+                                <div className="profile-badges-list">
+                                    {profile.badges.map((badge, idx) => (
+                                        <div key={idx} className="profile-badge">
+                                            {badge.icon} {badge.name}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {profile.recentActivities && profile.recentActivities.length > 0 && (
+                            <div className="profile-activity">
+                                <h4>📜 Recent Activity</h4>
+                                {profile.recentActivities.slice(0, 5).map((activity, idx) => (
+                                    <div key={idx} className="profile-activity-item">
+                                        <span className="profile-activity-icon">{activity.icon}</span>
+                                        <span>{activity.description}</span>
+                                        <span className="profile-activity-time">{activity.timeAgo}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== ACTIVITY FEED COMPONENT ====================
+        function ActivityFeed({ activities, onPlayerClick }) {
+            if (!activities || activities.length === 0) {
+                return (
+                    <div className="activity-feed">
+                        <div className="activity-feed-header">
+                            <span className="activity-feed-title">📢 Activity Feed</span>
+                            <span className="activity-feed-live">LIVE</span>
+                        </div>
+                        <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
+                            No activity yet. Be the first to make a move!
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="activity-feed">
+                    <div className="activity-feed-header">
+                        <span className="activity-feed-title">📢 Activity Feed</span>
+                        <span className="activity-feed-live">LIVE</span>
+                    </div>
+                    <div className="activity-feed-list">
+                        {activities.map((activity) => (
+                            <div key={activity.id} className="activity-feed-item">
+                                <span className="activity-feed-icon">{activity.icon}</span>
+                                <div className="activity-feed-content">
+                                    <span 
+                                        className="activity-feed-player"
+                                        onClick={() => onPlayerClick && onPlayerClick(activity.playerName)}
+                                    >
+                                        {activity.playerName}
+                                    </span>
+                                    {' '}
+                                    <span className="activity-feed-text">{activity.description}</span>
+                                </div>
+                                <span className="activity-feed-time">{activity.timeAgo}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
         // ==================== MAYOR REACTION MODAL ====================
         function MayorReactionModal({ reaction, onClose }) {
             if (!reaction) return null;
@@ -19267,6 +20893,49 @@
                             </div>
 
                             <div className="vote-section">
+                                {/* Category Badge */}
+                                {currentVote.category && (
+                                    <div style={{ 
+                                        display: 'inline-block',
+                                        padding: '4px 12px',
+                                        borderRadius: '20px',
+                                        fontSize: '0.75em',
+                                        fontWeight: 'bold',
+                                        marginBottom: '12px',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '1px',
+                                        background: {
+                                            economy: 'linear-gradient(135deg, #ffd700, #ff8c00)',
+                                            drama: 'linear-gradient(135deg, #ff4444, #ff69b4)',
+                                            chaos: 'linear-gradient(135deg, #9b59b6, #3498db)',
+                                            crime: 'linear-gradient(135deg, #2c3e50, #34495e)',
+                                            culture: 'linear-gradient(135deg, #1abc9c, #16a085)',
+                                            tech: 'linear-gradient(135deg, #3498db, #2980b9)',
+                                            emergency: 'linear-gradient(135deg, #e74c3c, #c0392b)',
+                                            weird: 'linear-gradient(135deg, #9b59b6, #8e44ad)',
+                                            meta: 'linear-gradient(135deg, #95a5a6, #7f8c8d)',
+                                            social: 'linear-gradient(135deg, #e91e63, #c2185b)',
+                                            legacy: 'linear-gradient(135deg, #795548, #5d4037)'
+                                        }[currentVote.category] || 'linear-gradient(135deg, #666, #444)',
+                                        color: '#fff',
+                                        boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+                                    }}>
+                                        {{
+                                            economy: '💰 ECONOMY',
+                                            drama: '🎭 DRAMA',
+                                            chaos: '🌀 CHAOS',
+                                            crime: '⚖️ CRIME & JUSTICE',
+                                            culture: '🎨 CULTURE',
+                                            tech: '🤖 TECHNOLOGY',
+                                            emergency: '🚨 EMERGENCY',
+                                            weird: '👽 WEIRD',
+                                            meta: '🗳️ GOVERNANCE',
+                                            social: '💬 SOCIAL',
+                                            legacy: '🏛️ LEGACY'
+                                        }[currentVote.category] || '📋 VOTE'}
+                                    </div>
+                                )}
+                                
                                 <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>
                                     {currentVote.question}
                                 </h3>

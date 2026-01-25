@@ -215,6 +215,44 @@ async function initDatabase() {
       await client.query(`INSERT INTO city_stats (economy, security, culture, morale) VALUES (50, 45, 60, 65)`);
     }
 
+    // Daily login tracking columns
+    await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS last_login_date DATE`).catch(() => {});
+    await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS login_streak INTEGER DEFAULT 0`).catch(() => {});
+    await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS last_reward_claimed DATE`).catch(() => {});
+    
+    // Activity feed table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS activity_feed (
+        id SERIAL PRIMARY KEY,
+        player_name VARCHAR(100) NOT NULL,
+        activity_type VARCHAR(50) NOT NULL,
+        description TEXT NOT NULL,
+        icon VARCHAR(10),
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create index for faster activity queries
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_activity_feed_time ON activity_feed(created_at DESC)
+    `).catch(() => {});
+    
+    // Push notification subscriptions
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        player_name VARCHAR(100),
+        subscription JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(email)
+      )
+    `);
+    
+    // Add mentions column to chat messages
+    await client.query(`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS mentions JSONB DEFAULT '[]'`).catch(() => {});
+
     console.log('✅ Database tables initialized');
   } catch (err) {
     console.error('Database initialization error:', err);
@@ -982,7 +1020,7 @@ app.get('/api/chat/:channel', async (req, res) => {
   
   try {
     const result = await pool.query(
-      'SELECT id, player_name, message, created_at FROM chat_messages WHERE channel = $1 ORDER BY created_at DESC LIMIT $2',
+      'SELECT id, player_name, message, mentions, created_at FROM chat_messages WHERE channel = $1 ORDER BY created_at DESC LIMIT $2',
       [channel, limit]
     );
     
@@ -991,6 +1029,7 @@ app.get('/api/chat/:channel', async (req, res) => {
       id: row.id,
       name: row.player_name,
       text: row.message,
+      mentions: row.mentions || [],
       time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       timestamp: new Date(row.created_at).getTime()
     }));
@@ -1017,21 +1056,30 @@ app.post('/api/chat/send', async (req, res) => {
   
   const chatChannel = channel || 'global';
   
+  // Parse @mentions
+  const mentionRegex = /@(\w+)/g;
+  const mentions = [];
+  let match;
+  while ((match = mentionRegex.exec(message)) !== null) {
+    mentions.push(match[1].toLowerCase());
+  }
+  
   try {
     const result = await pool.query(
-      'INSERT INTO chat_messages (channel, player_name, message) VALUES ($1, $2, $3) RETURNING id, created_at',
-      [chatChannel, playerName, message.trim()]
+      'INSERT INTO chat_messages (channel, player_name, message, mentions) VALUES ($1, $2, $3, $4) RETURNING id, created_at',
+      [chatChannel, playerName, message.trim(), JSON.stringify(mentions)]
     );
     
     const newMsg = {
       id: result.rows[0].id,
       name: playerName,
       text: message.trim(),
+      mentions,
       time: new Date(result.rows[0].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       timestamp: new Date(result.rows[0].created_at).getTime()
     };
     
-    console.log('💬 Chat:', playerName, '→', message.substring(0, 50));
+    console.log('💬 Chat:', playerName, '→', message.substring(0, 50), mentions.length > 0 ? `(@${mentions.join(', @')})` : '');
     res.json({ success: true, message: newMsg });
   } catch (err) {
     console.error('Send chat error:', err);
@@ -1046,7 +1094,7 @@ app.get('/api/chat/:channel/since/:timestamp', async (req, res) => {
   try {
     const since = new Date(parseInt(timestamp));
     const result = await pool.query(
-      'SELECT id, player_name, message, created_at FROM chat_messages WHERE channel = $1 AND created_at > $2 ORDER BY created_at ASC LIMIT 50',
+      'SELECT id, player_name, message, mentions, created_at FROM chat_messages WHERE channel = $1 AND created_at > $2 ORDER BY created_at ASC LIMIT 50',
       [channel, since]
     );
     
@@ -1054,6 +1102,7 @@ app.get('/api/chat/:channel/since/:timestamp', async (req, res) => {
       id: row.id,
       name: row.player_name,
       text: row.message,
+      mentions: row.mentions || [],
       time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       timestamp: new Date(row.created_at).getTime()
     }));
@@ -1106,6 +1155,407 @@ app.post('/api/verify-wallet', async (req, res) => {
     res.json({ success: balance >= 100000, balance, required: 100000, walletAddress });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Verification failed', balance: 0 });
+  }
+});
+
+// ==================== DAILY LOGIN REWARDS ====================
+
+// Daily reward structure
+const DAILY_REWARDS = [
+  { day: 1, hopium: 10, alpha: 0, copium: 5, liquidity: 0, xp: 10 },
+  { day: 2, hopium: 15, alpha: 5, copium: 5, liquidity: 5, xp: 15 },
+  { day: 3, hopium: 20, alpha: 10, copium: 10, liquidity: 10, xp: 20 },
+  { day: 4, hopium: 25, alpha: 15, copium: 10, liquidity: 15, xp: 25 },
+  { day: 5, hopium: 35, alpha: 20, copium: 15, liquidity: 20, xp: 35 },
+  { day: 6, hopium: 50, alpha: 30, copium: 20, liquidity: 25, xp: 50 },
+  { day: 7, hopium: 100, alpha: 50, copium: 30, liquidity: 50, xp: 100 }, // Weekly bonus!
+];
+
+// Get login streak status
+app.get('/api/daily-reward/status/:email', async (req, res) => {
+  const { email } = req.params;
+  
+  try {
+    const result = await pool.query(
+      'SELECT login_streak, last_login_date, last_reward_claimed FROM characters WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: 'Player not found' });
+    }
+    
+    const player = result.rows[0];
+    const today = new Date().toISOString().split('T')[0];
+    const lastLogin = player.last_login_date ? new Date(player.last_login_date).toISOString().split('T')[0] : null;
+    const lastClaimed = player.last_reward_claimed ? new Date(player.last_reward_claimed).toISOString().split('T')[0] : null;
+    
+    // Check if can claim today
+    const canClaim = lastClaimed !== today;
+    
+    // Calculate current streak
+    let currentStreak = player.login_streak || 0;
+    
+    // If last login was yesterday, streak continues. If older, streak resets.
+    if (lastLogin) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      if (lastLogin !== today && lastLogin !== yesterdayStr) {
+        currentStreak = 0; // Streak broken
+      }
+    }
+    
+    // Get reward for current day (1-7, then loops)
+    const rewardDay = (currentStreak % 7) + 1;
+    const todayReward = DAILY_REWARDS[rewardDay - 1];
+    
+    res.json({
+      success: true,
+      canClaim,
+      currentStreak,
+      rewardDay,
+      todayReward,
+      allRewards: DAILY_REWARDS,
+      lastClaimed
+    });
+  } catch (err) {
+    console.error('Daily reward status error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get status' });
+  }
+});
+
+// Claim daily reward
+app.post('/api/daily-reward/claim', async (req, res) => {
+  const { email, playerName } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ success: false, error: 'Email required' });
+  }
+  
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Get current status
+    const result = await pool.query(
+      'SELECT login_streak, last_login_date, last_reward_claimed, resources FROM characters WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: 'Player not found' });
+    }
+    
+    const player = result.rows[0];
+    const lastClaimed = player.last_reward_claimed ? new Date(player.last_reward_claimed).toISOString().split('T')[0] : null;
+    
+    if (lastClaimed === today) {
+      return res.json({ success: false, error: 'Already claimed today', alreadyClaimed: true });
+    }
+    
+    // Calculate new streak
+    const lastLogin = player.last_login_date ? new Date(player.last_login_date).toISOString().split('T')[0] : null;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    let newStreak = player.login_streak || 0;
+    if (!lastLogin || (lastLogin !== today && lastLogin !== yesterdayStr)) {
+      newStreak = 1; // Reset or start streak
+    } else if (lastLogin === yesterdayStr) {
+      newStreak = (player.login_streak || 0) + 1; // Continue streak
+    } else if (lastLogin === today) {
+      newStreak = player.login_streak || 1; // Same day, keep streak
+    }
+    
+    // Get reward
+    const rewardDay = ((newStreak - 1) % 7) + 1;
+    const reward = DAILY_REWARDS[rewardDay - 1];
+    
+    // Update resources
+    let currentResources = player.resources || {};
+    if (typeof currentResources === 'string') {
+      currentResources = JSON.parse(currentResources);
+    }
+    
+    const newResources = {
+      hopium: (currentResources.hopium || 0) + reward.hopium,
+      alpha: (currentResources.alpha || 0) + reward.alpha,
+      copium: (currentResources.copium || 0) + reward.copium,
+      liquidity: (currentResources.liquidity || 0) + reward.liquidity
+    };
+    
+    // Update database
+    await pool.query(
+      `UPDATE characters SET 
+        login_streak = $1, 
+        last_login_date = $2, 
+        last_reward_claimed = $2,
+        resources = $3
+      WHERE LOWER(email) = LOWER($4)`,
+      [newStreak, today, JSON.stringify(newResources), email]
+    );
+    
+    // Log activity
+    if (playerName) {
+      await pool.query(
+        'INSERT INTO activity_feed (player_name, activity_type, description, icon, metadata) VALUES ($1, $2, $3, $4, $5)',
+        [playerName, 'daily_reward', `claimed Day ${rewardDay} reward (${newStreak} day streak!)`, '🎁', JSON.stringify({ streak: newStreak, reward })]
+      );
+    }
+    
+    console.log(`🎁 Daily reward claimed: ${playerName || email} - Day ${rewardDay}, Streak ${newStreak}`);
+    
+    res.json({
+      success: true,
+      reward,
+      newStreak,
+      rewardDay,
+      newResources,
+      xpEarned: reward.xp
+    });
+  } catch (err) {
+    console.error('Claim daily reward error:', err);
+    res.status(500).json({ success: false, error: 'Failed to claim reward' });
+  }
+});
+
+// ==================== ACTIVITY FEED ====================
+
+// Post new activity
+app.post('/api/activity', async (req, res) => {
+  const { playerName, activityType, description, icon, metadata } = req.body;
+  
+  if (!playerName || !activityType || !description) {
+    return res.status(400).json({ success: false, error: 'Missing required fields' });
+  }
+  
+  try {
+    const result = await pool.query(
+      'INSERT INTO activity_feed (player_name, activity_type, description, icon, metadata) VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at',
+      [playerName, activityType, description, icon || '📢', JSON.stringify(metadata || {})]
+    );
+    
+    res.json({ success: true, id: result.rows[0].id });
+  } catch (err) {
+    console.error('Post activity error:', err);
+    res.status(500).json({ success: false, error: 'Failed to post activity' });
+  }
+});
+
+// Get recent activity feed
+app.get('/api/activity/recent', async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+  
+  try {
+    const result = await pool.query(
+      'SELECT id, player_name, activity_type, description, icon, metadata, created_at FROM activity_feed ORDER BY created_at DESC LIMIT $1',
+      [limit]
+    );
+    
+    const activities = result.rows.map(row => ({
+      id: row.id,
+      playerName: row.player_name,
+      type: row.activity_type,
+      description: row.description,
+      icon: row.icon,
+      metadata: row.metadata,
+      timestamp: new Date(row.created_at).getTime(),
+      timeAgo: getTimeAgoString(new Date(row.created_at))
+    }));
+    
+    res.json({ success: true, activities });
+  } catch (err) {
+    console.error('Get activity feed error:', err);
+    res.json({ success: true, activities: [] });
+  }
+});
+
+// Get activities since timestamp (for polling)
+app.get('/api/activity/since/:timestamp', async (req, res) => {
+  const { timestamp } = req.params;
+  
+  try {
+    const since = new Date(parseInt(timestamp));
+    const result = await pool.query(
+      'SELECT id, player_name, activity_type, description, icon, metadata, created_at FROM activity_feed WHERE created_at > $1 ORDER BY created_at DESC LIMIT 20',
+      [since]
+    );
+    
+    const activities = result.rows.map(row => ({
+      id: row.id,
+      playerName: row.player_name,
+      type: row.activity_type,
+      description: row.description,
+      icon: row.icon,
+      metadata: row.metadata,
+      timestamp: new Date(row.created_at).getTime(),
+      timeAgo: getTimeAgoString(new Date(row.created_at))
+    }));
+    
+    res.json({ success: true, activities });
+  } catch (err) {
+    console.error('Get new activities error:', err);
+    res.json({ success: true, activities: [] });
+  }
+});
+
+// Helper function for time ago
+function getTimeAgoString(date) {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
+}
+
+// ==================== PLAYER PROFILES ====================
+
+// Get player profile by name
+app.get('/api/player/:name', async (req, res) => {
+  const { name } = req.params;
+  
+  try {
+    // Get player data
+    const playerResult = await pool.query(
+      `SELECT name, role, avatar, xp, level, reputation, degen_score, votes_count, 
+              badges, joined_date, player_stats, resources, login_streak
+       FROM characters WHERE LOWER(name) = LOWER($1)`,
+      [name]
+    );
+    
+    if (playerResult.rows.length === 0) {
+      return res.json({ success: false, error: 'Player not found' });
+    }
+    
+    const player = playerResult.rows[0];
+    
+    // Get recent activities for this player
+    const activityResult = await pool.query(
+      'SELECT activity_type, description, icon, created_at FROM activity_feed WHERE LOWER(player_name) = LOWER($1) ORDER BY created_at DESC LIMIT 10',
+      [name]
+    );
+    
+    const recentActivities = activityResult.rows.map(row => ({
+      type: row.activity_type,
+      description: row.description,
+      icon: row.icon,
+      timeAgo: getTimeAgoString(new Date(row.created_at))
+    }));
+    
+    // Parse avatar
+    let avatar = player.avatar;
+    if (typeof avatar === 'string') {
+      try { avatar = JSON.parse(avatar); } catch (e) { }
+    }
+    
+    // Parse badges
+    let badges = player.badges || [];
+    if (typeof badges === 'string') {
+      try { badges = JSON.parse(badges); } catch (e) { badges = []; }
+    }
+    
+    // Parse player_stats
+    let playerStats = player.player_stats || {};
+    if (typeof playerStats === 'string') {
+      try { playerStats = JSON.parse(playerStats); } catch (e) { playerStats = {}; }
+    }
+    
+    // Parse resources
+    let resources = player.resources || {};
+    if (typeof resources === 'string') {
+      try { resources = JSON.parse(resources); } catch (e) { resources = {}; }
+    }
+    
+    // Calculate days since joined
+    const joinedDate = new Date(player.joined_date);
+    const daysSinceJoined = Math.floor((Date.now() - joinedDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    res.json({
+      success: true,
+      profile: {
+        name: player.name,
+        role: player.role,
+        avatar,
+        level: playerStats.level || player.level || 1,
+        xp: playerStats.xp || player.xp || 0,
+        reputation: player.reputation || 50,
+        degenScore: playerStats.degenScore || player.degen_score || 0,
+        votesCount: player.votes_count || 0,
+        badges,
+        resources,
+        loginStreak: player.login_streak || 0,
+        joinedDate: joinedDate.toISOString(),
+        daysSinceJoined,
+        gamesPlayed: playerStats.gamesPlayed || 0,
+        gamesWon: playerStats.gamesWon || 0,
+        totalActions: playerStats.totalActions || 0,
+        recentActivities
+      }
+    });
+  } catch (err) {
+    console.error('Get player profile error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get profile' });
+  }
+});
+
+// ==================== PUSH NOTIFICATIONS ====================
+
+// Subscribe to push notifications
+app.post('/api/push/subscribe', async (req, res) => {
+  const { email, playerName, subscription } = req.body;
+  
+  if (!email || !subscription) {
+    return res.status(400).json({ success: false, error: 'Email and subscription required' });
+  }
+  
+  try {
+    await pool.query(
+      `INSERT INTO push_subscriptions (email, player_name, subscription) 
+       VALUES ($1, $2, $3) 
+       ON CONFLICT (email) DO UPDATE SET subscription = $3, player_name = $2`,
+      [email, playerName, JSON.stringify(subscription)]
+    );
+    
+    console.log(`🔔 Push subscription: ${playerName || email}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Push subscribe error:', err);
+    res.status(500).json({ success: false, error: 'Failed to subscribe' });
+  }
+});
+
+// Unsubscribe from push notifications
+app.post('/api/push/unsubscribe', async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ success: false, error: 'Email required' });
+  }
+  
+  try {
+    await pool.query('DELETE FROM push_subscriptions WHERE email = $1', [email]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Push unsubscribe error:', err);
+    res.status(500).json({ success: false, error: 'Failed to unsubscribe' });
+  }
+});
+
+// Get notification preferences
+app.get('/api/push/status/:email', async (req, res) => {
+  const { email } = req.params;
+  
+  try {
+    const result = await pool.query('SELECT id FROM push_subscriptions WHERE email = $1', [email]);
+    res.json({ success: true, subscribed: result.rows.length > 0 });
+  } catch (err) {
+    res.json({ success: true, subscribed: false });
   }
 });
 
