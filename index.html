@@ -6946,9 +6946,29 @@
             padding: 30px;
             max-width: 500px;
             width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             text-align: center;
             animation: slideUp 0.5s ease;
             box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+            position: relative;
+        }
+        
+        @media (max-width: 600px) {
+            .daily-briefing {
+                max-height: 80vh;
+                padding: 20px 15px;
+                width: 95%;
+                border-radius: 15px;
+            }
+            .daily-briefing-close {
+                position: sticky;
+                bottom: 0;
+                margin-top: auto;
+                padding: 12px 30px;
+            }
         }
 
         @keyframes slideUp {
@@ -7029,6 +7049,25 @@
             transform: scale(1.05);
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
         }
+        
+        .daily-briefing-x {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px 10px;
+            line-height: 1;
+            transition: color 0.2s;
+            z-index: 10;
+        }
+        
+        .daily-briefing-x:hover {
+            color: #ffd700;
+        }
 
         /* ==================== MAYOR QUICK ACTIONS ==================== */
         .mayor-quick-actions {
@@ -7099,8 +7138,21 @@
             padding: 30px;
             max-width: 450px;
             width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             text-align: center;
             animation: reactionPop 0.4s ease;
+            position: relative;
+        }
+        
+        @media (max-width: 600px) {
+            .mayor-reaction {
+                max-height: 80vh;
+                padding: 20px 15px;
+                width: 95%;
+            }
         }
 
         .mayor-reaction.excited { border-color: #00ff88; }
@@ -7167,6 +7219,25 @@
 
         .mayor-reaction-close:hover {
             transform: scale(1.05);
+        }
+        
+        .mayor-reaction-x {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px 10px;
+            line-height: 1;
+            transition: color 0.2s;
+            z-index: 10;
+        }
+        
+        .mayor-reaction-x:hover {
+            color: #ffd700;
         }
 
         /* ==================== SPECIAL EVENT BANNER ==================== */
@@ -20238,6 +20309,7 @@
             return (
                 <div className="daily-briefing-overlay" onClick={onClose}>
                     <div className="daily-briefing" onClick={e => e.stopPropagation()}>
+                        <button className="daily-briefing-x" onClick={onClose}>✕</button>
                         <div className="daily-briefing-header">
                             <div className="daily-briefing-avatar">🎩</div>
                             <div className="daily-briefing-title">Mayor's Daily Briefing</div>
@@ -20633,6 +20705,7 @@
             return (
                 <div className="mayor-reaction-overlay" onClick={onClose}>
                     <div className={`mayor-reaction ${reaction.mood || 'proud'}`} onClick={e => e.stopPropagation()}>
+                        <button className="mayor-reaction-x" onClick={onClose}>✕</button>
                         <div className="mayor-reaction-header">
                             {moodIcons[reaction.mood] || '🎩'}
                         </div>
