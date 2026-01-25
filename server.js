@@ -168,6 +168,36 @@ async function initDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    
+    // Seed leaderboard with fake players if empty
+    const playerCount = await client.query('SELECT COUNT(*) FROM player_stats');
+    if (parseInt(playerCount.rows[0].count) < 5) {
+      const seedPlayers = [
+        { name: 'alpha_hunter', role: 'Degen', xp: 4250, level: 8, degen_score: 145, avatar: 'pepe' },
+        { name: 'ser_pump', role: 'Whale', xp: 3800, level: 7, degen_score: 120, avatar: 'doge' },
+        { name: 'moon_chaser', role: 'Chart Autist', xp: 3100, level: 6, degen_score: 98, avatar: 'shiba' },
+        { name: 'degen_mike', role: 'Meme Lord', xp: 2650, level: 5, degen_score: 85, avatar: 'floki' },
+        { name: 'diamond_dan', role: 'Ape Farmer', xp: 2200, level: 5, degen_score: 72, avatar: 'wif' },
+        { name: 'based_andy', role: 'Degen', xp: 1850, level: 4, degen_score: 63, avatar: 'popcat' },
+        { name: 'yield_farm3r', role: 'Chart Autist', xp: 1500, level: 4, degen_score: 55, avatar: 'pepe' },
+        { name: 'anon_whale', role: 'Whale', xp: 1200, level: 3, degen_score: 48, avatar: 'doge' },
+        { name: 'fomo_fred', role: 'Meme Lord', xp: 950, level: 3, degen_score: 42, avatar: 'shiba' },
+        { name: 'paper_pete', role: 'Ape Farmer', xp: 720, level: 3, degen_score: 35, avatar: 'floki' },
+        { name: 'early_ape', role: 'Degen', xp: 580, level: 2, degen_score: 28, avatar: 'wif' },
+        { name: 'bag_secured', role: 'Chart Autist', xp: 450, level: 2, degen_score: 22, avatar: 'popcat' },
+        { name: 'sol_maxi', role: 'Whale', xp: 320, level: 2, degen_score: 18, avatar: 'pepe' },
+        { name: 'eth_bull', role: 'Meme Lord', xp: 180, level: 1, degen_score: 12, avatar: 'doge' },
+        { name: 'swap_king99', role: 'Ape Farmer', xp: 95, level: 1, degen_score: 8, avatar: 'shiba' }
+      ];
+      
+      for (const player of seedPlayers) {
+        await client.query(
+          `INSERT INTO player_stats (name, role, xp, level, degen_score, avatar) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (name) DO NOTHING`,
+          [player.name, player.role, player.xp, player.level, player.degen_score, player.avatar]
+        ).catch(() => {});
+      }
+      console.log('✅ Seeded leaderboard with initial players');
+    }
 
     // AI-generated votes cache
     await client.query(`
@@ -237,6 +267,32 @@ async function initDatabase() {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_activity_feed_time ON activity_feed(created_at DESC)
     `).catch(() => {});
+    
+    // Seed activity feed if empty
+    const activityCount = await client.query('SELECT COUNT(*) FROM activity_feed');
+    if (parseInt(activityCount.rows[0].count) < 5) {
+      const seedActivities = [
+        { name: 'alpha_hunter', type: 'level_up', desc: 'reached Level 8!', icon: '🎉' },
+        { name: 'ser_pump', type: 'game_win', desc: 'won 500 Hopium in slots', icon: '🎰' },
+        { name: 'moon_chaser', type: 'vote', desc: 'voted on governance', icon: '🗳️' },
+        { name: 'degen_mike', type: 'action', desc: 'launched a new coin', icon: '🚀' },
+        { name: 'diamond_dan', type: 'daily_reward', desc: 'claimed Day 5 reward (5 day streak!)', icon: '🎁' },
+        { name: 'based_andy', type: 'game_win', desc: 'scored 850 in Token Sniper', icon: '🎯' },
+        { name: 'yield_farm3r', type: 'level_up', desc: 'reached Level 4!', icon: '🎉' },
+        { name: 'anon_whale', type: 'action', desc: 'sniped early on $PEPE2', icon: '🎯' },
+        { name: 'fomo_fred', type: 'game_win', desc: 'won the Chart Battle', icon: '📈' },
+        { name: 'early_ape', type: 'vote', desc: 'voted on governance', icon: '🗳️' }
+      ];
+      
+      for (let i = 0; i < seedActivities.length; i++) {
+        const activity = seedActivities[i];
+        await client.query(
+          `INSERT INTO activity_feed (player_name, activity_type, description, icon, created_at) VALUES ($1, $2, $3, $4, NOW() - INTERVAL '${i * 15} minutes')`,
+          [activity.name, activity.type, activity.desc, activity.icon]
+        ).catch(() => {});
+      }
+      console.log('✅ Seeded activity feed with initial activities');
+    }
     
     // Push notification subscriptions
     await client.query(`
@@ -1556,6 +1612,65 @@ app.get('/api/push/status/:email', async (req, res) => {
     res.json({ success: true, subscribed: result.rows.length > 0 });
   } catch (err) {
     res.json({ success: true, subscribed: false });
+  }
+});
+
+// ==================== SEED DATA (for populating leaderboard) ====================
+
+app.post('/api/seed-leaderboard', async (req, res) => {
+  try {
+    const seedPlayers = [
+      { name: 'alpha_hunter', role: 'Degen', xp: 4250, level: 8, degen_score: 145, avatar: 'pepe' },
+      { name: 'ser_pump', role: 'Whale', xp: 3800, level: 7, degen_score: 120, avatar: 'doge' },
+      { name: 'moon_chaser', role: 'Chart Autist', xp: 3100, level: 6, degen_score: 98, avatar: 'shiba' },
+      { name: 'degen_mike', role: 'Meme Lord', xp: 2650, level: 5, degen_score: 85, avatar: 'floki' },
+      { name: 'diamond_dan', role: 'Ape Farmer', xp: 2200, level: 5, degen_score: 72, avatar: 'wif' },
+      { name: 'based_andy', role: 'Degen', xp: 1850, level: 4, degen_score: 63, avatar: 'popcat' },
+      { name: 'yield_farm3r', role: 'Chart Autist', xp: 1500, level: 4, degen_score: 55, avatar: 'pepe' },
+      { name: 'anon_whale', role: 'Whale', xp: 1200, level: 3, degen_score: 48, avatar: 'doge' },
+      { name: 'fomo_fred', role: 'Meme Lord', xp: 950, level: 3, degen_score: 42, avatar: 'shiba' },
+      { name: 'paper_pete', role: 'Ape Farmer', xp: 720, level: 3, degen_score: 35, avatar: 'floki' },
+      { name: 'early_ape', role: 'Degen', xp: 580, level: 2, degen_score: 28, avatar: 'wif' },
+      { name: 'bag_secured', role: 'Chart Autist', xp: 450, level: 2, degen_score: 22, avatar: 'popcat' },
+      { name: 'sol_maxi', role: 'Whale', xp: 320, level: 2, degen_score: 18, avatar: 'pepe' },
+      { name: 'eth_bull', role: 'Meme Lord', xp: 180, level: 1, degen_score: 12, avatar: 'doge' },
+      { name: 'swap_king99', role: 'Ape Farmer', xp: 95, level: 1, degen_score: 8, avatar: 'shiba' }
+    ];
+    
+    let added = 0;
+    for (const player of seedPlayers) {
+      const result = await pool.query(
+        `INSERT INTO player_stats (name, role, xp, level, degen_score, avatar) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (name) DO NOTHING RETURNING name`,
+        [player.name, player.role, player.xp, player.level, player.degen_score, player.avatar]
+      );
+      if (result.rows.length > 0) added++;
+    }
+    
+    // Also seed activity feed
+    const seedActivities = [
+      { name: 'alpha_hunter', type: 'level_up', desc: 'reached Level 8!', icon: '🎉' },
+      { name: 'ser_pump', type: 'game_win', desc: 'won 500 Hopium in slots', icon: '🎰' },
+      { name: 'moon_chaser', type: 'vote', desc: 'voted on governance', icon: '🗳️' },
+      { name: 'degen_mike', type: 'action', desc: 'launched a new coin', icon: '🚀' },
+      { name: 'diamond_dan', type: 'daily_reward', desc: 'claimed Day 5 reward (5 day streak!)', icon: '🎁' },
+      { name: 'based_andy', type: 'game_win', desc: 'scored 850 in Token Sniper', icon: '🎯' },
+      { name: 'yield_farm3r', type: 'level_up', desc: 'reached Level 4!', icon: '🎉' },
+      { name: 'anon_whale', type: 'action', desc: 'sniped early on $PEPE2', icon: '🎯' }
+    ];
+    
+    for (let i = 0; i < seedActivities.length; i++) {
+      const activity = seedActivities[i];
+      await pool.query(
+        `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+        [activity.name, activity.type, activity.desc, activity.icon]
+      ).catch(() => {});
+    }
+    
+    console.log(`✅ Seeded ${added} players to leaderboard`);
+    res.json({ success: true, playersAdded: added, message: `Added ${added} seed players` });
+  } catch (err) {
+    console.error('Seed error:', err);
+    res.status(500).json({ success: false, error: 'Failed to seed data' });
   }
 });
 
