@@ -110,6 +110,10 @@ async function initDatabase() {
     await client.query(`ALTER TABLE characters ALTER COLUMN role TYPE VARCHAR(100)`).catch(() => {});
     await client.query(`ALTER TABLE characters ALTER COLUMN trait TYPE VARCHAR(100)`).catch(() => {});
     
+    // Add player_stats and resources columns for progress persistence
+    await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS player_stats JSONB DEFAULT '{}'`).catch(() => {});
+    await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS resources JSONB DEFAULT '{}'`).catch(() => {});
+    
     // Add unique constraint on email if it doesn't exist (for existing databases)
     // First, remove any duplicate emails (keep most recent)
     await client.query(`
@@ -734,7 +738,7 @@ app.post('/api/reset-password', async (req, res) => {
 // ==================== CHARACTER ENDPOINTS ====================
 
 app.post('/api/save-character', async (req, res) => {
-  const { email, character } = req.body;
+  const { email, character, playerStats, resources } = req.body;
   if (!email || !character) return res.status(400).json({ success: false, error: 'Data required' });
   
   try {
@@ -742,13 +746,22 @@ app.post('/api/save-character', async (req, res) => {
     const userId = userResult.rows[0]?.id || null;
     let avatarStr = typeof character.avatar === 'object' ? JSON.stringify(character.avatar) : character.avatar;
     
-    await pool.query(`
-      INSERT INTO characters (user_id, email, name, role, trait, avatar, xp, level, reputation, degen_score, treasury, votes_count)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      ON CONFLICT (email) DO UPDATE SET name=$3, role=$4, trait=$5, avatar=$6, xp=$7, level=$8, reputation=$9, degen_score=$10, treasury=$11, votes_count=GREATEST(characters.votes_count, $12), updated_at=CURRENT_TIMESTAMP
-    `, [userId, email.toLowerCase(), character.name, character.role, character.trait, avatarStr, character.xp||0, character.level||1, character.reputation||50, character.degenScore||0, character.treasury||1000, character.votesCount||0]);
+    // Stringify playerStats and resources for storage
+    const playerStatsStr = JSON.stringify(playerStats || {});
+    const resourcesStr = JSON.stringify(resources || {});
     
-    console.log('💾 Character saved:', character.name);
+    await pool.query(`
+      INSERT INTO characters (user_id, email, name, role, trait, avatar, xp, level, reputation, degen_score, treasury, votes_count, player_stats, resources)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ON CONFLICT (email) DO UPDATE SET 
+        name=$3, role=$4, trait=$5, avatar=$6, xp=$7, level=$8, reputation=$9, degen_score=$10, treasury=$11, 
+        votes_count=GREATEST(characters.votes_count, $12),
+        player_stats=$13,
+        resources=$14,
+        updated_at=CURRENT_TIMESTAMP
+    `, [userId, email.toLowerCase(), character.name, character.role, character.trait, avatarStr, character.xp||0, character.level||1, character.reputation||50, character.degenScore||0, character.treasury||1000, character.votesCount||0, playerStatsStr, resourcesStr]);
+    
+    console.log('💾 Character + progress saved:', character.name);
     res.json({ success: true });
   } catch (err) {
     console.error('Save character error:', err);
@@ -770,7 +783,39 @@ app.post('/api/load-character', async (req, res) => {
       try { avatar = JSON.parse(avatar); } catch(e) {}
     }
     
-    res.json({ success: true, character: { name: c.name, role: c.role, trait: c.trait, avatar, xp: c.xp, level: c.level, reputation: c.reputation, degenScore: c.degen_score, treasury: c.treasury, votesCount: c.votes_count, joinedDate: c.joined_date, badges: c.badges || [] } });
+    // Parse playerStats and resources from database
+    let playerStats = c.player_stats || {};
+    let resources = c.resources || {};
+    
+    // Handle if stored as string
+    if (typeof playerStats === 'string') {
+      try { playerStats = JSON.parse(playerStats); } catch(e) { playerStats = {}; }
+    }
+    if (typeof resources === 'string') {
+      try { resources = JSON.parse(resources); } catch(e) { resources = {}; }
+    }
+    
+    console.log('📂 Character loaded:', c.name, '| Level:', playerStats.level || c.level || 1, '| XP:', playerStats.xp || c.xp || 0);
+    
+    res.json({ 
+      success: true, 
+      character: { 
+        name: c.name, 
+        role: c.role, 
+        trait: c.trait, 
+        avatar, 
+        xp: c.xp, 
+        level: c.level, 
+        reputation: c.reputation, 
+        degenScore: c.degen_score, 
+        treasury: c.treasury, 
+        votesCount: c.votes_count, 
+        joinedDate: c.joined_date, 
+        badges: c.badges || [] 
+      },
+      playerStats: playerStats,
+      resources: resources
+    });
   } catch (err) {
     console.error('Load character error:', err);
     res.status(500).json({ success: false, error: 'Load failed' });
