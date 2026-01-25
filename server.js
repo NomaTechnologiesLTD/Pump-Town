@@ -169,6 +169,9 @@ async function initDatabase() {
       )
     `);
     
+    // Fix avatar column to allow longer strings (base64 images or JSON)
+    await client.query(`ALTER TABLE player_stats ALTER COLUMN avatar TYPE TEXT`).catch(() => {});
+    
     // Seed leaderboard with fake players if empty
     const playerCount = await client.query('SELECT COUNT(*) FROM player_stats');
     if (parseInt(playerCount.rows[0].count) < 5) {
@@ -1047,13 +1050,20 @@ app.post('/api/update-stats', async (req, res) => {
   const { name, role, xp, level, degenScore, avatar } = req.body;
   if (!name) return res.status(400).json({ success: false, error: 'Name required' });
   
+  // Handle avatar - can be string ID or object with id/name
+  let avatarValue = avatar;
+  if (avatar && typeof avatar === 'object') {
+    avatarValue = avatar.id || avatar.name || JSON.stringify(avatar);
+  }
+  
   try {
     await pool.query(`
       INSERT INTO player_stats (name, role, xp, level, degen_score, avatar, updated_at) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
       ON CONFLICT (name) DO UPDATE SET role=COALESCE($2, player_stats.role), xp=COALESCE($3, player_stats.xp), level=COALESCE($4, player_stats.level), degen_score=COALESCE($5, player_stats.degen_score), avatar=COALESCE($6, player_stats.avatar), updated_at=CURRENT_TIMESTAMP
-    `, [name, role, xp, level, degenScore, avatar]);
+    `, [name, role, xp, level, degenScore, avatarValue]);
     res.json({ success: true });
   } catch (err) {
+    console.error('Update stats error:', err);
     res.status(500).json({ success: false, error: 'Update failed' });
   }
 });
