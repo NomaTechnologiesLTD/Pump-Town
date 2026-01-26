@@ -9260,6 +9260,25 @@
                             console.log('✅ Resources restored from backend:', mergedResources);
                         }
                         
+                        // ====== RESTORE SEASON PASS FROM BACKEND ======
+                        if (data.seasonPass) {
+                            const localBpLevel = parseInt(localStorage.getItem('pumptown_bp_level') || '1');
+                            const localBpXP = parseInt(localStorage.getItem('pumptown_bp_xp') || '0');
+                            const localBpClaimed = JSON.parse(localStorage.getItem('pumptown_bp_claimed') || '[]');
+                            
+                            // Merge: take maximum level/xp, combine claimed rewards
+                            const mergedLevel = Math.max(data.seasonPass.level || 1, localBpLevel);
+                            const mergedXP = Math.max(data.seasonPass.xp || 0, localBpXP);
+                            // Combine claimed rewards (union of both lists)
+                            const backendClaimed = data.seasonPass.claimedRewards || [];
+                            const mergedClaimed = [...new Set([...backendClaimed, ...localBpClaimed])];
+                            
+                            localStorage.setItem('pumptown_bp_level', mergedLevel.toString());
+                            localStorage.setItem('pumptown_bp_xp', mergedXP.toString());
+                            localStorage.setItem('pumptown_bp_claimed', JSON.stringify(mergedClaimed));
+                            console.log('✅ Season Pass restored from backend:', { level: mergedLevel, xp: mergedXP, claimed: mergedClaimed });
+                        }
+                        
                         // Sync merged data back to backend
                         saveCharacterToBackend(walletAddress, char);
                         
@@ -9279,6 +9298,13 @@
                     const currentStats = stats || JSON.parse(localStorage.getItem('pumptown_player_stats') || '{}');
                     const currentResources = res || JSON.parse(localStorage.getItem('pumptown_resources') || '{}');
                     
+                    // Get Season Pass data
+                    const seasonPass = {
+                        level: parseInt(localStorage.getItem('pumptown_bp_level') || '1'),
+                        xp: parseInt(localStorage.getItem('pumptown_bp_xp') || '0'),
+                        claimedRewards: JSON.parse(localStorage.getItem('pumptown_bp_claimed') || '[]')
+                    };
+                    
                     await fetch('https://pump-town-backend-production.up.railway.app/api/save-character', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -9286,10 +9312,11 @@
                             email: walletAddress, 
                             character: charData,
                             playerStats: currentStats,
-                            resources: currentResources
+                            resources: currentResources,
+                            seasonPass: seasonPass
                         })
                     });
-                    console.log('Character + progress saved to backend');
+                    console.log('Character + progress + Season Pass saved to backend');
                 } catch (error) {
                     console.error('Error saving character to backend:', error);
                 }
@@ -15164,15 +15191,25 @@
             
             const xpPerLevel = 200;
             
-            const rewards = [
-                { level: 1, icon: '💊', name: '500 HOPIUM', reward: { hopium: 500 } },
-                { level: 2, icon: '🔮', name: '100 ALPHA', reward: { alpha: 100 } },
-                { level: 3, icon: '🎫', name: 'Loot Box', reward: { hopium: 1000 } },
-                { level: 4, icon: '🎯', name: '200 ALPHA', reward: { alpha: 200 } },
-                { level: 5, icon: '💎', name: 'Diamond Badge', reward: { hopium: 2000, alpha: 200 } },
-                { level: 7, icon: '🐋', name: 'Whale Title', reward: { hopium: 3000 } },
-                { level: 10, icon: '👑', name: 'Season Crown', reward: { hopium: 10000, alpha: 1000 } }
-            ];
+            // Generate rewards for any tier (0-9, 10-19, 20-29, etc.)
+            const generateTierRewards = (tierStart) => {
+                const tierNum = Math.floor(tierStart / 10) + 1;
+                const multiplier = tierNum; // Rewards scale with tier
+                
+                return [
+                    { level: tierStart + 1, icon: '💊', name: `${500 * multiplier} HOPIUM`, reward: { hopium: 500 * multiplier } },
+                    { level: tierStart + 2, icon: '🔮', name: `${100 * multiplier} ALPHA`, reward: { alpha: 100 * multiplier } },
+                    { level: tierStart + 3, icon: '🎫', name: 'Loot Box', reward: { hopium: 1000 * multiplier } },
+                    { level: tierStart + 4, icon: '🎯', name: `${200 * multiplier} ALPHA`, reward: { alpha: 200 * multiplier } },
+                    { level: tierStart + 5, icon: '💎', name: tierNum === 1 ? 'Diamond Badge' : `Diamond Badge ${tierNum}`, reward: { hopium: 2000 * multiplier, alpha: 200 * multiplier } },
+                    { level: tierStart + 7, icon: '🐋', name: tierNum === 1 ? 'Whale Title' : `Whale Title ${tierNum}`, reward: { hopium: 3000 * multiplier } },
+                    { level: tierStart + 10, icon: '👑', name: tierNum === 1 ? 'Season Crown' : `Season Crown ${tierNum}`, reward: { hopium: 10000 * multiplier, alpha: 1000 * multiplier } }
+                ];
+            };
+            
+            // Calculate which tier to show based on current level
+            const currentTierStart = Math.floor((bpLevel - 1) / 10) * 10;
+            const rewards = generateTierRewards(currentTierStart);
             
             useEffect(() => {
                 localStorage.setItem('pumptown_bp_level', bpLevel.toString());
@@ -15199,6 +15236,7 @@
             const claimReward = (level) => {
                 if (bpLevel < level || claimedRewards.includes(level)) return;
                 
+                // Find reward from current tier
                 const reward = rewards.find(r => r.level === level);
                 if (!reward) return;
                 
@@ -15213,13 +15251,15 @@
                 showToast(`Claimed ${reward.name}!`, 'success');
             };
             
+            const tierNum = Math.floor(currentTierStart / 10) + 1;
+            
             return (
                 <div className="battle-pass">
                     <div className="battle-pass-header">
                         <div className="battle-pass-level">
                             <div className="bp-level-badge">{bpLevel}</div>
                             <div>
-                                <div style={{ color: '#fff', fontWeight: 'bold' }}>Season 1</div>
+                                <div style={{ color: '#fff', fontWeight: 'bold' }}>Season 1 {tierNum > 1 ? `• Tier ${tierNum}` : ''}</div>
                                 <div style={{ color: '#888', fontSize: '0.85em' }}>Ends Feb 28</div>
                             </div>
                         </div>
