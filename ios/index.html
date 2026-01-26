@@ -4815,159 +4815,6 @@
             margin-bottom: 10px;
         }
 
-        /* ==================== PREDICTION SYSTEM ==================== */
-        .prediction-section {
-            background: linear-gradient(145deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.3));
-            border: 1px solid rgba(138, 43, 226, 0.4);
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-
-        .prediction-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-weight: bold;
-            color: #a855f7;
-            margin-bottom: 8px;
-        }
-
-        .prediction-icon {
-            font-size: 1.2em;
-            animation: crystalFloat 2s ease-in-out infinite;
-        }
-
-        @keyframes crystalFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
-
-        .prediction-streak {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.8em;
-            animation: streakPulse 1s ease-in-out infinite;
-        }
-
-        @keyframes streakPulse {
-            0%, 100% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.3); }
-            50% { box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); }
-        }
-
-        .prediction-hint {
-            color: #888;
-            font-size: 0.85em;
-            margin-bottom: 12px;
-        }
-
-        .prediction-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .prediction-btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.9em;
-        }
-
-        .prediction-btn.win {
-            background: linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(0, 200, 100, 0.4));
-            color: #00ff88;
-            border: 1px solid rgba(0, 255, 136, 0.5);
-        }
-
-        .prediction-btn.win:hover {
-            background: linear-gradient(135deg, rgba(0, 255, 136, 0.5), rgba(0, 200, 100, 0.6));
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
-        }
-
-        .prediction-btn.neutral {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(200, 160, 0, 0.4));
-            color: #ffd700;
-            border: 1px solid rgba(255, 215, 0, 0.5);
-        }
-
-        .prediction-btn.neutral:hover {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.5), rgba(200, 160, 0, 0.6));
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
-        }
-
-        .prediction-btn.loss {
-            background: linear-gradient(135deg, rgba(255, 68, 68, 0.3), rgba(200, 50, 50, 0.4));
-            color: #ff4444;
-            border: 1px solid rgba(255, 68, 68, 0.5);
-        }
-
-        .prediction-btn.loss:hover {
-            background: linear-gradient(135deg, rgba(255, 68, 68, 0.5), rgba(200, 50, 50, 0.6));
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
-        }
-
-        .prediction-locked {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 12px;
-            background: rgba(138, 43, 226, 0.15);
-            border-radius: 10px;
-            margin-top: 15px;
-            color: #ccc;
-        }
-
-        .prediction-locked .prediction-win { color: #00ff88; }
-        .prediction-locked .prediction-neutral { color: #ffd700; }
-        .prediction-locked .prediction-loss { color: #ff4444; }
-
-        .prediction-result {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 15px;
-            border-radius: 12px;
-            margin-top: 15px;
-            animation: resultReveal 0.5s ease-out;
-        }
-
-        @keyframes resultReveal {
-            0% { transform: scale(0.8); opacity: 0; }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .prediction-result.correct {
-            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 200, 100, 0.3));
-            border: 2px solid rgba(0, 255, 136, 0.5);
-        }
-
-        .prediction-result.wrong {
-            background: linear-gradient(135deg, rgba(255, 68, 68, 0.2), rgba(200, 50, 50, 0.3));
-            border: 2px solid rgba(255, 68, 68, 0.5);
-        }
-
-        .result-icon {
-            font-size: 1.5em;
-        }
-
-        .result-text {
-            color: #fff;
-            font-weight: bold;
-        }
-
         /* Cycle Timer */
         .cycle-timer-box {
             background: linear-gradient(145deg, rgba(255, 68, 68, 0.1), rgba(0, 0, 0, 0.3));
@@ -5034,51 +4881,6 @@
         .mayor-title {
             color: #8a2be2;
             font-size: 0.85em;
-        }
-
-        .mayor-mood-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75em;
-            font-weight: bold;
-            margin-top: 5px;
-            animation: moodPulse 2s ease-in-out infinite;
-        }
-
-        .mayor-mood-badge.mood-bullish {
-            background: rgba(0, 255, 136, 0.2);
-            color: #00ff88;
-            border: 1px solid rgba(0, 255, 136, 0.4);
-        }
-
-        .mayor-mood-badge.mood-bearish {
-            background: rgba(255, 68, 68, 0.2);
-            color: #ff4444;
-            border: 1px solid rgba(255, 68, 68, 0.4);
-        }
-
-        .mayor-mood-badge.mood-calm {
-            background: rgba(0, 212, 255, 0.2);
-            color: #00d4ff;
-            border: 1px solid rgba(0, 212, 255, 0.4);
-        }
-
-        .mayor-mood-badge.mood-chaotic {
-            background: rgba(255, 215, 0, 0.2);
-            color: #ffd700;
-            border: 1px solid rgba(255, 215, 0, 0.4);
-        }
-
-        .mayor-mood-badge.mood-neutral {
-            background: rgba(150, 150, 150, 0.2);
-            color: #999;
-            border: 1px solid rgba(150, 150, 150, 0.4);
-        }
-
-        @keyframes moodPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
         }
 
         .mayor-message {
@@ -5316,407 +5118,7 @@
 
         .ledger-rep.negative {
             background: rgba(255, 68, 68, 0.2);
-        }
-
-        /* ==================== MULTIPLIER BADGES ==================== */
-        .multiplier-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.75em;
-            font-weight: bold;
-            margin-left: 8px;
-            animation: multiplierPop 0.3s ease-out;
-        }
-
-        @keyframes multiplierPop {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .multiplier-badge.rarity-uncommon {
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.4);
-        }
-
-        .multiplier-badge.rarity-rare {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-            border: 1px solid rgba(59, 130, 246, 0.4);
-        }
-
-        .multiplier-badge.rarity-epic {
-            background: rgba(168, 85, 247, 0.2);
-            color: #a855f7;
-            border: 1px solid rgba(168, 85, 247, 0.4);
-            animation: multiplierPop 0.3s ease-out, epicGlow 2s ease-in-out infinite;
-        }
-
-        @keyframes epicGlow {
-            0%, 100% { box-shadow: 0 0 5px rgba(168, 85, 247, 0.3); }
-            50% { box-shadow: 0 0 15px rgba(168, 85, 247, 0.6); }
-        }
-
-        .multiplier-badge.rarity-legendary {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 140, 0, 0.3));
-            color: #ffd700;
-            border: 1px solid rgba(255, 215, 0, 0.5);
-            animation: multiplierPop 0.3s ease-out, legendaryGlow 1.5s ease-in-out infinite;
-        }
-
-        @keyframes legendaryGlow {
-            0%, 100% { 
-                box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-                text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
-            }
-            50% { 
-                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
-                text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
-            }
-        }
-
-        /* ==================== LIVE ACTION FEED ==================== */
-        .live-feed-section {
-            background: linear-gradient(145deg, rgba(0, 0, 0, 0.6), rgba(20, 20, 40, 0.6));
-            border: 2px solid rgba(0, 255, 136, 0.3);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 25px;
-            max-height: 200px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .live-feed-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .live-feed-header h3 {
-            color: #00ff88;
-            margin: 0;
-            font-size: 1em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .live-indicator {
-            width: 8px;
-            height: 8px;
-            background: #ff4444;
-            border-radius: 50%;
-            animation: livePulse 1.5s infinite;
-        }
-
-        @keyframes livePulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 5px #ff4444; }
-            50% { opacity: 0.5; box-shadow: 0 0 10px #ff4444; }
-        }
-
-        .live-feed-count {
-            color: #888;
-            font-size: 0.8em;
-        }
-
-        .live-feed-items {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            animation: feedScroll 0.3s ease-out;
-        }
-
-        @keyframes feedScroll {
-            from { transform: translateY(-30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .live-feed-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            border-left: 3px solid #00ff88;
-            animation: feedItemIn 0.4s ease-out;
-        }
-
-        .live-feed-item.action-launch { border-left-color: #ff6b6b; }
-        .live-feed-item.action-snipe { border-left-color: #ffd700; }
-        .live-feed-item.action-hold { border-left-color: #00d4ff; }
-        .live-feed-item.action-dump { border-left-color: #ff9f43; }
-
-        @keyframes feedItemIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .feed-icon {
-            font-size: 1.2em;
-        }
-
-        .feed-player {
-            color: #00ff88;
-            font-weight: bold;
-        }
-
-        .feed-message {
-            color: #ccc;
-            flex: 1;
-            font-size: 0.9em;
-        }
-
-        .feed-time {
-            color: #666;
-            font-size: 0.75em;
-        }
-
-        .live-feed-fade {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 40px;
-            background: linear-gradient(transparent, rgba(15, 15, 25, 0.95));
-            pointer-events: none;
             color: #ff4444;
-        }
-
-        /* ==================== MOMENTUM METER ==================== */
-        .momentum-meter-section {
-            background: linear-gradient(145deg, rgba(0, 0, 0, 0.6), rgba(20, 20, 40, 0.6));
-            border: 2px solid rgba(138, 43, 226, 0.3);
-            border-radius: 15px;
-            padding: 15px 20px;
-            margin-bottom: 25px;
-        }
-
-        .momentum-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .momentum-header h3 {
-            margin: 0;
-            color: #ffd700;
-            font-size: 1em;
-        }
-
-        .momentum-update {
-            background: rgba(0, 255, 136, 0.2);
-            color: #00ff88;
-            padding: 3px 10px;
-            border-radius: 10px;
-            font-size: 0.7em;
-            font-weight: bold;
-            animation: livePulse 1.5s ease-in-out infinite;
-        }
-
-        .momentum-bars {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .momentum-bar-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .momentum-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85em;
-            color: #ccc;
-        }
-
-        .momentum-percent {
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .momentum-bar-track {
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .momentum-bar-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease-out;
-        }
-
-        .momentum-bar-fill.launch-fill {
-            background: linear-gradient(90deg, #ff6b6b, #ff4444);
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
-        }
-
-        .momentum-bar-fill.snipe-fill {
-            background: linear-gradient(90deg, #ffd700, #ffaa00);
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-        }
-
-        .momentum-bar-fill.hold-fill {
-            background: linear-gradient(90deg, #00d4ff, #0099cc);
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-        }
-
-        .momentum-bar-fill.dump-fill {
-            background: linear-gradient(90deg, #ff9f43, #ff7700);
-            box-shadow: 0 0 10px rgba(255, 159, 67, 0.5);
-        }
-
-        .momentum-hint {
-            margin-top: 12px;
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            font-size: 0.8em;
-            text-align: center;
-        }
-
-        .hint-bullish { color: #00ff88; }
-        .hint-bearish { color: #ff4444; }
-        .hint-calm { color: #00d4ff; }
-        .hint-chaotic { color: #ffd700; }
-        .hint-neutral { color: #888; }
-
-        /* ==================== MARKET UPDATE BANNER ==================== */
-        .market-update-banner {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            animation: bannerSlideIn 0.5s ease-out, bannerPulse 2s ease-in-out infinite;
-            position: relative;
-        }
-
-        @keyframes bannerSlideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes bannerPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-            50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); }
-        }
-
-        .market-update-banner.update-whale {
-            background: linear-gradient(135deg, rgba(0, 100, 200, 0.3), rgba(0, 50, 100, 0.4));
-            border: 2px solid rgba(0, 150, 255, 0.5);
-        }
-
-        .market-update-banner.update-pump {
-            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 100, 50, 0.3));
-            border: 2px solid rgba(0, 255, 136, 0.5);
-        }
-
-        .market-update-banner.update-dump {
-            background: linear-gradient(135deg, rgba(255, 68, 68, 0.2), rgba(100, 0, 0, 0.3));
-            border: 2px solid rgba(255, 68, 68, 0.5);
-        }
-
-        .market-update-banner.update-news {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(100, 80, 0, 0.3));
-            border: 2px solid rgba(255, 215, 0, 0.5);
-        }
-
-        .market-update-banner.update-milestone {
-            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.3));
-            border: 2px solid rgba(138, 43, 226, 0.5);
-        }
-
-        .market-update-banner.update-warning {
-            background: linear-gradient(135deg, rgba(255, 159, 67, 0.2), rgba(100, 60, 0, 0.3));
-            border: 2px solid rgba(255, 159, 67, 0.5);
-        }
-
-        .update-icon {
-            font-size: 2em;
-            animation: iconBounce 1s ease-in-out infinite;
-        }
-
-        @keyframes iconBounce {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .update-content {
-            flex: 1;
-        }
-
-        .update-title {
-            font-weight: bold;
-            color: #ffd700;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 3px;
-        }
-
-        .update-message {
-            color: #fff;
-            font-size: 0.95em;
-            line-height: 1.4;
-        }
-
-        .update-dismiss {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #888;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.2s;
-        }
-
-        .update-dismiss:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-        }
-
-        .next-update-timer {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 8px 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 20px;
-            margin-bottom: 20px;
-            font-size: 0.8em;
-            color: #888;
-        }
-
-        .timer-icon {
-            animation: radarPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes radarPulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-
-        .timer-text {
-            font-family: monospace;
         }
 
         /* Hall of Fame/Shame */
@@ -9858,25 +9260,6 @@
                             console.log('✅ Resources restored from backend:', mergedResources);
                         }
                         
-                        // ====== RESTORE SEASON PASS FROM BACKEND ======
-                        if (data.seasonPass) {
-                            const localBpLevel = parseInt(localStorage.getItem('pumptown_bp_level') || '1');
-                            const localBpXP = parseInt(localStorage.getItem('pumptown_bp_xp') || '0');
-                            const localBpClaimed = JSON.parse(localStorage.getItem('pumptown_bp_claimed') || '[]');
-                            
-                            // Merge: take maximum level/xp, combine claimed rewards
-                            const mergedLevel = Math.max(data.seasonPass.level || 1, localBpLevel);
-                            const mergedXP = Math.max(data.seasonPass.xp || 0, localBpXP);
-                            // Combine claimed rewards (union of both lists)
-                            const backendClaimed = data.seasonPass.claimedRewards || [];
-                            const mergedClaimed = [...new Set([...backendClaimed, ...localBpClaimed])];
-                            
-                            localStorage.setItem('pumptown_bp_level', mergedLevel.toString());
-                            localStorage.setItem('pumptown_bp_xp', mergedXP.toString());
-                            localStorage.setItem('pumptown_bp_claimed', JSON.stringify(mergedClaimed));
-                            console.log('✅ Season Pass restored from backend:', { level: mergedLevel, xp: mergedXP, claimed: mergedClaimed });
-                        }
-                        
                         // Sync merged data back to backend
                         saveCharacterToBackend(walletAddress, char);
                         
@@ -9896,13 +9279,6 @@
                     const currentStats = stats || JSON.parse(localStorage.getItem('pumptown_player_stats') || '{}');
                     const currentResources = res || JSON.parse(localStorage.getItem('pumptown_resources') || '{}');
                     
-                    // Get Season Pass data
-                    const seasonPass = {
-                        level: parseInt(localStorage.getItem('pumptown_bp_level') || '1'),
-                        xp: parseInt(localStorage.getItem('pumptown_bp_xp') || '0'),
-                        claimedRewards: JSON.parse(localStorage.getItem('pumptown_bp_claimed') || '[]')
-                    };
-                    
                     await fetch('https://pump-town-backend-production.up.railway.app/api/save-character', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -9910,11 +9286,10 @@
                             email: walletAddress, 
                             character: charData,
                             playerStats: currentStats,
-                            resources: currentResources,
-                            seasonPass: seasonPass
+                            resources: currentResources
                         })
                     });
-                    console.log('Character + progress + Season Pass saved to backend');
+                    console.log('Character + progress saved to backend');
                 } catch (error) {
                     console.error('Error saving character to backend:', error);
                 }
@@ -11845,38 +11220,6 @@
                 return tomorrow.getTime();
             });
             const [timeLeft, setTimeLeft] = useState('');
-            
-            // Live Feed state
-            const [liveFeed, setLiveFeed] = useState([]);
-            const [activeTraders, setActiveTraders] = useState(Math.floor(Math.random() * 50) + 120);
-            const [momentum, setMomentum] = useState({ launch: 25, snipe: 25, hold: 30, dump: 20 });
-            const [mayorMood, setMayorMood] = useState('neutral');
-            const [mayorMessage, setMayorMessage] = useState('');
-            const [marketUpdate, setMarketUpdate] = useState(null);
-            const [nextUpdateIn, setNextUpdateIn] = useState(45);
-            const [prediction, setPrediction] = useState(null);
-            const [predictionResult, setPredictionResult] = useState(null);
-            const [predictionStreak, setPredictionStreak] = useState(() => {
-                const saved = localStorage.getItem('pumptown_prediction_streak');
-                return saved ? parseInt(saved) : 0;
-            });
-
-            // NPC names for the live feed
-            const npcNames = [
-                'DiamondDegen', 'PumpKing', 'MoonBoi', 'CryptoChad', 'WhaleWatcher',
-                'GigaBrain', 'TokenTitan', 'AlphaApe', 'DumpDestroyer', 'SendoorMax',
-                'YoloYeti', 'BasedBaron', 'RugRanger', 'FOMOFred', 'PaperPete',
-                'ShibaSamurai', 'DogeDisciple', 'PepePatron', 'FlokiFan', 'MemeMarshall',
-                'LaunchLord', 'SnipeSniper', 'HodlHero', 'BagHolder99', 'EarlyEntry',
-                'LateToParty', 'GasFeeGary', 'SlippageSam', 'RugPullRick', 'SafeMoonSally'
-            ];
-
-            const feedMessages = {
-                launch: ['just launched! 🚀', 'sent it! New coin live! 🔥', 'is launching something... 👀', 'deployed a fresh contract! 💎'],
-                snipe: ['sniped a fresh launch! 🎯', 'got in early! 🏃', 'quick fingers! Sniped! ⚡', 'is farming new launches! 🌾'],
-                hold: ['is diamond handing! 💎', 'HODL mode activated! 🙌', 'aint selling! 💪', 'refusing to sell! 🦍'],
-                dump: ['took profits! 💰', 'cashed out! 📉', 'paper hands? Smart hands? 🤔', 'exited position! 🚪']
-            };
 
             const actions = [
                 { id: 'launch', name: 'Launch', icon: '🚀', risk: 'HIGH', riskClass: 'risk-high', 
@@ -11927,146 +11270,6 @@
                 return () => clearInterval(interval);
             }, [cycleEndTime, pendingAction]);
 
-            // Live Feed Generator
-            useEffect(() => {
-                const generateLiveAction = () => {
-                    const npc = npcNames[Math.floor(Math.random() * npcNames.length)];
-                    const actionTypes = ['launch', 'snipe', 'hold', 'dump'];
-                    const weights = [0.25, 0.3, 0.3, 0.15]; // Weighted probabilities
-                    
-                    let random = Math.random();
-                    let actionType = 'hold';
-                    let cumulative = 0;
-                    for (let i = 0; i < actionTypes.length; i++) {
-                        cumulative += weights[i];
-                        if (random < cumulative) {
-                            actionType = actionTypes[i];
-                            break;
-                        }
-                    }
-                    
-                    const messages = feedMessages[actionType];
-                    const message = messages[Math.floor(Math.random() * messages.length)];
-                    
-                    return {
-                        id: Date.now() + Math.random(),
-                        player: npc,
-                        action: actionType,
-                        message: message,
-                        timestamp: Date.now()
-                    };
-                };
-
-                // Generate initial feed items
-                const initialFeed = Array(5).fill(null).map(() => generateLiveAction());
-                setLiveFeed(initialFeed);
-
-                // Add new feed items periodically
-                const interval = setInterval(() => {
-                    setLiveFeed(prev => {
-                        const newItem = generateLiveAction();
-                        
-                        // Update momentum based on activity
-                        setMomentum(m => {
-                            const newM = { ...m };
-                            newM[newItem.action] = Math.min(60, (newM[newItem.action] || 20) + 3);
-                            // Decay others slightly
-                            Object.keys(newM).forEach(k => {
-                                if (k !== newItem.action) {
-                                    newM[k] = Math.max(10, newM[k] - 1);
-                                }
-                            });
-                            return newM;
-                        });
-                        
-                        return [newItem, ...prev].slice(0, 8);
-                    });
-                    
-                    // Fluctuate active traders
-                    setActiveTraders(prev => {
-                        const change = Math.floor(Math.random() * 11) - 5;
-                        return Math.max(80, Math.min(200, prev + change));
-                    });
-                }, 3000 + Math.random() * 4000);
-
-                return () => clearInterval(interval);
-            }, []);
-
-            // Hourly Market Updates
-            useEffect(() => {
-                const marketEvents = [
-                    { type: 'whale', icon: '🐋', title: 'WHALE ALERT', messages: [
-                        'Massive wallet just woke up! $2.4M moved on-chain!',
-                        'Whale accumulation detected! Smart money loading bags!',
-                        'Dormant whale wallet active after 847 days!'
-                    ]},
-                    { type: 'pump', icon: '📈', title: 'MARKET PUMP', messages: [
-                        'Market cap surging! +23% in the last hour!',
-                        'Volume explosion! 10x the daily average!',
-                        'Green candles across the board! Bulls are running!'
-                    ]},
-                    { type: 'dump', icon: '📉', title: 'MARKET DIP', messages: [
-                        'Flash crash detected! Buying opportunity?',
-                        'Liquidation cascade in progress! -15% and falling!',
-                        'Paper hands folding! Blood in the streets!'
-                    ]},
-                    { type: 'news', icon: '📰', title: 'BREAKING NEWS', messages: [
-                        'Major exchange listing rumored! Which coin?',
-                        'Regulatory news dropping! Market on edge!',
-                        'Partnership announcement incoming!'
-                    ]},
-                    { type: 'milestone', icon: '🏆', title: 'MILESTONE', messages: [
-                        'New ATH! The city is celebrating!',
-                        '100,000 transactions processed today!',
-                        'Record number of active traders online!'
-                    ]},
-                    { type: 'warning', icon: '⚠️', title: 'MARKET ALERT', messages: [
-                        'High volatility detected! Trade with caution!',
-                        'Unusual activity in the mempool!',
-                        'Bot activity spike detected on DEX!'
-                    ]}
-                ];
-
-                const triggerMarketUpdate = () => {
-                    const event = marketEvents[Math.floor(Math.random() * marketEvents.length)];
-                    const message = event.messages[Math.floor(Math.random() * event.messages.length)];
-                    
-                    setMarketUpdate({
-                        type: event.type,
-                        icon: event.icon,
-                        title: event.title,
-                        message: message,
-                        timestamp: Date.now()
-                    });
-
-                    // Auto-dismiss after 8 seconds
-                    setTimeout(() => {
-                        setMarketUpdate(null);
-                    }, 8000);
-                };
-
-                // Countdown timer
-                const countdownInterval = setInterval(() => {
-                    setNextUpdateIn(prev => {
-                        if (prev <= 1) {
-                            triggerMarketUpdate();
-                            return 45 + Math.floor(Math.random() * 30); // 45-75 seconds
-                        }
-                        return prev - 1;
-                    });
-                }, 1000);
-
-                // Initial update after 10-20 seconds
-                const initialTimeout = setTimeout(() => {
-                    triggerMarketUpdate();
-                }, 10000 + Math.random() * 10000);
-
-                return () => {
-                    clearInterval(countdownInterval);
-                    clearTimeout(initialTimeout);
-                };
-            }, []);
-
             const confirmAction = () => {
                 if (!selectedAction) return;
                 setPendingAction({
@@ -12092,117 +11295,44 @@
                     outcome: outcome.result,
                     outcomeText: outcome.text,
                     repChange: outcome.repChange,
-                    multiplier: outcome.multiplier,
                     timestamp: Date.now()
                 };
                 
                 setActionHistory(prev => [entry, ...prev].slice(0, 100));
                 setPendingAction(null);
                 
-                // Handle prediction resolution
-                if (prediction) {
-                    const predictionCorrect = prediction === outcome.result;
-                    setPredictionResult({
-                        predicted: prediction,
-                        actual: outcome.result,
-                        correct: predictionCorrect
-                    });
-                    
-                    if (predictionCorrect) {
-                        const newStreak = predictionStreak + 1;
-                        setPredictionStreak(newStreak);
-                        localStorage.setItem('pumptown_prediction_streak', newStreak.toString());
-                        const bonusRep = Math.min(5 + newStreak * 2, 25); // 5-25 bonus rep based on streak
-                        showToast(`🔮 Prediction correct! +${bonusRep} REP (${newStreak}x streak!)`, 'success');
-                    } else {
-                        setPredictionStreak(0);
-                        localStorage.setItem('pumptown_prediction_streak', '0');
-                        showToast(`🔮 Prediction wrong! Streak reset.`, 'error');
-                    }
-                    
-                    // Clear prediction after showing result for 3 seconds
-                    setTimeout(() => {
-                        setPrediction(null);
-                        setPredictionResult(null);
-                    }, 3000);
-                }
-                
                 const nextCycle = new Date();
                 nextCycle.setHours(24, 0, 0, 0);
                 setCycleEndTime(nextCycle.getTime());
                 
-                showToast(outcome.toast, outcome.result === 'win' ? 'success' : outcome.result === 'neutral' ? 'info' : 'error');
-            };
-
-            const makePrediction = (predictedOutcome) => {
-                if (!pendingAction || prediction) return;
-                setPrediction(predictedOutcome);
-                showToast(`🔮 Prediction locked: ${predictedOutcome.toUpperCase()}`, 'info');
-            };
-
-            // Roll for multiplier rarity
-            const rollMultiplier = () => {
-                const roll = Math.random();
-                if (roll > 0.98) return { value: 5, rarity: 'legendary', icon: '🌟', color: '#ffd700' };
-                if (roll > 0.92) return { value: 3, rarity: 'epic', icon: '💎', color: '#a855f7' };
-                if (roll > 0.80) return { value: 2, rarity: 'rare', icon: '✨', color: '#3b82f6' };
-                if (roll > 0.60) return { value: 1.5, rarity: 'uncommon', icon: '⭐', color: '#22c55e' };
-                return { value: 1, rarity: 'common', icon: '', color: '#888' };
+                showToast(outcome.toast, outcome.result === 'win' ? 'success' : 'error');
             };
 
             const resolveAction = (actionId) => {
                 const roll = Math.random();
-                const multiplier = rollMultiplier();
-                let baseResult;
-                
                 switch(actionId) {
                     case 'launch':
-                        if (roll > 0.7) baseResult = { result: 'win', text: 'Coin pumped 500%! Legendary.', repChange: 15, toast: '🚀 Your launch mooned!' };
-                        else if (roll > 0.3) baseResult = { result: 'neutral', text: 'Modest 2x. Not bad.', repChange: 5, toast: '📈 Decent launch' };
-                        else baseResult = { result: 'loss', text: 'Dumped 90%. RIP.', repChange: -10, toast: '💀 Launch flopped' };
-                        break;
+                        if (roll > 0.7) return { result: 'win', text: 'Coin pumped 500%! Legendary.', repChange: 15, toast: '🚀 Your launch mooned!' };
+                        if (roll > 0.3) return { result: 'neutral', text: 'Modest 2x. Not bad.', repChange: 5, toast: '📈 Decent launch' };
+                        return { result: 'loss', text: 'Dumped 90%. RIP.', repChange: -10, toast: '💀 Launch flopped' };
                     case 'snipe':
-                        if (roll > 0.6) baseResult = { result: 'win', text: 'Perfect snipe!', repChange: 10, toast: '🎯 Sniped it!' };
-                        else if (roll > 0.25) baseResult = { result: 'neutral', text: 'Small profit.', repChange: 3, toast: '👍 Okay snipe' };
-                        else baseResult = { result: 'loss', text: 'Sniped into a rug.', repChange: -8, toast: '🧹 Got rugged' };
-                        break;
+                        if (roll > 0.6) return { result: 'win', text: 'Perfect snipe!', repChange: 10, toast: '🎯 Sniped it!' };
+                        if (roll > 0.25) return { result: 'neutral', text: 'Small profit.', repChange: 3, toast: '👍 Okay snipe' };
+                        return { result: 'loss', text: 'Sniped into a rug.', repChange: -8, toast: '🧹 Got rugged' };
                     case 'hold':
-                        if (roll > 0.5) baseResult = { result: 'win', text: 'Diamond hands paid off!', repChange: 12, toast: '💎 Held to glory!' };
-                        else if (roll > 0.2) baseResult = { result: 'neutral', text: 'Broke even.', repChange: 2, toast: '😐 Survived' };
-                        else baseResult = { result: 'loss', text: 'Held to zero.', repChange: -5, toast: '📉 Bagholder status' };
-                        break;
+                        if (roll > 0.5) return { result: 'win', text: 'Diamond hands paid off!', repChange: 12, toast: '💎 Held to glory!' };
+                        if (roll > 0.2) return { result: 'neutral', text: 'Broke even.', repChange: 2, toast: '😐 Survived' };
+                        return { result: 'loss', text: 'Held to zero.', repChange: -5, toast: '📉 Bagholder status' };
                     case 'dump':
-                        if (roll > 0.6) baseResult = { result: 'win', text: 'Sold the top!', repChange: 8, toast: '🏆 Perfect exit!' };
-                        else if (roll > 0.3) baseResult = { result: 'neutral', text: 'Small profit.', repChange: 2, toast: '💰 Took profits' };
-                        else baseResult = { result: 'loss', text: 'Sold the bottom.', repChange: -6, toast: '😭 Paper hands' };
-                        break;
+                        if (roll > 0.6) return { result: 'win', text: 'Sold the top!', repChange: 8, toast: '🏆 Perfect exit!' };
+                        if (roll > 0.3) return { result: 'neutral', text: 'Small profit.', repChange: 2, toast: '💰 Took profits' };
+                        return { result: 'loss', text: 'Sold the bottom.', repChange: -6, toast: '😭 Paper hands' };
                     case 'rug':
-                        if (roll > 0.3) baseResult = { result: 'win', text: 'Rug successful. Monster.', repChange: -30, toast: '🧹 You rugged them...' };
-                        else baseResult = { result: 'loss', text: 'Rug failed. Exposed.', repChange: -50, toast: '⚖️ Justice served' };
-                        break;
+                        if (roll > 0.3) return { result: 'win', text: 'Rug successful. Monster.', repChange: -30, toast: '🧹 You rugged them...' };
+                        return { result: 'loss', text: 'Rug failed. Exposed.', repChange: -50, toast: '⚖️ Justice served' };
                     default:
-                        baseResult = { result: 'neutral', text: 'Nothing happened.', repChange: 0, toast: 'Nothing' };
+                        return { result: 'neutral', text: 'Nothing happened.', repChange: 0, toast: 'Nothing' };
                 }
-
-                // Apply multiplier (only to positive rep changes, or reduce negative on wins)
-                let finalRepChange = baseResult.repChange;
-                if (multiplier.value > 1) {
-                    if (baseResult.repChange > 0) {
-                        finalRepChange = Math.round(baseResult.repChange * multiplier.value);
-                    } else if (baseResult.result === 'win') {
-                        // Reduce penalty on "win" outcomes like successful rug
-                        finalRepChange = Math.round(baseResult.repChange / multiplier.value);
-                    }
-                }
-
-                return {
-                    ...baseResult,
-                    repChange: finalRepChange,
-                    multiplier: multiplier,
-                    toast: multiplier.value > 1 
-                        ? `${multiplier.icon} ${multiplier.rarity.toUpperCase()}! ${baseResult.toast} (${multiplier.value}x)`
-                        : baseResult.toast
-                };
             };
 
             const getMayorMessage = () => {
@@ -12218,64 +11348,6 @@
                 return `Welcome, degen. The market waits for no one. Choose your action - <span style="color:#ffd700">every move is recorded</span>, every outcome remembered. Winners gain glory. Losers become lore.`;
             };
 
-            // Dynamic Mayor Commentary based on momentum
-            useEffect(() => {
-                const topAction = Object.entries(momentum)
-                    .sort((a, b) => b[1] - a[1])[0];
-                
-                let mood = 'neutral';
-                if (topAction[0] === 'launch' && topAction[1] > 40) mood = 'bullish';
-                else if (topAction[0] === 'dump' && topAction[1] > 35) mood = 'bearish';
-                else if (topAction[0] === 'hold' && topAction[1] > 40) mood = 'calm';
-                else if (topAction[0] === 'snipe' && topAction[1] > 40) mood = 'chaotic';
-                
-                setMayorMood(mood);
-                
-                const messages = {
-                    bullish: [
-                        `🚀 The LAUNCH energy is <span style="color:#00ff88">INSANE</span> right now! ${topAction[1].toFixed(0)}% of citizens are launching! <span style="color:#ffd700">WAGMI!</span>`,
-                        `📈 <span style="color:#00ff88">BULLISH VIBES ONLY!</span> The city is pumping! Don't miss out, anon!`,
-                        `💎 Market's heating up! Launches everywhere! <span style="color:#ffd700">This is what we live for!</span>`,
-                        `🔥 <span style="color:#ff6b6b">PUMP TOWN IS PUMPING!</span> Everyone's launching! Are YOU?`
-                    ],
-                    bearish: [
-                        `📉 Dumpers are out in force... <span style="color:#ff4444">${momentum.dump.toFixed(0)}%</span> taking profits. Paper hands or smart money?`,
-                        `😰 The <span style="color:#ff4444">selling pressure</span> is real. Who's next to exit?`,
-                        `🐻 Bear energy detected. <span style="color:#ff4444">${momentum.dump.toFixed(0)}%</span> of traders are dumping. Stay alert.`,
-                        `💸 Profit-taking intensifies. The weak hands are <span style="color:#ff4444">folding</span>...`
-                    ],
-                    calm: [
-                        `💎 <span style="color:#00d4ff">Diamond hands</span> dominating! ${momentum.hold.toFixed(0)}% of citizens HODLing strong!`,
-                        `🧘 The city is <span style="color:#00d4ff">zen</span>. Holders are patient. Conviction is high.`,
-                        `✨ <span style="color:#00d4ff">HODL gang</span> in control. No panic here. Just vibes.`,
-                        `🦍 Apes together strong. <span style="color:#00d4ff">${momentum.hold.toFixed(0)}%</span> refusing to sell!`
-                    ],
-                    chaotic: [
-                        `🎯 SNIPERS EVERYWHERE! <span style="color:#ffd700">${momentum.snipe.toFixed(0)}%</span> of traders hunting launches!`,
-                        `⚡ The market is <span style="color:#ffd700">FAST</span>. Snipers are feasting. Stay sharp!`,
-                        `🏃 Quick fingers winning! <span style="color:#ffd700">Snipe szn</span> is upon us!`,
-                        `🎪 <span style="color:#ffd700">CHAOS MODE!</span> Everyone's racing to snipe! Who's fastest?`
-                    ],
-                    neutral: [
-                        `Welcome, degen. The market waits for no one. <span style="color:#ffd700">Every move is recorded.</span>`,
-                        `Another cycle begins. What's your play today, citizen?`,
-                        `The city watches. The city remembers. <span style="color:#ffd700">Choose wisely.</span>`,
-                        `Pump Town never sleeps. Neither should your strategy.`
-                    ]
-                };
-                
-                const moodMessages = messages[mood];
-                const newMessage = moodMessages[Math.floor(Math.random() * moodMessages.length)];
-                setMayorMessage(newMessage);
-                
-            }, [momentum]);
-
-            // Fallback if no dynamic message yet
-            const displayMayorMessage = () => {
-                if (mayorMessage) return mayorMessage;
-                return getMayorMessage();
-            };
-
             return (
                 <>
                     {/* Cycle Timer */}
@@ -12283,24 +11355,6 @@
                         <div className="cycle-timer-label">Next Resolution In</div>
                         <div className="cycle-timer-time">{timeLeft}</div>
                         <div className="cycle-timer-info">AI Mayor resolves all actions at midnight</div>
-                    </div>
-
-                    {/* Market Update Banner */}
-                    {marketUpdate && (
-                        <div className={`market-update-banner update-${marketUpdate.type}`}>
-                            <div className="update-icon">{marketUpdate.icon}</div>
-                            <div className="update-content">
-                                <div className="update-title">{marketUpdate.title}</div>
-                                <div className="update-message">{marketUpdate.message}</div>
-                            </div>
-                            <button className="update-dismiss" onClick={() => setMarketUpdate(null)}>✕</button>
-                        </div>
-                    )}
-
-                    {/* Next Update Countdown */}
-                    <div className="next-update-timer">
-                        <span className="timer-icon">📡</span>
-                        <span className="timer-text">Next market update in {nextUpdateIn}s</span>
                     </div>
 
                     {/* Mayor Announcement */}
@@ -12312,101 +11366,10 @@
                             <div className="mayor-info">
                                 <h3>AI Mayor</h3>
                                 <div className="mayor-title">Governs Pump Town</div>
-                                <div className={`mayor-mood-badge mood-${mayorMood}`}>
-                                    {mayorMood === 'bullish' && '🚀 Bullish'}
-                                    {mayorMood === 'bearish' && '🐻 Bearish'}
-                                    {mayorMood === 'calm' && '🧘 Zen'}
-                                    {mayorMood === 'chaotic' && '🎪 Chaotic'}
-                                    {mayorMood === 'neutral' && '😐 Watching'}
-                                </div>
                             </div>
                         </div>
                         <div className="mayor-message">
-                            <p dangerouslySetInnerHTML={{ __html: displayMayorMessage() }}></p>
-                        </div>
-                    </div>
-
-                    {/* Live Action Feed */}
-                    <div className="live-feed-section">
-                        <div className="live-feed-header">
-                            <h3><span className="live-indicator"></span> Live Activity</h3>
-                            <span className="live-feed-count">🟢 {activeTraders} traders online</span>
-                        </div>
-                        <div className="live-feed-items">
-                            {liveFeed.slice(0, 5).map((item, idx) => (
-                                <div key={item.id} className={`live-feed-item action-${item.action}`} style={{ animationDelay: `${idx * 0.1}s` }}>
-                                    <span className="feed-player">{item.player}</span>
-                                    <span className="feed-message">{item.message}</span>
-                                    <span className="feed-time">now</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="live-feed-fade"></div>
-                    </div>
-
-                    {/* Action Momentum Meter */}
-                    <div className="momentum-meter-section">
-                        <div className="momentum-header">
-                            <h3>📊 Market Momentum</h3>
-                            <span className="momentum-update">Live</span>
-                        </div>
-                        <div className="momentum-bars">
-                            <div className="momentum-bar-item">
-                                <div className="momentum-label">
-                                    <span>🚀 Launch</span>
-                                    <span className="momentum-percent">{momentum.launch.toFixed(0)}%</span>
-                                </div>
-                                <div className="momentum-bar-track">
-                                    <div 
-                                        className="momentum-bar-fill launch-fill" 
-                                        style={{ width: `${momentum.launch}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <div className="momentum-bar-item">
-                                <div className="momentum-label">
-                                    <span>🎯 Snipe</span>
-                                    <span className="momentum-percent">{momentum.snipe.toFixed(0)}%</span>
-                                </div>
-                                <div className="momentum-bar-track">
-                                    <div 
-                                        className="momentum-bar-fill snipe-fill" 
-                                        style={{ width: `${momentum.snipe}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <div className="momentum-bar-item">
-                                <div className="momentum-label">
-                                    <span>💎 Hold</span>
-                                    <span className="momentum-percent">{momentum.hold.toFixed(0)}%</span>
-                                </div>
-                                <div className="momentum-bar-track">
-                                    <div 
-                                        className="momentum-bar-fill hold-fill" 
-                                        style={{ width: `${momentum.hold}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <div className="momentum-bar-item">
-                                <div className="momentum-label">
-                                    <span>💸 Dump</span>
-                                    <span className="momentum-percent">{momentum.dump.toFixed(0)}%</span>
-                                </div>
-                                <div className="momentum-bar-track">
-                                    <div 
-                                        className="momentum-bar-fill dump-fill" 
-                                        style={{ width: `${momentum.dump}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="momentum-hint">
-                            {momentum.launch > 40 && <span className="hint-bullish">🔥 Bullish sentiment - launches trending!</span>}
-                            {momentum.dump > 35 && <span className="hint-bearish">⚠️ Bearish pressure - profit taking detected</span>}
-                            {momentum.hold > 40 && <span className="hint-calm">💎 Diamond hands strong - conviction high</span>}
-                            {momentum.snipe > 40 && <span className="hint-chaotic">⚡ Sniper activity elevated - fast money moving</span>}
-                            {momentum.launch <= 40 && momentum.dump <= 35 && momentum.hold <= 40 && momentum.snipe <= 40 && 
-                                <span className="hint-neutral">📈 Market balanced - no clear trend</span>}
+                            <p dangerouslySetInnerHTML={{ __html: getMayorMessage() }}></p>
                         </div>
                     </div>
 
@@ -12423,64 +11386,7 @@
                                 <p style={{ color: '#888', marginBottom: '10px' }}>
                                     You chose <strong style={{ color: '#ffd700' }}>{pendingAction.action.toUpperCase()}</strong>
                                 </p>
-                                
-                                {/* Prediction System */}
-                                {!prediction && !predictionResult && (
-                                    <div className="prediction-section">
-                                        <div className="prediction-header">
-                                            <span className="prediction-icon">🔮</span>
-                                            <span>Predict Your Outcome</span>
-                                            {predictionStreak > 0 && (
-                                                <span className="prediction-streak">🔥 {predictionStreak}x streak</span>
-                                            )}
-                                        </div>
-                                        <p className="prediction-hint">Guess correctly to earn bonus REP!</p>
-                                        <div className="prediction-buttons">
-                                            <button 
-                                                className="prediction-btn win"
-                                                onClick={() => makePrediction('win')}
-                                            >
-                                                🏆 Win
-                                            </button>
-                                            <button 
-                                                className="prediction-btn neutral"
-                                                onClick={() => makePrediction('neutral')}
-                                            >
-                                                😐 Neutral
-                                            </button>
-                                            <button 
-                                                className="prediction-btn loss"
-                                                onClick={() => makePrediction('loss')}
-                                            >
-                                                💀 Loss
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {prediction && !predictionResult && (
-                                    <div className="prediction-locked">
-                                        <span className="prediction-icon">🔮</span>
-                                        <span>Prediction: <strong className={`prediction-${prediction}`}>{prediction.toUpperCase()}</strong></span>
-                                        {predictionStreak > 0 && (
-                                            <span className="prediction-streak">🔥 {predictionStreak}x streak</span>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                {predictionResult && (
-                                    <div className={`prediction-result ${predictionResult.correct ? 'correct' : 'wrong'}`}>
-                                        <div className="result-icon">{predictionResult.correct ? '✅' : '❌'}</div>
-                                        <div className="result-text">
-                                            {predictionResult.correct 
-                                                ? `Nailed it! You predicted ${predictionResult.predicted.toUpperCase()}!`
-                                                : `Wrong! You predicted ${predictionResult.predicted.toUpperCase()}, got ${predictionResult.actual.toUpperCase()}`
-                                            }
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                <p style={{ color: '#666', fontSize: '0.9em', marginTop: '15px' }}>
+                                <p style={{ color: '#666', fontSize: '0.9em' }}>
                                     Waiting for cycle resolution by AI Mayor...
                                 </p>
                             </div>
@@ -12529,11 +11435,6 @@
                                 <div className="ledger-content">
                                     <div className="ledger-action">
                                         <span className="ledger-player">{entry.player}</span> chose {entry.action.toUpperCase()}
-                                        {entry.multiplier && entry.multiplier.value > 1 && (
-                                            <span className={`multiplier-badge rarity-${entry.multiplier.rarity}`}>
-                                                {entry.multiplier.icon} {entry.multiplier.value}x
-                                            </span>
-                                        )}
                                     </div>
                                     <div className="ledger-result">{entry.outcomeText}</div>
                                 </div>
@@ -12646,11 +11547,6 @@
                                     <div className="ledger-content">
                                         <div className="ledger-action">
                                             <span className="ledger-player">{entry.player}</span> chose {entry.action.toUpperCase()}
-                                            {entry.multiplier && entry.multiplier.value > 1 && (
-                                                <span className={`multiplier-badge rarity-${entry.multiplier.rarity}`}>
-                                                    {entry.multiplier.icon} {entry.multiplier.value}x
-                                                </span>
-                                            )}
                                         </div>
                                         <div className="ledger-result">{entry.outcomeText}</div>
                                     </div>
@@ -16255,61 +15151,34 @@
         function BattlePass({ playerStats, resources, onResourceChange, showToast }) {
             const [bpLevel, setBpLevel] = useState(() => {
                 const saved = localStorage.getItem('pumptown_bp_level');
-                const level = saved ? parseInt(saved) : 1;
-                // Reset if corrupted (level > 100 is unreasonable for a new game)
-                if (level > 100) {
-                    localStorage.removeItem('pumptown_bp_level');
-                    localStorage.removeItem('pumptown_bp_xp');
-                    localStorage.removeItem('pumptown_bp_claimed');
-                    localStorage.removeItem('pumptown_bp_last_tracked_xp');
-                    return 1;
-                }
-                return level;
+                return saved ? parseInt(saved) : 1;
             });
             const [bpXP, setBpXP] = useState(() => {
                 const saved = localStorage.getItem('pumptown_bp_xp');
-                const xp = saved ? parseInt(saved) : 0;
-                // Reset if corrupted
-                if (xp > 200) return 0;
-                return xp;
+                return saved ? parseInt(saved) : 0;
             });
             const [claimedRewards, setClaimedRewards] = useState(() => {
                 const saved = localStorage.getItem('pumptown_bp_claimed');
                 return saved ? JSON.parse(saved) : [];
             });
-            const [lastTrackedXP, setLastTrackedXP] = useState(() => {
-                const saved = localStorage.getItem('pumptown_bp_last_tracked_xp');
-                return saved ? parseInt(saved) : 0;
-            });
             
             const xpPerLevel = 200;
             
-            // Generate rewards for any tier (0-9, 10-19, 20-29, etc.)
-            const generateTierRewards = (tierStart) => {
-                const tierNum = Math.floor(tierStart / 10) + 1;
-                const multiplier = tierNum; // Rewards scale with tier
-                
-                return [
-                    { level: tierStart + 1, icon: '💊', name: `${500 * multiplier} HOPIUM`, reward: { hopium: 500 * multiplier } },
-                    { level: tierStart + 2, icon: '🔮', name: `${100 * multiplier} ALPHA`, reward: { alpha: 100 * multiplier } },
-                    { level: tierStart + 3, icon: '🎫', name: 'Loot Box', reward: { hopium: 1000 * multiplier } },
-                    { level: tierStart + 4, icon: '🎯', name: `${200 * multiplier} ALPHA`, reward: { alpha: 200 * multiplier } },
-                    { level: tierStart + 5, icon: '💎', name: tierNum === 1 ? 'Diamond Badge' : `Diamond Badge ${tierNum}`, reward: { hopium: 2000 * multiplier, alpha: 200 * multiplier } },
-                    { level: tierStart + 7, icon: '🐋', name: tierNum === 1 ? 'Whale Title' : `Whale Title ${tierNum}`, reward: { hopium: 3000 * multiplier } },
-                    { level: tierStart + 10, icon: '👑', name: tierNum === 1 ? 'Season Crown' : `Season Crown ${tierNum}`, reward: { hopium: 10000 * multiplier, alpha: 1000 * multiplier } }
-                ];
-            };
-            
-            // Calculate which tier to show based on current level
-            const currentTierStart = Math.floor((bpLevel - 1) / 10) * 10;
-            const rewards = generateTierRewards(currentTierStart);
+            const rewards = [
+                { level: 1, icon: '💊', name: '500 HOPIUM', reward: { hopium: 500 } },
+                { level: 2, icon: '🔮', name: '100 ALPHA', reward: { alpha: 100 } },
+                { level: 3, icon: '🎫', name: 'Loot Box', reward: { hopium: 1000 } },
+                { level: 4, icon: '🎯', name: '200 ALPHA', reward: { alpha: 200 } },
+                { level: 5, icon: '💎', name: 'Diamond Badge', reward: { hopium: 2000, alpha: 200 } },
+                { level: 7, icon: '🐋', name: 'Whale Title', reward: { hopium: 3000 } },
+                { level: 10, icon: '👑', name: 'Season Crown', reward: { hopium: 10000, alpha: 1000 } }
+            ];
             
             useEffect(() => {
                 localStorage.setItem('pumptown_bp_level', bpLevel.toString());
                 localStorage.setItem('pumptown_bp_xp', bpXP.toString());
                 localStorage.setItem('pumptown_bp_claimed', JSON.stringify(claimedRewards));
-                localStorage.setItem('pumptown_bp_last_tracked_xp', lastTrackedXP.toString());
-            }, [bpLevel, bpXP, claimedRewards, lastTrackedXP]);
+            }, [bpLevel, bpXP, claimedRewards]);
             
             // Level up check
             useEffect(() => {
@@ -16320,22 +15189,16 @@
                 }
             }, [bpXP]);
             
-            // Track XP GAINS only (not total XP) - add only the difference since last check
+            // Add XP from player actions (playerStats.xp is total XP)
             useEffect(() => {
-                if (playerStats.xp > lastTrackedXP) {
-                    const xpGained = playerStats.xp - lastTrackedXP;
-                    // Only add reasonable XP gains (prevent huge jumps from corrupted data)
-                    if (xpGained > 0 && xpGained < 1000) {
-                        setBpXP(prev => prev + xpGained);
-                    }
-                    setLastTrackedXP(playerStats.xp);
+                if (playerStats.xp > bpXP) {
+                    setBpXP(playerStats.xp);
                 }
             }, [playerStats.xp]);
             
             const claimReward = (level) => {
                 if (bpLevel < level || claimedRewards.includes(level)) return;
                 
-                // Find reward from current tier
                 const reward = rewards.find(r => r.level === level);
                 if (!reward) return;
                 
@@ -16350,15 +15213,13 @@
                 showToast(`Claimed ${reward.name}!`, 'success');
             };
             
-            const tierNum = Math.floor(currentTierStart / 10) + 1;
-            
             return (
                 <div className="battle-pass">
                     <div className="battle-pass-header">
                         <div className="battle-pass-level">
                             <div className="bp-level-badge">{bpLevel}</div>
                             <div>
-                                <div style={{ color: '#fff', fontWeight: 'bold' }}>Season 1 {tierNum > 1 ? `• Tier ${tierNum}` : ''}</div>
+                                <div style={{ color: '#fff', fontWeight: 'bold' }}>Season 1</div>
                                 <div style={{ color: '#888', fontSize: '0.85em' }}>Ends Feb 28</div>
                             </div>
                         </div>
@@ -22505,9 +21366,5 @@
 
         ReactDOM.render(<PumpTown />, document.getElementById('root'));
     </script>
-    
-    <!-- Cloudflare Web Analytics -->
-    <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a56d86a42ca749db800efd74b9c8c418"}'></script>
-    <!-- End Cloudflare Web Analytics -->
 </body>
 </html>
