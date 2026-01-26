@@ -113,6 +113,7 @@ async function initDatabase() {
     // Add player_stats and resources columns for progress persistence
     await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS player_stats JSONB DEFAULT '{}'`).catch(() => {});
     await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS resources JSONB DEFAULT '{}'`).catch(() => {});
+    await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS season_pass JSONB DEFAULT '{}'`).catch(() => {});
     
     // Add unique constraint on email if it doesn't exist (for existing databases)
     // First, remove any duplicate emails (keep most recent)
@@ -851,7 +852,7 @@ app.post('/api/reset-password', async (req, res) => {
 // ==================== CHARACTER ENDPOINTS ====================
 
 app.post('/api/save-character', async (req, res) => {
-  const { email, character, playerStats, resources } = req.body;
+  const { email, character, playerStats, resources, seasonPass } = req.body;
   if (!email || !character) return res.status(400).json({ success: false, error: 'Data required' });
   
   try {
@@ -859,22 +860,24 @@ app.post('/api/save-character', async (req, res) => {
     const userId = userResult.rows[0]?.id || null;
     let avatarStr = typeof character.avatar === 'object' ? JSON.stringify(character.avatar) : character.avatar;
     
-    // Stringify playerStats and resources for storage
+    // Stringify playerStats, resources, and seasonPass for storage
     const playerStatsStr = JSON.stringify(playerStats || {});
     const resourcesStr = JSON.stringify(resources || {});
+    const seasonPassStr = JSON.stringify(seasonPass || {});
     
     await pool.query(`
-      INSERT INTO characters (user_id, email, name, role, trait, avatar, xp, level, reputation, degen_score, treasury, votes_count, player_stats, resources)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      INSERT INTO characters (user_id, email, name, role, trait, avatar, xp, level, reputation, degen_score, treasury, votes_count, player_stats, resources, season_pass)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       ON CONFLICT (email) DO UPDATE SET 
         name=$3, role=$4, trait=$5, avatar=$6, xp=$7, level=$8, reputation=$9, degen_score=$10, treasury=$11, 
         votes_count=GREATEST(characters.votes_count, $12),
         player_stats=$13,
         resources=$14,
+        season_pass=$15,
         updated_at=CURRENT_TIMESTAMP
-    `, [userId, email.toLowerCase(), character.name, character.role, character.trait, avatarStr, character.xp||0, character.level||1, character.reputation||50, character.degenScore||0, character.treasury||1000, character.votesCount||0, playerStatsStr, resourcesStr]);
+    `, [userId, email.toLowerCase(), character.name, character.role, character.trait, avatarStr, character.xp||0, character.level||1, character.reputation||50, character.degenScore||0, character.treasury||1000, character.votesCount||0, playerStatsStr, resourcesStr, seasonPassStr]);
     
-    console.log('💾 Character + progress saved:', character.name);
+    console.log('💾 Character + progress + Season Pass saved:', character.name);
     res.json({ success: true });
   } catch (err) {
     console.error('Save character error:', err);
@@ -896,9 +899,10 @@ app.post('/api/load-character', async (req, res) => {
       try { avatar = JSON.parse(avatar); } catch(e) {}
     }
     
-    // Parse playerStats and resources from database
+    // Parse playerStats, resources, and seasonPass from database
     let playerStats = c.player_stats || {};
     let resources = c.resources || {};
+    let seasonPass = c.season_pass || {};
     
     // Handle if stored as string
     if (typeof playerStats === 'string') {
@@ -907,8 +911,11 @@ app.post('/api/load-character', async (req, res) => {
     if (typeof resources === 'string') {
       try { resources = JSON.parse(resources); } catch(e) { resources = {}; }
     }
+    if (typeof seasonPass === 'string') {
+      try { seasonPass = JSON.parse(seasonPass); } catch(e) { seasonPass = {}; }
+    }
     
-    console.log('📂 Character loaded:', c.name, '| Level:', playerStats.level || c.level || 1, '| XP:', playerStats.xp || c.xp || 0);
+    console.log('📂 Character loaded:', c.name, '| Level:', playerStats.level || c.level || 1, '| XP:', playerStats.xp || c.xp || 0, '| Season Pass Lv:', seasonPass.level || 1);
     
     res.json({ 
       success: true, 
@@ -927,7 +934,8 @@ app.post('/api/load-character', async (req, res) => {
         badges: c.badges || [] 
       },
       playerStats: playerStats,
-      resources: resources
+      resources: resources,
+      seasonPass: seasonPass
     });
   } catch (err) {
     console.error('Load character error:', err);
