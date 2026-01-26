@@ -1846,7 +1846,8 @@
             position: relative;
             width: 100%;
             height: 350px;
-            background: 
+            background-color: #1a1a3e;
+            background-image: 
                 linear-gradient(180deg, 
                     rgba(10, 10, 26, 0.2) 0%, 
                     rgba(26, 26, 62, 0.1) 50%,
@@ -2915,6 +2916,173 @@
             background: transparent;
             border: 2px solid #ffd700;
             color: #ffd700;
+        }
+
+        /* ==================== IS THIS CAP? GAME STYLES ==================== */
+        .is-this-cap-game {
+            border-color: #ffd700;
+        }
+        
+        .is-this-cap-game .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .is-this-cap-game .game-header h2 {
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+        
+        .is-this-cap-game .game-header p {
+            color: #888;
+        }
+        
+        .cap-game-stats {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            color: #aaa;
+        }
+        
+        .cap-bio-card {
+            background: linear-gradient(145deg, rgba(29, 161, 242, 0.1), rgba(29, 161, 242, 0.05));
+            border: 2px solid rgba(29, 161, 242, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .cap-bio-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .cap-bio-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #1da1f2, #0d8bd9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+        
+        .cap-bio-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 1.1em;
+        }
+        
+        .cap-bio-handle {
+            color: #1da1f2;
+            font-size: 0.9em;
+        }
+        
+        .cap-bio-text {
+            color: #ddd;
+            font-size: 1.1em;
+            line-height: 1.6;
+            font-style: italic;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        
+        .cap-guess-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .cap-btn {
+            padding: 20px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cap-btn.cap {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: #fff;
+            border: 3px solid transparent;
+        }
+        
+        .cap-btn.cap:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 25px rgba(255, 107, 107, 0.4);
+            border-color: #fff;
+        }
+        
+        .cap-btn.no-cap {
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: #000;
+            border: 3px solid transparent;
+        }
+        
+        .cap-btn.no-cap:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 25px rgba(0, 255, 136, 0.4);
+            border-color: #fff;
+        }
+        
+        .cap-result-screen {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .mayor-verdict {
+            text-align: left;
+            margin-top: 20px;
+        }
+        
+        .cap-gameover {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .cap-gameover h3 {
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+        
+        .cap-final-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+        }
+        
+        .cap-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .cap-stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .cap-stat-label {
+            color: #888;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
         }
 
         /* ==================== SPOT THE RUG STYLES ==================== */
@@ -5094,52 +5262,59 @@
         }
 
         /* ==================== MAYOR CHAT ==================== */
+        .mayor-chat-section {
+            margin-bottom: 30px;
+        }
+        
         .mayor-chat {
-            background: linear-gradient(145deg, rgba(138, 43, 226, 0.1), rgba(75, 0, 130, 0.2));
-            border: 2px solid rgba(138, 43, 226, 0.3);
+            background: linear-gradient(145deg, rgba(138, 43, 226, 0.15), rgba(75, 0, 130, 0.25));
+            border: 2px solid rgba(138, 43, 226, 0.4);
             border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
+            padding: 25px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .mayor-chat-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 18px;
             color: #ffd700;
             font-weight: bold;
+            font-size: 1.1em;
         }
 
         .mayor-chat-messages {
-            max-height: 200px;
+            max-height: 280px;
             overflow-y: auto;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
+            margin-bottom: 18px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
         }
 
         .mayor-chat-message {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 8px;
+            margin-bottom: 12px;
+            padding: 12px 15px;
+            border-radius: 10px;
         }
 
         .mayor-chat-message.user {
             background: rgba(0, 255, 136, 0.1);
-            border-left: 3px solid #00ff88;
+            border-left: 4px solid #00ff88;
         }
 
         .mayor-chat-message.mayor {
             background: rgba(138, 43, 226, 0.2);
-            border-left: 3px solid #8a2be2;
+            border-left: 4px solid #8a2be2;
         }
 
         .mayor-chat-message .sender {
             font-weight: bold;
-            font-size: 0.85em;
-            margin-bottom: 5px;
+            font-size: 0.9em;
+            margin-bottom: 6px;
         }
 
         .mayor-chat-message.user .sender { color: #00ff88; }
@@ -5147,31 +5322,33 @@
 
         .mayor-chat-message .text {
             color: #ddd;
-            line-height: 1.5;
+            line-height: 1.6;
+            font-size: 1em;
         }
 
         .mayor-chat-input {
             display: flex;
-            gap: 10px;
+            gap: 12px;
         }
 
         .mayor-chat-input input {
             flex: 1;
-            padding: 12px 15px;
-            border: 2px solid rgba(138, 43, 226, 0.3);
+            padding: 14px 18px;
+            border: 2px solid rgba(138, 43, 226, 0.4);
             border-radius: 25px;
             background: rgba(0, 0, 0, 0.5);
             color: #fff;
-            font-size: 0.95em;
+            font-size: 1em;
         }
 
         .mayor-chat-input input:focus {
             outline: none;
             border-color: #8a2be2;
+            box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
         }
 
         .mayor-chat-input button {
-            padding: 12px 25px;
+            padding: 14px 28px;
             border: none;
             border-radius: 25px;
             background: linear-gradient(135deg, #8a2be2, #6a1fb2);
@@ -5179,11 +5356,13 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 1em;
         }
 
         .mayor-chat-input button:hover {
             background: linear-gradient(135deg, #9a3cf2, #7a2fc2);
             transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
         }
 
         .mayor-chat-input button:disabled {
@@ -6813,11 +6992,11 @@
             height: 200px;
             border-radius: 50%;
             background: conic-gradient(
-                #ff4444 0deg 36deg,
-                #ff8844 36deg 72deg,
+                #00ff88 0deg 36deg,
+                #88cc00 36deg 72deg,
                 #ffcc00 72deg 108deg,
-                #88cc00 108deg 144deg,
-                #00ff88 144deg 180deg
+                #ff8844 108deg 144deg,
+                #ff4444 144deg 180deg
             );
             position: absolute;
             top: 0;
@@ -8139,6 +8318,1425 @@
         .mayor-tips-refresh:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        /* ==================== DAILY MAYOR ROAST ==================== */
+        .daily-roast {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 68, 68, 0.05));
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .daily-roast-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #ff6b6b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .daily-roast-content {
+            margin-top: 15px;
+        }
+        
+        .roast-target-card {
+            background: linear-gradient(145deg, rgba(29, 161, 242, 0.1), rgba(29, 161, 242, 0.05));
+            border: 1px solid rgba(29, 161, 242, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .roast-target-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .roast-target-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1da1f2, #0d8bd9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+        
+        .roast-target-name {
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .roast-target-handle {
+            color: #1da1f2;
+            font-size: 0.85em;
+        }
+        
+        .roast-category {
+            margin-left: auto;
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        
+        .roast-target-bio {
+            color: #bbb;
+            font-style: italic;
+            line-height: 1.5;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .mayor-roast-box {
+            background: rgba(138, 43, 226, 0.15);
+            border-left: 4px solid #8a2be2;
+            border-radius: 0 12px 12px 0;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .mayor-roast-text {
+            color: #ddd;
+            line-height: 1.6;
+        }
+        
+        .roast-voting {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .roast-vote-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: transparent;
+        }
+        
+        .roast-vote-btn.fire {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+        
+        .roast-vote-btn.fire:hover:not(:disabled) {
+            background: rgba(255, 107, 107, 0.2);
+        }
+        
+        .roast-vote-btn.cap {
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        
+        .roast-vote-btn.cap:hover:not(:disabled) {
+            background: rgba(255, 215, 0, 0.2);
+        }
+        
+        .roast-vote-btn.voted {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .roast-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .roast-action-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+        
+        .roast-action-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        
+        .roast-action-btn.nominate {
+            border-color: rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+        }
+        
+        .nominate-form {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        
+        .nominate-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        
+        .nominate-input:focus {
+            outline: none;
+            border-color: #00ff88;
+        }
+        
+        .nominate-submit {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .nominate-submit:hover:not(:disabled) {
+            transform: scale(1.02);
+        }
+        
+        .nominate-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ==================== ROAST LEADERBOARD ==================== */
+        .roast-leaderboard {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 170, 0, 0.05));
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .roast-leaderboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #ffd700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .roast-leaderboard-content {
+            margin-top: 15px;
+        }
+        
+        .player-roast-stats {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .player-roast-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .player-roast-stat .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        
+        .player-roast-stat .stat-label {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 2px;
+        }
+        
+        .roast-lb-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .roast-lb-tab {
+            flex: 1;
+            padding: 8px 5px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: transparent;
+            color: #888;
+            font-size: 0.75em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .roast-lb-tab:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+        
+        .roast-lb-tab.active {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        
+        .roast-lb-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .roast-lb-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .roast-lb-entry:hover {
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .roast-lb-entry.top-3 {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        
+        .roast-lb-entry.you {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .roast-lb-entry.shame {
+            border-left: 3px solid #ff6b6b;
+        }
+        
+        .roast-lb-entry.fame {
+            border-left: 3px solid #00ff88;
+        }
+        
+        .roast-lb-rank {
+            width: 35px;
+            text-align: center;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .roast-lb-rank.shame-icon,
+        .roast-lb-rank.fame-icon {
+            font-size: 1.3em;
+        }
+        
+        .roast-lb-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .roast-lb-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .roast-lb-meta {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 2px;
+        }
+        
+        .roast-lb-score {
+            font-weight: bold;
+            color: #ffd700;
+            text-align: right;
+        }
+        
+        .roast-lb-score.shame-count {
+            color: #ff6b6b;
+        }
+        
+        .roast-lb-score.fame-count {
+            color: #00ff88;
+        }
+        
+        .roast-lb-divider {
+            text-align: center;
+            color: #444;
+            padding: 5px 0;
+        }
+        
+        .shame-intro,
+        .fame-intro {
+            font-size: 0.85em;
+            color: #888;
+            padding: 10px;
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        /* ==================== CITIZEN RIVALRIES ==================== */
+        .citizen-rivalries {
+            background: linear-gradient(135deg, rgba(255, 68, 68, 0.1), rgba(255, 107, 107, 0.05));
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .rivalries-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #ff6b6b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .rivalry-badge {
+            background: #ff4444;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            animation: pulse 2s infinite;
+        }
+        
+        .rivalries-content {
+            margin-top: 15px;
+        }
+        
+        .challenge-btn {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed rgba(255, 107, 107, 0.5);
+            border-radius: 10px;
+            background: transparent;
+            color: #ff6b6b;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        
+        .challenge-btn:hover {
+            background: rgba(255, 107, 107, 0.1);
+            border-style: solid;
+        }
+        
+        .challenge-form {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .challenge-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        
+        .challenge-stake {
+            text-align: center;
+            color: #888;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+        
+        .send-challenge-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .send-challenge-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .challenge-sent {
+            text-align: center;
+            color: #00ff88;
+            padding: 15px;
+        }
+        
+        .rivals-section-title {
+            color: #888;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            margin-top: 15px;
+        }
+        
+        .potential-rivals .rivals-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .rival-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+        
+        .rival-info {
+            flex: 1;
+        }
+        
+        .rival-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .rival-status {
+            font-size: 0.6em;
+        }
+        
+        .rival-status.online { color: #00ff88; }
+        .rival-status.away { color: #ffd700; }
+        .rival-status.offline { color: #888; }
+        
+        .rival-stats {
+            font-size: 0.75em;
+            color: #888;
+        }
+        
+        .rival-matchup {
+            text-align: center;
+        }
+        
+        .matchup-percent {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .matchup-label {
+            font-size: 0.65em;
+            color: #888;
+        }
+        
+        .quick-challenge-btn {
+            padding: 8px 12px;
+            border: 1px solid #ff6b6b;
+            border-radius: 8px;
+            background: transparent;
+            color: #ff6b6b;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .quick-challenge-btn:hover {
+            background: rgba(255, 107, 107, 0.2);
+        }
+        
+        .beef-card {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .beef-card.complete {
+            border-left-color: #ffd700;
+            opacity: 0.85;
+        }
+        
+        .beef-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .beef-players {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .beef-player {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .beef-player.challenger { color: #ff6b6b; }
+        .beef-player.defender { color: #00d4ff; }
+        .beef-player.winner { color: #ffd700; }
+        .beef-player.loser { color: #666; text-decoration: line-through; }
+        
+        .beef-vs {
+            color: #888;
+            font-size: 0.8em;
+        }
+        
+        .beef-stake {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        
+        .beef-stake.won {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+        }
+        
+        .beef-scores {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        
+        .beef-score {
+            text-align: center;
+        }
+        
+        .beef-score .score-value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .beef-score.challenger .score-value { color: #ff6b6b; }
+        .beef-score.defender .score-value { color: #00d4ff; }
+        
+        .beef-score .score-label {
+            font-size: 0.7em;
+            color: #888;
+            display: block;
+        }
+        
+        .beef-diff {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .beef-mayor-comment {
+            background: rgba(138, 43, 226, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.85em;
+            color: #ddd;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        
+        .beef-mayor-comment.result {
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .beef-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75em;
+            color: #888;
+        }
+        
+        .beef-live {
+            color: #ff4444;
+            animation: pulse 2s infinite;
+        }
+
+        /* ==================== MAYOR'S HOT TAKES TICKER ==================== */
+        .hot-takes-ticker {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.15));
+            border: 1px solid rgba(138, 43, 226, 0.4);
+            border-radius: 12px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .hot-takes-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .hot-takes-icon {
+            font-size: 1.2em;
+        }
+        
+        .hot-takes-label > span:nth-child(2) {
+            color: #8a2be2;
+            font-weight: bold;
+        }
+        
+        .hot-takes-category {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            margin-left: auto;
+        }
+        
+        .hot-takes-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .hot-takes-nav {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #888;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .hot-takes-nav:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        
+        .hot-takes-text {
+            flex: 1;
+            color: #fff;
+            font-size: 0.95em;
+            line-height: 1.5;
+            text-align: center;
+            transition: all 0.3s ease;
+            opacity: 1;
+        }
+        
+        .hot-takes-text.animating {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        
+        .hot-takes-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .hot-takes-reactions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .take-reaction {
+            padding: 5px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            background: transparent;
+            color: #888;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .take-reaction:hover:not(:disabled) {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .take-reaction.fire:hover:not(:disabled),
+        .take-reaction.fire.reacted {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+        
+        .take-reaction.cap:hover:not(:disabled),
+        .take-reaction.cap.reacted {
+            border-color: #ffd700;
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .take-reaction:disabled {
+            cursor: default;
+        }
+        
+        .take-share {
+            padding: 5px 10px;
+            border: 1px solid rgba(29, 161, 242, 0.3);
+            border-radius: 15px;
+            background: transparent;
+            color: #1da1f2;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-left: auto;
+        }
+        
+        .take-share:hover {
+            background: rgba(29, 161, 242, 0.1);
+        }
+        
+        .hot-takes-counter {
+            color: #666;
+            font-size: 0.75em;
+        }
+
+        /* ==================== MAYOR'S VERDICT HISTORY ==================== */
+        .verdict-history {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 150, 200, 0.05));
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .verdict-history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #00d4ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .verdict-count {
+            background: rgba(0, 212, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+        
+        .verdict-history-content {
+            margin-top: 15px;
+        }
+        
+        .verdict-stats {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .verdict-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .verdict-stat .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .verdict-stat .stat-label {
+            font-size: 0.75em;
+            color: #888;
+        }
+        
+        .verdict-filters {
+            margin-bottom: 15px;
+        }
+        
+        .verdict-search {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        
+        .verdict-search:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        
+        .verdict-filter-btns {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .filter-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: transparent;
+            color: #888;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .filter-btn.active {
+            border-color: #00d4ff;
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+        
+        .filter-btn.cap.active {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+        
+        .filter-btn.nocap.active {
+            border-color: #00ff88;
+            color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+        }
+        
+        .verdict-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .verdict-card {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 12px;
+            border-left: 4px solid #888;
+        }
+        
+        .verdict-card.cap {
+            border-left-color: #ff6b6b;
+        }
+        
+        .verdict-card.nocap {
+            border-left-color: #00ff88;
+        }
+        
+        .verdict-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .verdict-target {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .verdict-handle {
+            color: #1da1f2;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .verdict-name {
+            color: #888;
+            font-size: 0.8em;
+        }
+        
+        .verdict-badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        
+        .verdict-badge.cap {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+        
+        .verdict-badge.nocap {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+        
+        .verdict-bio {
+            color: #aaa;
+            font-size: 0.85em;
+            font-style: italic;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .verdict-mayor-comment {
+            color: #ddd;
+            font-size: 0.85em;
+            line-height: 1.4;
+            padding: 8px;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .verdict-mayor-comment .mayor-icon {
+            margin-right: 6px;
+        }
+        
+        .verdict-card-footer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8em;
+        }
+        
+        .verdict-reactions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .verdict-reactions .reaction {
+            color: #888;
+        }
+        
+        .verdict-time {
+            color: #666;
+            margin-left: auto;
+        }
+        
+        .verdict-share-btn {
+            background: transparent;
+            border: 1px solid rgba(29, 161, 242, 0.3);
+            color: #1da1f2;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        .verdict-share-btn:hover {
+            background: rgba(29, 161, 242, 0.1);
+        }
+        
+        .verdict-empty {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .verdict-more {
+            text-align: center;
+            color: #666;
+            font-size: 0.85em;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        /* ==================== CAP ALERT SYSTEM ==================== */
+        .cap-alert-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(20, 20, 40, 0.95);
+            border: 2px solid #ff6b6b;
+            color: #ff6b6b;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 9990;
+            transition: all 0.3s;
+        }
+        
+        .cap-alert-toggle:hover {
+            background: rgba(255, 107, 107, 0.2);
+        }
+        
+        .cap-alert-toggle.disabled {
+            border-color: #666;
+            color: #666;
+        }
+        
+        .cap-alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9995;
+            max-width: 350px;
+        }
+        
+        .cap-alert {
+            background: linear-gradient(135deg, rgba(20, 20, 40, 0.98), rgba(30, 30, 60, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #ff6b6b;
+            border-radius: 12px;
+            padding: 12px 15px;
+            animation: alertSlideIn 0.4s ease forwards;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        @keyframes alertSlideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .cap-alert-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .cap-alert-icon {
+            font-size: 1.2em;
+        }
+        
+        .cap-alert-type {
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ff6b6b;
+        }
+        
+        .cap-alert-dismiss {
+            margin-left: auto;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 2px 6px;
+        }
+        
+        .cap-alert-dismiss:hover {
+            color: #fff;
+        }
+        
+        .cap-alert-content {
+            font-size: 0.9em;
+        }
+        
+        .cap-alert-handle {
+            color: #1da1f2;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .cap-alert-reason {
+            color: #888;
+            font-size: 0.85em;
+            margin-bottom: 6px;
+        }
+        
+        .cap-alert-quote {
+            color: #ddd;
+            font-size: 0.85em;
+            padding: 8px;
+            background: rgba(138, 43, 226, 0.15);
+            border-radius: 6px;
+            line-height: 1.4;
+        }
+        
+        .cap-alert-player {
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .cap-alert-score {
+            color: #ffd700;
+            font-size: 0.85em;
+        }
+        
+        .cap-alert-rivalry {
+            color: #fff;
+            line-height: 1.4;
+        }
+        
+        .cap-alert-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ff6b6b, #ffd700);
+            animation: alertProgress 8s linear forwards;
+        }
+        
+        @keyframes alertProgress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        /* ==================== CAP OR CHAD QUIZ ==================== */
+        .cap-chad-quiz {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.15), rgba(75, 0, 130, 0.1));
+            border: 1px solid rgba(138, 43, 226, 0.4);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .quiz-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #8a2be2;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .quiz-completed-badge {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            text-transform: none;
+        }
+        
+        .quiz-content {
+            margin-top: 15px;
+        }
+        
+        .quiz-progress {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .quiz-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #8a2be2, #ffd700);
+            transition: width 0.3s ease;
+        }
+        
+        .quiz-question-count {
+            color: #888;
+            font-size: 0.8em;
+            margin-bottom: 15px;
+        }
+        
+        .quiz-question {
+            color: #fff;
+            font-size: 1.1em;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .quiz-option {
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(0,0,0,0.2);
+            color: #ddd;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95em;
+        }
+        
+        .quiz-option:hover {
+            border-color: #8a2be2;
+            background: rgba(138, 43, 226, 0.2);
+            color: #fff;
+            transform: translateX(5px);
+        }
+        
+        .quiz-result {
+            margin-top: 15px;
+        }
+        
+        .result-type {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .result-emoji {
+            font-size: 2.5em;
+        }
+        
+        .result-title {
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+        
+        .result-description {
+            color: #bbb;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+        
+        .result-traits {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .trait-tag {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            color: #aaa;
+        }
+        
+        .result-mayor-comment {
+            background: rgba(138, 43, 226, 0.2);
+            border-left: 4px solid #8a2be2;
+            padding: 12px;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #ddd;
+            line-height: 1.5;
+        }
+        
+        .result-mayor-comment .mayor-icon {
+            margin-right: 8px;
+        }
+        
+        .result-scores {
+            margin-bottom: 20px;
+        }
+        
+        .score-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .score-label {
+            width: 80px;
+            font-size: 0.8em;
+            color: #888;
+        }
+        
+        .score-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .score-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .score-fill.chad { background: linear-gradient(90deg, #ffd700, #ffed4a); }
+        .score-fill.degen { background: linear-gradient(90deg, #ff6b6b, #ff8e8e); }
+        .score-fill.rational { background: linear-gradient(90deg, #00d4ff, #4de8ff); }
+        .score-fill.cap { background: linear-gradient(90deg, #8a2be2, #a855f7); }
+        
+        .result-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .result-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .result-btn.share {
+            background: linear-gradient(135deg, #1da1f2, #0d8bd9);
+            color: #fff;
+        }
+        
+        .result-btn.retake {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #aaa;
+        }
+        
+        .result-btn:hover {
+            transform: scale(1.02);
         }
 
         /* ==================== MAYOR ACTION COMMENT ==================== */
@@ -10956,20 +12554,53 @@
                         );
                         
                     case 'governance':
+                        if (!gameState || !gameState.stats) {
+                            return (
+                                <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+                                    <div style={{ fontSize: '3em', marginBottom: '20px', animation: 'pulse 1.5s ease-in-out infinite' }}>🏛️</div>
+                                    <h3 style={{ color: '#ffd700', marginBottom: '10px' }}>Loading Governance</h3>
+                                    <p style={{ color: '#888' }}>Fetching city data...</p>
+                                </div>
+                            );
+                        }
                         return (
                             <>
+                                {/* Cap Alert System - Global Notifications */}
+                                <CapAlertSystem />
+                                
                                 {/* City View Section */}
-                                <CityView gameState={gameState} citizenCount={fakeCitizenCount} />
+                                <CityView gameState={gameState} citizenCount={fakeCitizenCount} character={character} />
+                                
+                                {/* Mayor's Hot Takes Ticker */}
+                                <MayorHotTakes />
                                 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', minWidth: 0 }}>
                                         <TownStats stats={gameState.stats} day={gameState.day} round={gameState.round} />
-                                        <VoteHistory history={gameState.voteHistory} />
+                                        <VoteHistory history={gameState.voteHistory || []} />
                                     </div>
                                     
                                     <div style={{ minWidth: 0 }}>
                                         {/* Mayor Mood Indicator */}
                                         <MayorMood stats={gameState.stats} />
+                                        
+                                        {/* Daily Mayor Roast */}
+                                        <DailyMayorRoast playerName={character?.name || 'Citizen'} />
+                                        
+                                        {/* Roast Leaderboard */}
+                                        <RoastLeaderboard playerName={character?.name || 'Citizen'} />
+                                        
+                                        {/* Citizen Rivalries */}
+                                        <CitizenRivalries 
+                                            playerName={character?.name || 'Citizen'} 
+                                            playerStats={{ highScore: parseInt(localStorage.getItem('is_this_cap_highscore') || '0') }}
+                                        />
+                                        
+                                        {/* Mayor's Verdict History */}
+                                        <MayorVerdictHistory playerName={character?.name || 'Citizen'} />
+                                        
+                                        {/* Cap or Chad Personality Quiz */}
+                                        <CapOrChadQuiz playerName={character?.name || 'Citizen'} />
                                         
                                         {/* Mayor Tips & Wisdom */}
                                         <MayorTips playerLevel={character?.level || 1} />
@@ -10997,7 +12628,7 @@
                                 <div className="card">
                                     <h2>🏆 Governance Leaderboard</h2>
                                     <div className="leaderboard">
-                                        {gameState.leaderboard.map(player => (
+                                        {(gameState.leaderboard || []).map(player => (
                                             <div key={player.rank} className="leaderboard-item">
                                                 <div className={`leaderboard-rank ${player.rank <= 3 ? 'top-3' : ''}`}>
                                                     #{player.rank}
@@ -21002,6 +22633,450 @@
         }
         
         // ==================== SPOT THE RUG GAME ====================
+        // ==================== IS THIS CAP? MINI-GAME ====================
+        function IsThisCap({ onClose, onReward, playerName, onGameComplete }) {
+            const [gameState, setGameState] = useState('start');
+            const [currentBio, setCurrentBio] = useState(null);
+            const [round, setRound] = useState(1);
+            const [score, setScore] = useState(0);
+            const [streak, setStreak] = useState(0);
+            const [maxStreak, setMaxStreak] = useState(0);
+            const [result, setResult] = useState(null);
+            const [mayorComment, setMayorComment] = useState('');
+            const [loadingComment, setLoadingComment] = useState(false);
+            const [highScore, setHighScore] = useState(() => {
+                const saved = localStorage.getItem('is_this_cap_highscore');
+                return saved ? parseInt(saved) : 0;
+            });
+            const totalRounds = 10;
+            
+            // Curated bios - mix of real ridiculous claims and fake ones
+            const bioDatabase = [
+                // DEFINITE CAP - Fake/Exaggerated claims
+                {
+                    name: "CryptoGenius42",
+                    handle: "@CryptoGenius42",
+                    bio: "IQ 276 | Self-made billionaire at 19 | Predicted BTC at $1 | Ex-NASA | 10x entrepreneur",
+                    isCap: true,
+                    reason: "IQ 276 is IMPOSSIBLE (Einstein was 160). 'Self-made billionaire at 19' with no verifiable company? And 'predicted BTC at $1' - everyone says that now 🧢"
+                },
+                {
+                    name: "AlphaSignals",
+                    handle: "@AlphaSignals",
+                    bio: "100% win rate trader | Never lost a trade | Turned $100 into $10M | DM for signals 💰",
+                    isCap: true,
+                    reason: "100% win rate is IMPOSSIBLE in trading. Anyone claiming this is running a scam. The 'DM for signals' is the giveaway 🚨"
+                },
+                {
+                    name: "ThoughtLeaderX",
+                    handle: "@ThoughtLeaderX",
+                    bio: "Visionary | Thought Leader | Futurist | 3x TEDx Speaker | Changing the world one post at a time",
+                    isCap: true,
+                    reason: "Self-proclaimed 'Thought Leader' and 'Visionary' = red flag. Real visionaries don't call themselves that. TEDx (not TED) speakers pay to speak 💀"
+                },
+                {
+                    name: "Web3Maven",
+                    handle: "@Web3Maven",
+                    bio: "Serial Entrepreneur (12 exits) | Angel Investor | Advisor to 50+ startups | Building the future",
+                    isCap: true,
+                    reason: "12 exits with no company names? 'Advisor to 50+ startups' = they added me to their website. This bio is fiction 📝"
+                },
+                {
+                    name: "QuantumTrader",
+                    handle: "@QuantumTrader",
+                    bio: "Ex-Goldman MD | Ex-Citadel | Ex-Renaissance | Now sharing alpha for free because I care",
+                    isCap: true,
+                    reason: "Ex-Goldman AND Citadel AND Renaissance? Cap. And nobody from those firms 'shares alpha for free' 😂"
+                },
+                {
+                    name: "MindsetKing",
+                    handle: "@MindsetKing",
+                    bio: "IQ 195 | Mensa member | Read 500 books/year | Wake up at 3AM | Millionaire mindset coach",
+                    isCap: true,
+                    reason: "500 books/year = 1.4 books per DAY. IQ 195 is top 0.0001% - they wouldn't be a 'mindset coach'. Pure cap 🧢"
+                },
+                {
+                    name: "CryptoWhale",
+                    handle: "@CryptoWhale",
+                    bio: "Top 10 BTC holder | 500,000 ETH | Retired at 22 | Not financial advice | 🐋",
+                    isCap: true,
+                    reason: "Top 10 BTC holder is publicly trackable - none match this account. 500k ETH = $1B+. Cap of the highest order 🎪"
+                },
+                {
+                    name: "AIFounder",
+                    handle: "@AIFounder",
+                    bio: "Former OpenAI researcher | Left to build something bigger | Raised $50M stealth | Changing everything",
+                    isCap: true,
+                    reason: "'Former OpenAI' is verifiable - this person isn't listed. 'Stealth' for years with nothing to show = vaporware 💨"
+                },
+                // NO CAP - Legitimate (but might seem like cap)
+                {
+                    name: "Vitalik Buterin",
+                    handle: "@VitalikButerin",
+                    bio: "Ethereum",
+                    isCap: false,
+                    reason: "Simple, humble bio. Built Ethereum. Let the work speak. This is what real credibility looks like ✅"
+                },
+                {
+                    name: "Naval",
+                    handle: "@naval",
+                    bio: "Angel investor",
+                    isCap: false,
+                    reason: "Two words. No flex. But actually one of the most successful angel investors ever. Real ones don't need to brag ✅"
+                },
+                {
+                    name: "Balaji",
+                    handle: "@balaboroseis",
+                    bio: "Author of The Network State. Former CTO of Coinbase.",
+                    isCap: false,
+                    reason: "Verifiable credentials, humble presentation. Former Coinbase CTO is checkable. This is legit ✅"
+                },
+                {
+                    name: "Elon Musk",
+                    handle: "@elonmusk",
+                    bio: "Tesla, SpaceX, X",
+                    isCap: false,
+                    reason: "No 'IQ 300' or 'visionary' - just the companies. You can verify he runs these. No cap ✅"
+                },
+                {
+                    name: "SomeDevGuy",
+                    handle: "@SomeDevGuy",
+                    bio: "Software eng @Google | Building side projects | Opinions my own",
+                    isCap: false,
+                    reason: "Humble, verifiable, specific. Doesn't claim to be a genius or thought leader. Probably legit ✅"
+                },
+                {
+                    name: "indie_hacker",
+                    handle: "@indie_hacker",
+                    bio: "Making $5k MRR from my SaaS | Sharing the journey | Shipped 3 products",
+                    isCap: false,
+                    reason: "Specific, achievable numbers. Not claiming millions. This is believable and verifiable ✅"
+                },
+                // More CAP
+                {
+                    name: "MetaverseMogul",
+                    handle: "@MetaverseMogul",
+                    bio: "Own 10,000 ETH in virtual land | Metaverse real estate billionaire | The future is virtual",
+                    isCap: true,
+                    reason: "10,000 ETH = $20M+ in 'virtual land'? Even Snoop Dogg's neighbor plot was only $450k. Mega cap 🏠"
+                },
+                {
+                    name: "DeFiDegen",
+                    handle: "@DeFiDegen",
+                    bio: "Turned $1000 into $50M in DeFi summer | Now I teach others | Not selling anything (yet)",
+                    isCap: true,
+                    reason: "50,000x return would be one of the greatest trades ever. 'Not selling anything (yet)' = definitely selling something 🎣"
+                },
+                {
+                    name: "StartupSage",
+                    handle: "@StartupSage",
+                    bio: "Rejected by YC 5 times | Now worth $500M | Take that Sam Altman | Motivation speaker",
+                    isCap: true,
+                    reason: "Worth $500M but a 'motivation speaker'? Real $500M founders don't have time for speaking gigs. Also, weird flex on YC rejection 🤔"
+                },
+                {
+                    name: "NFTLord",
+                    handle: "@NFTLord",
+                    bio: "Sold NFTs for $100M total | Own 50 Bored Apes | Art collector | DM for colabs",
+                    isCap: true,
+                    reason: "50 Bored Apes = $5M+ minimum. '$100M in NFT sales' would make them one of the top artists ever. No evidence exists 🖼️"
+                },
+                {
+                    name: "ZenMasterCEO",
+                    handle: "@ZenMasterCEO",
+                    bio: "Meditating CEO | 4 hours sleep | 2 hour morning routine | 10 companies | Balance is key",
+                    isCap: true,
+                    reason: "4 hours sleep, 2 hour morning routine, running 10 companies, and has 'balance'? The math doesn't math ser 🧘"
+                }
+            ];
+            
+            const getRandomBio = () => {
+                const available = bioDatabase.filter(b => b.handle !== currentBio?.handle);
+                return available[Math.floor(Math.random() * available.length)];
+            };
+            
+            const startGame = () => {
+                setGameState('playing');
+                setRound(1);
+                setScore(0);
+                setStreak(0);
+                setMaxStreak(0);
+                setCurrentBio(getRandomBio());
+                setResult(null);
+                setMayorComment('');
+            };
+            
+            const makeGuess = async (guessedCap) => {
+                const correct = guessedCap === currentBio.isCap;
+                
+                // Calculate points
+                let points = correct ? 100 : 0;
+                if (correct) {
+                    points += streak * 25; // Streak bonus
+                    if (currentBio.isCap === false && guessedCap === false) {
+                        points += 50; // Bonus for correctly identifying legit people
+                    }
+                }
+                
+                const newScore = score + points;
+                const newStreak = correct ? streak + 1 : 0;
+                const newMaxStreak = Math.max(maxStreak, newStreak);
+                
+                setScore(newScore);
+                setStreak(newStreak);
+                setMaxStreak(newMaxStreak);
+                setResult({ correct, points, wasCAp: currentBio.isCap });
+                setGameState('result');
+                
+                // Get Mayor's commentary
+                setLoadingComment(true);
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: `Quick reaction to this X bio: "${currentBio.bio}" - The answer was ${currentBio.isCap ? 'CAP (fake/exaggerated)' : 'NO CAP (legit)'}. Give a 1-2 sentence savage or respectful comment.`,
+                            playerName: playerName || 'Citizen',
+                            playerLevel: 1,
+                            xUserContext: {
+                                query: currentBio.handle,
+                                info: `${currentBio.handle} (${currentBio.name}) - Bio: "${currentBio.bio}" - This is ${currentBio.isCap ? 'CAP/FAKE' : 'LEGIT/NO CAP'}. Reason: ${currentBio.reason}`
+                            }
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setMayorComment(data.response);
+                    } else {
+                        setMayorComment(currentBio.reason);
+                    }
+                } catch (e) {
+                    setMayorComment(currentBio.reason);
+                }
+                setLoadingComment(false);
+                
+                // Award resources
+                if (correct && onReward) {
+                    onReward('hopium', Math.floor(points / 2));
+                    onReward('alpha', Math.floor(points / 10));
+                }
+            };
+            
+            const nextRound = () => {
+                if (round >= totalRounds) {
+                    // Game over
+                    if (score > highScore) {
+                        setHighScore(score);
+                        localStorage.setItem('is_this_cap_highscore', score.toString());
+                    }
+                    // Track games played
+                    const gamesPlayed = parseInt(localStorage.getItem('is_this_cap_games') || '0') + 1;
+                    localStorage.setItem('is_this_cap_games', gamesPlayed.toString());
+                    
+                    if (onGameComplete) {
+                        onGameComplete('is_this_cap', { 
+                            score, 
+                            maxStreak: maxStreak,
+                            correctGuesses: Math.floor(score / 100)
+                        });
+                    }
+                    setGameState('gameover');
+                } else {
+                    setRound(round + 1);
+                    setCurrentBio(getRandomBio());
+                    setResult(null);
+                    setMayorComment('');
+                    setGameState('playing');
+                }
+            };
+            
+            return (
+                <div className="game-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+                    <div className="game-modal is-this-cap-game" onClick={e => e.stopPropagation()}>
+                        <button className="game-close-btn" onClick={onClose}>✕</button>
+                        
+                        <div className="game-header">
+                            <h2>🧢 Is This Cap?</h2>
+                            <p>Can you spot the BS in X bios?</p>
+                        </div>
+                        
+                        {gameState === 'start' && (
+                            <div className="game-start-screen">
+                                <div style={{ fontSize: '4em', marginBottom: '20px' }}>🧢</div>
+                                <h3>How to Play</h3>
+                                <p style={{ color: '#aaa', marginBottom: '20px', lineHeight: '1.6' }}>
+                                    You'll see real X/Twitter bios with various claims.<br/>
+                                    Decide if the claims are <span style={{ color: '#ff6b6b' }}>🧢 CAP</span> (fake/exaggerated)<br/>
+                                    or <span style={{ color: '#00ff88' }}>✅ NO CAP</span> (legit)
+                                </p>
+                                <div style={{ 
+                                    background: 'rgba(255,215,0,0.1)', 
+                                    padding: '15px', 
+                                    borderRadius: '10px',
+                                    marginBottom: '20px',
+                                    border: '1px solid rgba(255,215,0,0.3)'
+                                }}>
+                                    <p style={{ color: '#ffd700', margin: 0 }}>
+                                        🎩 Mayor Satoshi will give his savage verdict on each one!
+                                    </p>
+                                </div>
+                                <p style={{ color: '#888', fontSize: '0.9em' }}>
+                                    High Score: <span style={{ color: '#ffd700' }}>{highScore}</span>
+                                </p>
+                                <button className="game-start-btn" onClick={startGame}>
+                                    Start Detecting 🔍
+                                </button>
+                            </div>
+                        )}
+                        
+                        {gameState === 'playing' && currentBio && (
+                            <div className="cap-game-play">
+                                <div className="cap-game-stats">
+                                    <div>Round: {round}/{totalRounds}</div>
+                                    <div>Score: {score}</div>
+                                    <div>Streak: {streak > 0 ? `🔥 ${streak}` : '0'}</div>
+                                </div>
+                                
+                                <div className="cap-bio-card">
+                                    <div className="cap-bio-header">
+                                        <div className="cap-bio-avatar">👤</div>
+                                        <div>
+                                            <div className="cap-bio-name">{currentBio.name}</div>
+                                            <div className="cap-bio-handle">{currentBio.handle}</div>
+                                        </div>
+                                    </div>
+                                    <div className="cap-bio-text">
+                                        "{currentBio.bio}"
+                                    </div>
+                                </div>
+                                
+                                <div className="cap-guess-buttons">
+                                    <button 
+                                        className="cap-btn cap"
+                                        onClick={() => makeGuess(true)}
+                                    >
+                                        🧢 CAP<br/>
+                                        <span style={{ fontSize: '0.7em', opacity: 0.8 }}>Fake / Exaggerated</span>
+                                    </button>
+                                    <button 
+                                        className="cap-btn no-cap"
+                                        onClick={() => makeGuess(false)}
+                                    >
+                                        ✅ NO CAP<br/>
+                                        <span style={{ fontSize: '0.7em', opacity: 0.8 }}>Legit</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {gameState === 'result' && result && (
+                            <div className="cap-result-screen">
+                                <div style={{ 
+                                    fontSize: '3em', 
+                                    marginBottom: '15px',
+                                    animation: result.correct ? 'pulse 0.5s ease' : 'shake 0.5s ease'
+                                }}>
+                                    {result.correct ? '✅' : '❌'}
+                                </div>
+                                <h3 style={{ color: result.correct ? '#00ff88' : '#ff4444' }}>
+                                    {result.correct ? 'CORRECT!' : 'WRONG!'}
+                                </h3>
+                                <p style={{ color: '#ffd700', fontSize: '1.1em', marginBottom: '15px' }}>
+                                    It was: {result.wasCap ? '🧢 CAP' : '✅ NO CAP'}
+                                </p>
+                                
+                                {result.correct && (
+                                    <div style={{ color: '#00ff88', marginBottom: '15px' }}>
+                                        +{result.points} points {streak > 1 && `(${streak}x streak! 🔥)`}
+                                    </div>
+                                )}
+                                
+                                <div className="mayor-verdict">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                        <span style={{ fontSize: '1.5em' }}>🎩</span>
+                                        <span style={{ color: '#ffd700', fontWeight: 'bold' }}>Mayor's Verdict:</span>
+                                    </div>
+                                    <div style={{ 
+                                        background: 'rgba(138,43,226,0.2)', 
+                                        padding: '15px', 
+                                        borderRadius: '10px',
+                                        borderLeft: '4px solid #8a2be2',
+                                        minHeight: '60px'
+                                    }}>
+                                        {loadingComment ? (
+                                            <span style={{ color: '#888' }}>Mayor is thinking... 🤔</span>
+                                        ) : (
+                                            <span style={{ color: '#ddd', lineHeight: '1.5' }}>{mayorComment}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <button 
+                                    className="game-start-btn" 
+                                    onClick={nextRound}
+                                    style={{ marginTop: '20px' }}
+                                    disabled={loadingComment}
+                                >
+                                    {round >= totalRounds ? 'See Results' : 'Next Bio →'}
+                                </button>
+                            </div>
+                        )}
+                        
+                        {gameState === 'gameover' && (
+                            <div className="cap-gameover">
+                                <div style={{ fontSize: '3em', marginBottom: '15px' }}>🏆</div>
+                                <h3>Game Over!</h3>
+                                <div className="cap-final-stats">
+                                    <div className="cap-stat">
+                                        <span className="cap-stat-value">{score}</span>
+                                        <span className="cap-stat-label">Final Score</span>
+                                    </div>
+                                    <div className="cap-stat">
+                                        <span className="cap-stat-value">{maxStreak}</span>
+                                        <span className="cap-stat-label">Best Streak</span>
+                                    </div>
+                                    <div className="cap-stat">
+                                        <span className="cap-stat-value">{Math.floor(score / 100)}/{totalRounds}</span>
+                                        <span className="cap-stat-label">Correct</span>
+                                    </div>
+                                </div>
+                                
+                                {score > highScore && (
+                                    <div style={{ color: '#ffd700', marginBottom: '15px' }}>
+                                        🎉 NEW HIGH SCORE! 🎉
+                                    </div>
+                                )}
+                                
+                                <div style={{ 
+                                    background: 'rgba(0,255,136,0.1)', 
+                                    padding: '15px', 
+                                    borderRadius: '10px',
+                                    marginBottom: '20px'
+                                }}>
+                                    <p style={{ color: '#00ff88', margin: 0 }}>
+                                        Rewards: +{Math.floor(score / 2)} HOPIUM, +{Math.floor(score / 10)} ALPHA
+                                    </p>
+                                </div>
+                                
+                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                                    <button className="game-start-btn" onClick={startGame}>
+                                        Play Again
+                                    </button>
+                                    <button 
+                                        className="game-start-btn" 
+                                        onClick={onClose}
+                                        style={{ background: 'rgba(255,255,255,0.1)' }}
+                                    >
+                                        Exit
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         function SpotTheRug({ onClose, onReward, playerName, onGameComplete }) {
             const [gameState, setGameState] = useState('start');
             const [currentToken, setCurrentToken] = useState(null);
@@ -21417,6 +23492,16 @@
             
             const games = [
                 {
+                    id: 'is_this_cap',
+                    title: 'Is This Cap?',
+                    icon: '🧢',
+                    difficulty: 'medium',
+                    description: 'Spot fake claims in X bios! Mayor Satoshi roasts the BS.',
+                    rewards: ['+HOPIUM', '+ALPHA'],
+                    component: IsThisCap,
+                    featured: true
+                },
+                {
                     id: 'falling_knife',
                     title: 'Catch the Falling Knife',
                     icon: '🔪',
@@ -21570,20 +23655,32 @@
             );
         }
 
-        function CityView({ gameState, citizenCount }) {
+        function CityView({ gameState, citizenCount, character }) {
+            // Early return if no gameState
+            if (!gameState || !gameState.stats) {
+                return (
+                    <div className="city-section">
+                        <div className="city-view" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ textAlign: 'center', color: '#888' }}>Loading city view...</div>
+                        </div>
+                    </div>
+                );
+            }
+            
             // Determine city status based on stats
             const getCityStatus = () => {
-                const { morale, crime, treasury } = gameState.stats;
+                const { morale = 50, crime = 50, treasury = 5000 } = gameState.stats || {};
                 if (crime > 70 || morale < 30) return { status: 'danger', text: '⚠️ City in Crisis' };
                 if (crime > 50 || morale < 50 || treasury < 3000) return { status: 'warning', text: '⚡ Tensions Rising' };
                 return { status: 'good', text: '✨ City Thriving' };
             };
 
             const cityStatus = getCityStatus();
-            const highCrime = gameState.stats.crime > 60;
-            const highProsperity = gameState.stats.treasury > 7000 && gameState.stats.morale > 60;
+            const highCrime = (gameState.stats?.crime || 0) > 60;
+            const highProsperity = (gameState.stats?.treasury || 0) > 7000 && (gameState.stats?.morale || 0) > 60;
 
             return (
+                <>
                 <div className="city-section">
                     <div className="city-view">
                         {/* Dynamic overlays based on city stats */}
@@ -21616,6 +23713,15 @@
                         <TownReportAI gameState={gameState} cityStatus={cityStatus} />
                     </div>
                 </div>
+                
+                {/* Mayor Chat - Below Town Report with proper spacing */}
+                <div className="mayor-chat-section">
+                    <MayorChat 
+                        playerName={character?.name || 'Citizen'} 
+                        playerLevel={character?.level || 1} 
+                    />
+                </div>
+                </>
             );
         }
 
@@ -21627,8 +23733,9 @@
             
             // Generate dynamic report based on stats
             const generateReport = () => {
-                const { morale, treasury, crime } = gameState.stats;
-                const day = gameState.day;
+                if (!gameState || !gameState.stats) return null;
+                const { morale = 50, treasury = 5000, crime = 50 } = gameState.stats;
+                const day = gameState.day || 1;
                 
                 // Headlines based on dominant stat
                 const headlines = [];
@@ -21723,11 +23830,16 @@
             };
             
             useEffect(() => {
+                if (!gameState || !gameState.stats) return;
                 generateReport();
                 // Refresh every 30 seconds for dynamic feel
                 const interval = setInterval(generateReport, 30000);
                 return () => clearInterval(interval);
-            }, [gameState.stats, gameState.day]);
+            }, [gameState?.stats, gameState?.day]);
+            
+            if (!gameState || !gameState.stats) {
+                return <div style={{ color: '#888', padding: '20px', textAlign: 'center' }}>Loading city data...</div>;
+            }
             
             if (!report) return <div style={{ color: '#888', padding: '20px', textAlign: 'center' }}>Loading report...</div>;
             
@@ -23196,6 +25308,1607 @@
             );
         }
 
+        // ==================== DAILY MAYOR ROAST ====================
+        function DailyMayorRoast({ playerName }) {
+            const [roast, setRoast] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [expanded, setExpanded] = useState(false);
+            const [hasVoted, setHasVoted] = useState(false);
+            const [votes, setVotes] = useState({ fire: 0, cap: 0 });
+            const [showNominate, setShowNominate] = useState(false);
+            const [nominateHandle, setNominateHandle] = useState('');
+            const [nominateReason, setNominateReason] = useState('');
+            const [nominated, setNominated] = useState(false);
+            
+            // Daily roast targets - rotates based on day
+            const roastTargets = [
+                {
+                    handle: "@CryptoGuru999",
+                    name: "CryptoGuru999",
+                    bio: "IQ 250 | Predicted every crash | $500M portfolio | DM for mentorship 🚀",
+                    category: "Fake Genius"
+                },
+                {
+                    handle: "@Web3Visionary",
+                    name: "Web3 Visionary",
+                    bio: "Serial Entrepreneur (15 exits) | Angel Investor | Advisor to 100+ startups | Building the future",
+                    category: "Vague Flexer"
+                },
+                {
+                    handle: "@AlphaLeaks",
+                    name: "Alpha Leaks",
+                    bio: "100% win rate | Turned $50 into $5M | Free signals in DMs | Not financial advice",
+                    category: "Scam Alert"
+                },
+                {
+                    handle: "@MindsetMillionaire",
+                    name: "Mindset Millionaire",
+                    bio: "Wake up at 3AM | Read 2 books/day | 10x mindset | Retired at 25 | You're just lazy",
+                    category: "Grindset Cringe"
+                },
+                {
+                    handle: "@NFTWhale",
+                    name: "NFT Whale",
+                    bio: "Own 200 Bored Apes | $50M in JPEGs | The future is digital art | DM for collabs",
+                    category: "Cap Collector"
+                },
+                {
+                    handle: "@ThoughtLeaderX",
+                    name: "Thought Leader X", 
+                    bio: "Visionary | Futurist | 5x TEDx Speaker | Changing paradigms one post at a time",
+                    category: "Self-Proclaimed"
+                },
+                {
+                    handle: "@QuantKing",
+                    name: "Quant King",
+                    bio: "Ex-Goldman Ex-Citadel Ex-Jane Street | Now sharing secrets for free | You're welcome",
+                    category: "Resume Stacker"
+                }
+            ];
+            
+            // Get today's roast target based on date
+            const getTodaysTarget = () => {
+                const today = new Date();
+                const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+                return roastTargets[dayOfYear % roastTargets.length];
+            };
+            
+            // Check if user already voted today
+            useEffect(() => {
+                const today = new Date().toDateString();
+                const savedVote = localStorage.getItem('daily_roast_vote');
+                const savedVotes = localStorage.getItem('daily_roast_votes');
+                
+                if (savedVote === today) {
+                    setHasVoted(true);
+                }
+                
+                if (savedVotes) {
+                    try {
+                        const parsed = JSON.parse(savedVotes);
+                        if (parsed.date === today) {
+                            setVotes(parsed.votes);
+                        }
+                    } catch (e) {}
+                }
+                
+                fetchRoast();
+            }, []);
+            
+            const fetchRoast = async () => {
+                setLoading(true);
+                const target = getTodaysTarget();
+                
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: `Give me your daily roast of this X profile. Be savage but funny!`,
+                            playerName: 'Daily Roast',
+                            playerLevel: 1,
+                            xUserContext: {
+                                query: target.handle,
+                                info: `${target.handle} (${target.name}) - Bio: "${target.bio}" - Category: ${target.category}. This is today's roast target. Be SAVAGE and call out the BS!`
+                            }
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        setRoast({
+                            target,
+                            mayorComment: data.response,
+                            date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                        });
+                    }
+                } catch (error) {
+                    // Fallback roast
+                    setRoast({
+                        target,
+                        mayorComment: `${target.handle}?! Ser, this bio is PURE FICTION. "${target.bio}" - I've seen more credibility in a rugpull whitepaper! 🧢💀`,
+                        date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                    });
+                }
+                
+                setLoading(false);
+            };
+            
+            const handleVote = (type) => {
+                if (hasVoted) return;
+                
+                const newVotes = { ...votes, [type]: votes[type] + 1 };
+                setVotes(newVotes);
+                setHasVoted(true);
+                
+                const today = new Date().toDateString();
+                localStorage.setItem('daily_roast_vote', today);
+                localStorage.setItem('daily_roast_votes', JSON.stringify({ date: today, votes: newVotes }));
+            };
+            
+            const handleNominate = () => {
+                if (!nominateHandle.trim()) return;
+                
+                // In a real app, this would send to backend
+                console.log('Nomination:', { handle: nominateHandle, reason: nominateReason, by: playerName });
+                
+                setNominated(true);
+                setTimeout(() => {
+                    setShowNominate(false);
+                    setNominateHandle('');
+                    setNominateReason('');
+                    setNominated(false);
+                }, 2000);
+            };
+            
+            const shareOnX = () => {
+                const text = `🧢 Today's Roast on Pump Town!\n\n${roast.target.handle}: "${roast.target.bio}"\n\n🎩 Mayor Satoshi says: "${roast.mayorComment.substring(0, 150)}..."\n\nPlay at pump-town.xyz 🏛️`;
+                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+            };
+            
+            if (loading) {
+                return (
+                    <div className="daily-roast">
+                        <div className="daily-roast-header">
+                            <span>🔥</span>
+                            <span>Daily Roast</span>
+                        </div>
+                        <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                            Mayor is preparing today's roast... 🎩
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="daily-roast">
+                    <div 
+                        className="daily-roast-header"
+                        onClick={() => setExpanded(!expanded)}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>🔥</span>
+                            <span>Daily Roast</span>
+                            <span style={{ 
+                                fontSize: '0.7em', 
+                                background: 'rgba(255,107,107,0.2)', 
+                                padding: '2px 8px', 
+                                borderRadius: '10px',
+                                color: '#ff6b6b'
+                            }}>
+                                {roast?.date}
+                            </span>
+                        </div>
+                        <span style={{ color: '#888' }}>{expanded ? '▼' : '▶'}</span>
+                    </div>
+                    
+                    {expanded && roast && (
+                        <div className="daily-roast-content">
+                            {/* Target Bio Card */}
+                            <div className="roast-target-card">
+                                <div className="roast-target-header">
+                                    <div className="roast-target-avatar">👤</div>
+                                    <div>
+                                        <div className="roast-target-name">{roast.target.name}</div>
+                                        <div className="roast-target-handle">{roast.target.handle}</div>
+                                    </div>
+                                    <div className="roast-category">{roast.target.category}</div>
+                                </div>
+                                <div className="roast-target-bio">
+                                    "{roast.target.bio}"
+                                </div>
+                            </div>
+                            
+                            {/* Mayor's Roast */}
+                            <div className="mayor-roast-box">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                    <span style={{ fontSize: '1.3em' }}>🎩</span>
+                                    <span style={{ color: '#ffd700', fontWeight: 'bold' }}>Mayor's Verdict:</span>
+                                </div>
+                                <div className="mayor-roast-text">
+                                    {roast.mayorComment}
+                                </div>
+                            </div>
+                            
+                            {/* Voting */}
+                            <div className="roast-voting">
+                                <button 
+                                    className={`roast-vote-btn fire ${hasVoted ? 'voted' : ''}`}
+                                    onClick={() => handleVote('fire')}
+                                    disabled={hasVoted}
+                                >
+                                    🔥 {votes.fire} Fire
+                                </button>
+                                <button 
+                                    className={`roast-vote-btn cap ${hasVoted ? 'voted' : ''}`}
+                                    onClick={() => handleVote('cap')}
+                                    disabled={hasVoted}
+                                >
+                                    🧢 {votes.cap} Cap
+                                </button>
+                            </div>
+                            
+                            {/* Actions */}
+                            <div className="roast-actions">
+                                <button className="roast-action-btn" onClick={shareOnX}>
+                                    📤 Share on X
+                                </button>
+                                <button 
+                                    className="roast-action-btn nominate"
+                                    onClick={() => setShowNominate(!showNominate)}
+                                >
+                                    ✋ Nominate
+                                </button>
+                            </div>
+                            
+                            {/* Nominate Form */}
+                            {showNominate && (
+                                <div className="nominate-form">
+                                    {nominated ? (
+                                        <div style={{ textAlign: 'center', color: '#00ff88', padding: '15px' }}>
+                                            ✅ Nomination submitted! Mayor will review it.
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <input
+                                                type="text"
+                                                placeholder="@handle to roast"
+                                                value={nominateHandle}
+                                                onChange={(e) => setNominateHandle(e.target.value)}
+                                                className="nominate-input"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Why should they be roasted? (optional)"
+                                                value={nominateReason}
+                                                onChange={(e) => setNominateReason(e.target.value)}
+                                                className="nominate-input"
+                                            />
+                                            <button 
+                                                className="nominate-submit"
+                                                onClick={handleNominate}
+                                                disabled={!nominateHandle.trim()}
+                                            >
+                                                Submit Nomination 🔥
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ==================== ROAST LEADERBOARD ====================
+        function RoastLeaderboard({ playerName }) {
+            const [activeTab, setActiveTab] = useState('detectors');
+            const [expanded, setExpanded] = useState(false);
+            
+            // Get player's roast stats from localStorage
+            const getPlayerRoastStats = () => {
+                const highScore = parseInt(localStorage.getItem('is_this_cap_highscore') || '0');
+                const gamesPlayed = parseInt(localStorage.getItem('is_this_cap_games') || '0');
+                return { highScore, gamesPlayed };
+            };
+            
+            const playerStats = getPlayerRoastStats();
+            
+            // Top Cap Detectors (players who are good at spotting BS)
+            const topDetectors = [
+                { rank: 1, name: 'cap_hunter_9000', score: 2850, streak: 12, accuracy: '94%', badge: '🏆' },
+                { rank: 2, name: 'bs_detector_pro', score: 2640, streak: 10, accuracy: '91%', badge: '🥈' },
+                { rank: 3, name: 'truth_seeker', score: 2410, streak: 8, accuracy: '89%', badge: '🥉' },
+                { rank: 4, name: 'roast_master', score: 2180, streak: 9, accuracy: '87%', badge: '' },
+                { rank: 5, name: 'vibe_checker', score: 1950, streak: 7, accuracy: '85%', badge: '' },
+                { rank: 6, name: 'cap_police', score: 1820, streak: 6, accuracy: '84%', badge: '' },
+                { rank: 7, name: 'fraud_finder', score: 1690, streak: 5, accuracy: '82%', badge: '' },
+                { rank: 8, name: 'skeptic_supreme', score: 1540, streak: 5, accuracy: '80%', badge: '' },
+            ];
+            
+            // Wall of Shame - Most roasted bio types
+            const wallOfShame = [
+                { rank: 1, type: 'Fake IQ Claims', example: 'IQ 250+', roasts: 1247, icon: '🧠', shame: '🧢🧢🧢' },
+                { rank: 2, type: '100% Win Rate', example: 'Never lost a trade', roasts: 1089, icon: '📈', shame: '🧢🧢🧢' },
+                { rank: 3, type: 'Serial Entrepreneur', example: '10+ exits', roasts: 982, icon: '💼', shame: '🧢🧢' },
+                { rank: 4, type: 'Thought Leader', example: 'Self-proclaimed visionary', roasts: 876, icon: '💭', shame: '🧢🧢' },
+                { rank: 5, type: 'Grindset Guru', example: 'Wake up at 3AM', roasts: 754, icon: '⏰', shame: '🧢🧢' },
+                { rank: 6, type: 'Crypto Oracle', example: 'Predicted BTC at $1', roasts: 698, icon: '🔮', shame: '🧢' },
+                { rank: 7, type: 'Stealth Founder', example: 'Building in stealth for 3 years', roasts: 621, icon: '🥷', shame: '🧢' },
+                { rank: 8, type: 'NFT Whale', example: 'Own 100 Bored Apes', roasts: 543, icon: '🖼️', shame: '🧢' },
+            ];
+            
+            // Hall of Fame - Actually legit people (rare)
+            const hallOfFame = [
+                { rank: 1, name: 'Vitalik Buterin', handle: '@VitalikButerin', bio: 'Ethereum', respect: 2341, icon: '✅' },
+                { rank: 2, name: 'Naval', handle: '@naval', bio: 'Angel investor', respect: 1987, icon: '✅' },
+                { rank: 3, name: 'Satoshi Nakamoto', handle: '@satoshi', bio: '...', respect: 1876, icon: '👻' },
+                { rank: 4, name: 'Humble Devs', handle: '@various', bio: 'Just building', respect: 1654, icon: '✅' },
+            ];
+            
+            // Find player's rank
+            const getPlayerRank = () => {
+                if (playerStats.highScore === 0) return null;
+                const rank = topDetectors.findIndex(d => playerStats.highScore > d.score) + 1;
+                return rank > 0 ? rank : topDetectors.length + 1;
+            };
+            
+            const playerRank = getPlayerRank();
+            
+            return (
+                <div className="roast-leaderboard">
+                    <div 
+                        className="roast-leaderboard-header"
+                        onClick={() => setExpanded(!expanded)}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>🏆</span>
+                            <span>Roast Leaderboard</span>
+                        </div>
+                        <span style={{ color: '#888' }}>{expanded ? '▼' : '▶'}</span>
+                    </div>
+                    
+                    {expanded && (
+                        <div className="roast-leaderboard-content">
+                            {/* Player Stats Banner */}
+                            {playerStats.highScore > 0 && (
+                                <div className="player-roast-stats">
+                                    <div className="player-roast-stat">
+                                        <span className="stat-value">{playerStats.highScore}</span>
+                                        <span className="stat-label">Your Best</span>
+                                    </div>
+                                    <div className="player-roast-stat">
+                                        <span className="stat-value">#{playerRank || '?'}</span>
+                                        <span className="stat-label">Your Rank</span>
+                                    </div>
+                                    <div className="player-roast-stat">
+                                        <span className="stat-value">{playerStats.gamesPlayed}</span>
+                                        <span className="stat-label">Games</span>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Tabs */}
+                            <div className="roast-lb-tabs">
+                                <button 
+                                    className={`roast-lb-tab ${activeTab === 'detectors' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('detectors')}
+                                >
+                                    🔍 Top Detectors
+                                </button>
+                                <button 
+                                    className={`roast-lb-tab ${activeTab === 'shame' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('shame')}
+                                >
+                                    🧢 Wall of Shame
+                                </button>
+                                <button 
+                                    className={`roast-lb-tab ${activeTab === 'fame' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('fame')}
+                                >
+                                    ✅ Hall of Fame
+                                </button>
+                            </div>
+                            
+                            {/* Top Detectors Tab */}
+                            {activeTab === 'detectors' && (
+                                <div className="roast-lb-list">
+                                    {topDetectors.map((player, idx) => (
+                                        <div key={idx} className={`roast-lb-entry ${idx < 3 ? 'top-3' : ''}`}>
+                                            <div className="roast-lb-rank">
+                                                {player.badge || `#${player.rank}`}
+                                            </div>
+                                            <div className="roast-lb-info">
+                                                <div className="roast-lb-name">{player.name}</div>
+                                                <div className="roast-lb-meta">
+                                                    🔥 {player.streak} streak • {player.accuracy} accuracy
+                                                </div>
+                                            </div>
+                                            <div className="roast-lb-score">{player.score.toLocaleString()}</div>
+                                        </div>
+                                    ))}
+                                    
+                                    {/* Show player if not in top 8 */}
+                                    {playerStats.highScore > 0 && playerRank > 8 && (
+                                        <>
+                                            <div className="roast-lb-divider">• • •</div>
+                                            <div className="roast-lb-entry you">
+                                                <div className="roast-lb-rank">#{playerRank}</div>
+                                                <div className="roast-lb-info">
+                                                    <div className="roast-lb-name">{playerName} (You)</div>
+                                                    <div className="roast-lb-meta">Keep playing to climb!</div>
+                                                </div>
+                                                <div className="roast-lb-score">{playerStats.highScore.toLocaleString()}</div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                            
+                            {/* Wall of Shame Tab */}
+                            {activeTab === 'shame' && (
+                                <div className="roast-lb-list">
+                                    <div className="shame-intro">
+                                        Most common BS claims spotted by Pump Town citizens:
+                                    </div>
+                                    {wallOfShame.map((item, idx) => (
+                                        <div key={idx} className={`roast-lb-entry shame ${idx < 3 ? 'top-3' : ''}`}>
+                                            <div className="roast-lb-rank shame-icon">{item.icon}</div>
+                                            <div className="roast-lb-info">
+                                                <div className="roast-lb-name">{item.type}</div>
+                                                <div className="roast-lb-meta">
+                                                    "{item.example}" {item.shame}
+                                                </div>
+                                            </div>
+                                            <div className="roast-lb-score shame-count">
+                                                {item.roasts.toLocaleString()}
+                                                <span style={{ fontSize: '0.7em', display: 'block', color: '#888' }}>roasts</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {/* Hall of Fame Tab */}
+                            {activeTab === 'fame' && (
+                                <div className="roast-lb-list">
+                                    <div className="fame-intro">
+                                        Accounts with humble, verifiable bios. Real ones don't flex:
+                                    </div>
+                                    {hallOfFame.map((item, idx) => (
+                                        <div key={idx} className="roast-lb-entry fame">
+                                            <div className="roast-lb-rank fame-icon">{item.icon}</div>
+                                            <div className="roast-lb-info">
+                                                <div className="roast-lb-name">{item.name}</div>
+                                                <div className="roast-lb-meta">
+                                                    {item.handle} • "{item.bio}"
+                                                </div>
+                                            </div>
+                                            <div className="roast-lb-score fame-count">
+                                                {item.respect.toLocaleString()}
+                                                <span style={{ fontSize: '0.7em', display: 'block', color: '#00ff88' }}>respect</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ==================== CITIZEN RIVALRIES ====================
+        function CitizenRivalries({ playerName, playerStats }) {
+            const [expanded, setExpanded] = useState(false);
+            const [activeChallenge, setActiveChallenge] = useState(null);
+            const [showChallenge, setShowChallenge] = useState(false);
+            const [challengeTarget, setChallengeTarget] = useState('');
+            const [challengeSent, setChallengeSent] = useState(false);
+            const [rivalries, setRivalries] = useState(() => {
+                const saved = localStorage.getItem('pump_town_rivalries');
+                return saved ? JSON.parse(saved) : [];
+            });
+            
+            // Active beefs in Pump Town (seeded data + player rivalries)
+            const activeBeefs = [
+                {
+                    id: 'beef_1',
+                    challenger: 'cap_hunter_9000',
+                    defender: 'bs_detector_pro',
+                    challengerScore: 2850,
+                    defenderScore: 2640,
+                    status: 'active',
+                    mayorComment: "Two TITANS of cap detection going head to head! 🔥 cap_hunter_9000 is up 210 points but bs_detector_pro has that comeback energy. This is gonna be SPICY ser! 🌶️",
+                    stake: '500 HOPIUM',
+                    startedAt: '2 hours ago'
+                },
+                {
+                    id: 'beef_2',
+                    challenger: 'roast_master',
+                    defender: 'vibe_checker',
+                    challengerScore: 2180,
+                    defenderScore: 1950,
+                    status: 'active',
+                    mayorComment: "roast_master threw down the GAUNTLET and vibe_checker accepted! Currently 230 points apart. Will the vibes be checked or will they be WRECKED?! 💀",
+                    stake: '300 HOPIUM',
+                    startedAt: '5 hours ago'
+                },
+                {
+                    id: 'beef_3',
+                    challenger: 'truth_seeker',
+                    defender: 'fraud_finder',
+                    challengerScore: 2410,
+                    defenderScore: 1690,
+                    status: 'complete',
+                    winner: 'truth_seeker',
+                    mayorComment: "ABSOLUTE DOMINATION! truth_seeker came in with 720 POINTS MORE and sent fraud_finder back to the shadow realm! That's not a rivalry, that's a PUBLIC EXECUTION! 😭🏆",
+                    stake: '400 HOPIUM',
+                    completedAt: '1 day ago'
+                }
+            ];
+            
+            // Potential rivals (players close to your skill level)
+            const potentialRivals = [
+                { name: 'skeptic_supreme', score: 1540, level: 8, status: 'online', matchup: '52%' },
+                { name: 'cap_police', score: 1820, level: 9, status: 'online', matchup: '48%' },
+                { name: 'fraud_finder', score: 1690, level: 7, status: 'away', matchup: '50%' },
+                { name: 'truth_seeker', score: 2410, level: 12, status: 'online', matchup: '35%' },
+            ];
+            
+            const sendChallenge = () => {
+                if (!challengeTarget.trim()) return;
+                
+                // Create new rivalry
+                const newRivalry = {
+                    id: `rivalry_${Date.now()}`,
+                    challenger: playerName,
+                    defender: challengeTarget,
+                    challengerScore: playerStats?.highScore || 0,
+                    defenderScore: 0,
+                    status: 'pending',
+                    stake: '250 HOPIUM',
+                    createdAt: new Date().toISOString()
+                };
+                
+                const updatedRivalries = [...rivalries, newRivalry];
+                setRivalries(updatedRivalries);
+                localStorage.setItem('pump_town_rivalries', JSON.stringify(updatedRivalries));
+                
+                setChallengeSent(true);
+                setTimeout(() => {
+                    setShowChallenge(false);
+                    setChallengeTarget('');
+                    setChallengeSent(false);
+                }, 2000);
+            };
+            
+            const quickChallenge = (rivalName) => {
+                setChallengeTarget(rivalName);
+                setShowChallenge(true);
+            };
+            
+            return (
+                <div className="citizen-rivalries">
+                    <div 
+                        className="rivalries-header"
+                        onClick={() => setExpanded(!expanded)}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>⚔️</span>
+                            <span>Citizen Rivalries</span>
+                            {activeBeefs.filter(b => b.status === 'active').length > 0 && (
+                                <span className="rivalry-badge">
+                                    {activeBeefs.filter(b => b.status === 'active').length} LIVE
+                                </span>
+                            )}
+                        </div>
+                        <span style={{ color: '#888' }}>{expanded ? '▼' : '▶'}</span>
+                    </div>
+                    
+                    {expanded && (
+                        <div className="rivalries-content">
+                            {/* Challenge Button */}
+                            <button 
+                                className="challenge-btn"
+                                onClick={() => setShowChallenge(!showChallenge)}
+                            >
+                                ⚔️ Challenge a Citizen
+                            </button>
+                            
+                            {/* Challenge Form */}
+                            {showChallenge && (
+                                <div className="challenge-form">
+                                    {challengeSent ? (
+                                        <div className="challenge-sent">
+                                            ⚔️ Challenge sent to {challengeTarget}!<br/>
+                                            <span style={{ fontSize: '0.85em', color: '#888' }}>They have 24h to respond</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <input
+                                                type="text"
+                                                placeholder="Enter citizen name..."
+                                                value={challengeTarget}
+                                                onChange={(e) => setChallengeTarget(e.target.value)}
+                                                className="challenge-input"
+                                            />
+                                            <div className="challenge-stake">
+                                                Stake: <span style={{ color: '#00ff88' }}>250 HOPIUM</span>
+                                            </div>
+                                            <button 
+                                                className="send-challenge-btn"
+                                                onClick={sendChallenge}
+                                                disabled={!challengeTarget.trim()}
+                                            >
+                                                Send Challenge ⚔️
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                            
+                            {/* Quick Challenge - Potential Rivals */}
+                            <div className="potential-rivals">
+                                <div className="rivals-section-title">🎯 Potential Rivals</div>
+                                <div className="rivals-list">
+                                    {potentialRivals.map((rival, idx) => (
+                                        <div key={idx} className="rival-card">
+                                            <div className="rival-info">
+                                                <div className="rival-name">
+                                                    {rival.name}
+                                                    <span className={`rival-status ${rival.status}`}>●</span>
+                                                </div>
+                                                <div className="rival-stats">
+                                                    Score: {rival.score} • Lvl {rival.level}
+                                                </div>
+                                            </div>
+                                            <div className="rival-matchup">
+                                                <div className="matchup-percent">{rival.matchup}</div>
+                                                <div className="matchup-label">win chance</div>
+                                            </div>
+                                            <button 
+                                                className="quick-challenge-btn"
+                                                onClick={() => quickChallenge(rival.name)}
+                                            >
+                                                ⚔️
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Active Beefs */}
+                            <div className="active-beefs">
+                                <div className="rivals-section-title">🔥 Active Beefs</div>
+                                {activeBeefs.filter(b => b.status === 'active').map((beef, idx) => (
+                                    <div key={idx} className="beef-card active">
+                                        <div className="beef-header">
+                                            <div className="beef-players">
+                                                <span className="beef-player challenger">{beef.challenger}</span>
+                                                <span className="beef-vs">⚔️</span>
+                                                <span className="beef-player defender">{beef.defender}</span>
+                                            </div>
+                                            <div className="beef-stake">{beef.stake}</div>
+                                        </div>
+                                        <div className="beef-scores">
+                                            <div className="beef-score challenger">
+                                                <span className="score-value">{beef.challengerScore}</span>
+                                                <span className="score-label">pts</span>
+                                            </div>
+                                            <div className="beef-diff">
+                                                {beef.challengerScore > beef.defenderScore ? (
+                                                    <span style={{ color: '#00ff88' }}>+{beef.challengerScore - beef.defenderScore}</span>
+                                                ) : (
+                                                    <span style={{ color: '#ff6b6b' }}>{beef.challengerScore - beef.defenderScore}</span>
+                                                )}
+                                            </div>
+                                            <div className="beef-score defender">
+                                                <span className="score-value">{beef.defenderScore}</span>
+                                                <span className="score-label">pts</span>
+                                            </div>
+                                        </div>
+                                        <div className="beef-mayor-comment">
+                                            <span style={{ marginRight: '8px' }}>🎩</span>
+                                            {beef.mayorComment}
+                                        </div>
+                                        <div className="beef-footer">
+                                            <span>Started {beef.startedAt}</span>
+                                            <span className="beef-live">🔴 LIVE</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            {/* Recent Results */}
+                            <div className="beef-results">
+                                <div className="rivals-section-title">🏆 Recent Results</div>
+                                {activeBeefs.filter(b => b.status === 'complete').map((beef, idx) => (
+                                    <div key={idx} className="beef-card complete">
+                                        <div className="beef-header">
+                                            <div className="beef-players">
+                                                <span className={`beef-player ${beef.winner === beef.challenger ? 'winner' : 'loser'}`}>
+                                                    {beef.winner === beef.challenger && '👑 '}{beef.challenger}
+                                                </span>
+                                                <span className="beef-vs">vs</span>
+                                                <span className={`beef-player ${beef.winner === beef.defender ? 'winner' : 'loser'}`}>
+                                                    {beef.winner === beef.defender && '👑 '}{beef.defender}
+                                                </span>
+                                            </div>
+                                            <div className="beef-stake won">+{beef.stake}</div>
+                                        </div>
+                                        <div className="beef-mayor-comment result">
+                                            <span style={{ marginRight: '8px' }}>🎩</span>
+                                            {beef.mayorComment}
+                                        </div>
+                                        <div className="beef-footer">
+                                            <span>Ended {beef.completedAt}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ==================== MAYOR'S HOT TAKES TICKER ====================
+        function MayorHotTakes() {
+            const [currentTakeIndex, setCurrentTakeIndex] = useState(0);
+            const [reactions, setReactions] = useState(() => {
+                const saved = localStorage.getItem('hot_takes_reactions');
+                return saved ? JSON.parse(saved) : {};
+            });
+            const [isAnimating, setIsAnimating] = useState(false);
+            
+            const hotTakes = [
+                { id: 1, take: "If your portfolio needs 'diamond hands' to hold, maybe you just made bad decisions 💎🤔", category: "truth bomb" },
+                { id: 2, take: "Anyone with 'IQ' in their bio has an IQ lower than their follower count 🧠📉", category: "roast" },
+                { id: 3, take: "The real friends were the rugs we survived along the way 🤝", category: "wisdom" },
+                { id: 4, take: "'Not financial advice' is just legal speak for 'I'm about to say something stupid' 📜", category: "truth bomb" },
+                { id: 5, take: "If a coin needs a 10-page whitepaper to explain what it does, it does nothing 📄", category: "alpha" },
+                { id: 6, take: "Every 'generational buying opportunity' is followed by an even more generational one 📊", category: "truth bomb" },
+                { id: 7, take: "'Serial Entrepreneur' = I've failed upward multiple times and somehow kept getting funded 💼", category: "roast" },
+                { id: 8, take: "The best indicator is not RSI or MACD, it's how confident crypto Twitter is 🐦", category: "alpha" },
+                { id: 9, take: "If you're taking trading advice from someone with laser eyes, you deserve what happens next 👀", category: "roast" },
+                { id: 10, take: "WAGMI but statistically speaking, most of us NGMI and that's just math 📈", category: "truth bomb" },
+                { id: 11, take: "'Building in public' is often just 'failing in public with better marketing' 🏗️", category: "roast" },
+                { id: 12, take: "The real alpha is touching grass occasionally. Trust me, I'm an AI and even I know that 🌿", category: "wisdom" },
+                { id: 13, take: "If your exit strategy is 'never selling', your exit strategy is dying poor 💀", category: "truth bomb" },
+                { id: 14, take: "'Thought leader' is what you call yourself when you don't actually build anything 💭", category: "roast" },
+                { id: 15, take: "The market can stay irrational longer than you can stay liquid. Ask me how I know 💧", category: "wisdom" },
+                { id: 16, take: "Every influencer's 'conviction play' is just their biggest bag they need to dump 🎒", category: "alpha" },
+                { id: 17, take: "'I'm early' and 'I bought the top' are often the same thing said at different times ⏰", category: "truth bomb" },
+                { id: 18, take: "Your 'life-changing money' target keeps changing because you keep losing money 🎯", category: "roast" },
+                { id: 19, take: "The best time to buy Bitcoin was 10 years ago. The second best time is after you DYOR 🔍", category: "wisdom" },
+                { id: 20, take: "If someone DMs you about an 'opportunity', the only opportunity is for them to scam you 📩", category: "alpha" },
+            ];
+            
+            // Rotate takes every 8 seconds
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setIsAnimating(true);
+                    setTimeout(() => {
+                        setCurrentTakeIndex(prev => (prev + 1) % hotTakes.length);
+                        setIsAnimating(false);
+                    }, 500);
+                }, 8000);
+                
+                return () => clearInterval(interval);
+            }, []);
+            
+            const currentTake = hotTakes[currentTakeIndex];
+            const takeReactions = reactions[currentTake.id] || { fire: 0, cap: 0 };
+            const hasReacted = localStorage.getItem(`take_reaction_${currentTake.id}`);
+            
+            const handleReaction = (type) => {
+                if (hasReacted) return;
+                
+                const newReactions = {
+                    ...reactions,
+                    [currentTake.id]: {
+                        ...takeReactions,
+                        [type]: takeReactions[type] + 1
+                    }
+                };
+                
+                setReactions(newReactions);
+                localStorage.setItem('hot_takes_reactions', JSON.stringify(newReactions));
+                localStorage.setItem(`take_reaction_${currentTake.id}`, type);
+            };
+            
+            const shareOnX = () => {
+                const text = `🎩 Mayor Satoshi's Hot Take:\n\n"${currentTake.take}"\n\n${takeReactions.fire > takeReactions.cap ? '🔥 The people agree!' : '🧢 Controversial!'}\n\nMore alpha at pump-town.xyz`;
+                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+            };
+            
+            const getCategoryColor = (category) => {
+                switch(category) {
+                    case 'roast': return '#ff6b6b';
+                    case 'alpha': return '#00ff88';
+                    case 'wisdom': return '#ffd700';
+                    case 'truth bomb': return '#00d4ff';
+                    default: return '#888';
+                }
+            };
+            
+            const nextTake = () => {
+                setIsAnimating(true);
+                setTimeout(() => {
+                    setCurrentTakeIndex(prev => (prev + 1) % hotTakes.length);
+                    setIsAnimating(false);
+                }, 300);
+            };
+            
+            const prevTake = () => {
+                setIsAnimating(true);
+                setTimeout(() => {
+                    setCurrentTakeIndex(prev => (prev - 1 + hotTakes.length) % hotTakes.length);
+                    setIsAnimating(false);
+                }, 300);
+            };
+            
+            return (
+                <div className="hot-takes-ticker">
+                    <div className="hot-takes-label">
+                        <span className="hot-takes-icon">🎩</span>
+                        <span>HOT TAKE</span>
+                        <span 
+                            className="hot-takes-category"
+                            style={{ background: `${getCategoryColor(currentTake.category)}33`, color: getCategoryColor(currentTake.category) }}
+                        >
+                            {currentTake.category.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    <div className="hot-takes-content">
+                        <button className="hot-takes-nav prev" onClick={prevTake}>‹</button>
+                        
+                        <div className={`hot-takes-text ${isAnimating ? 'animating' : ''}`}>
+                            "{currentTake.take}"
+                        </div>
+                        
+                        <button className="hot-takes-nav next" onClick={nextTake}>›</button>
+                    </div>
+                    
+                    <div className="hot-takes-actions">
+                        <div className="hot-takes-reactions">
+                            <button 
+                                className={`take-reaction fire ${hasReacted === 'fire' ? 'reacted' : ''}`}
+                                onClick={() => handleReaction('fire')}
+                                disabled={!!hasReacted}
+                            >
+                                🔥 {takeReactions.fire}
+                            </button>
+                            <button 
+                                className={`take-reaction cap ${hasReacted === 'cap' ? 'reacted' : ''}`}
+                                onClick={() => handleReaction('cap')}
+                                disabled={!!hasReacted}
+                            >
+                                🧢 {takeReactions.cap}
+                            </button>
+                        </div>
+                        <button className="take-share" onClick={shareOnX}>
+                            📤
+                        </button>
+                        <div className="hot-takes-counter">
+                            {currentTakeIndex + 1}/{hotTakes.length}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== MAYOR'S VERDICT HISTORY ====================
+        function MayorVerdictHistory({ playerName }) {
+            const [expanded, setExpanded] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [filterType, setFilterType] = useState('all');
+            const [verdicts, setVerdicts] = useState(() => {
+                const saved = localStorage.getItem('mayor_verdict_history');
+                return saved ? JSON.parse(saved) : [];
+            });
+            
+            // Seeded verdict history for new players
+            const seededVerdicts = [
+                {
+                    id: 'v1',
+                    handle: '@CryptoGuru999',
+                    name: 'CryptoGuru999',
+                    bio: 'IQ 250 | Predicted every crash | $500M portfolio',
+                    verdict: 'cap',
+                    mayorComment: "IQ 250?! 😭 Ser, Einstein was 160. This person is claiming to be 60% SMARTER than Einstein while shilling on crypto Twitter. The only thing they predicted was how to farm engagement from gullible degens. MAXIMUM CAP! 🧢🚨",
+                    timestamp: Date.now() - 86400000 * 2,
+                    reactions: { fire: 127, cap: 12 }
+                },
+                {
+                    id: 'v2',
+                    handle: '@VitalikButerin',
+                    name: 'Vitalik Buterin',
+                    bio: 'Ethereum',
+                    verdict: 'nocap',
+                    mayorComment: "One word bio. Built a $200B+ ecosystem. Doesn't need to flex IQ numbers or list fake credentials. This is what ACTUAL credibility looks like, frens. The work speaks. Respect. ✅🙌",
+                    timestamp: Date.now() - 86400000 * 3,
+                    reactions: { fire: 342, cap: 5 }
+                },
+                {
+                    id: 'v3',
+                    handle: '@AlphaLeaks',
+                    name: 'Alpha Leaks',
+                    bio: '100% win rate | Never lost a trade | Free signals in DMs',
+                    verdict: 'cap',
+                    mayorComment: "100% WIN RATE?! 💀 Ser, even the best quants in the world hit maybe 55-60%. This is either a scammer or someone who deletes their losing calls. 'Free signals in DMs' = incoming rug. RUN. 🏃‍♂️🚨",
+                    timestamp: Date.now() - 86400000 * 4,
+                    reactions: { fire: 89, cap: 3 }
+                },
+                {
+                    id: 'v4',
+                    handle: '@naval',
+                    name: 'Naval',
+                    bio: 'Angel investor',
+                    verdict: 'nocap',
+                    mayorComment: "Two words. Doesn't say 'LEGENDARY angel investor' or '1000x returns'. Just 'Angel investor'. Meanwhile actually has hits like Twitter, Uber, and countless others. Humble kings stay humble. ✅",
+                    timestamp: Date.now() - 86400000 * 5,
+                    reactions: { fire: 201, cap: 8 }
+                },
+                {
+                    id: 'v5',
+                    handle: '@ThoughtLeaderX',
+                    name: 'Thought Leader X',
+                    bio: 'Visionary | Futurist | 5x TEDx Speaker | Changing paradigms',
+                    verdict: 'cap',
+                    mayorComment: "Self-proclaimed 'Visionary' and 'Thought Leader' 💀 Fren, these are titles OTHER PEOPLE give you. Also TEDx ≠ TED. Anyone can do TEDx if they pay. This bio is a red flag factory. 🧢",
+                    timestamp: Date.now() - 86400000 * 6,
+                    reactions: { fire: 156, cap: 21 }
+                },
+                {
+                    id: 'v6',
+                    handle: '@Web3Founder',
+                    name: 'Web3 Founder',
+                    bio: 'Building in stealth | Raised $50M | Ex-FAANG | Disrupting everything',
+                    verdict: 'cap',
+                    mayorComment: "'Building in stealth' for how long tho? 🤔 If you raised $50M, there would be a Crunchbase entry. 'Ex-FAANG' doing what exactly? This bio has more red flags than a Chinese military parade. 🧢",
+                    timestamp: Date.now() - 86400000 * 7,
+                    reactions: { fire: 98, cap: 15 }
+                },
+                {
+                    id: 'v7',
+                    handle: '@HumbleDev',
+                    name: 'Sarah Chen',
+                    bio: 'Software engineer. Building stuff. she/her',
+                    verdict: 'nocap',
+                    mayorComment: "No fake IQ. No 'serial entrepreneur'. No 'thought leader'. Just someone who codes and ships. This is the energy we need more of. Actual builders > Professional bio writers. ✅",
+                    timestamp: Date.now() - 86400000 * 8,
+                    reactions: { fire: 178, cap: 2 }
+                },
+                {
+                    id: 'v8',
+                    handle: '@GrindsetKing',
+                    name: 'Grindset King',
+                    bio: 'Wake up 3AM | Cold showers | No days off | Millionaire by 25 | You\'re just lazy',
+                    verdict: 'cap',
+                    mayorComment: "Ah yes, the 'you're just lazy' guy 😂 Ser, sleep deprivation isn't a flex. Cold showers don't make you rich. And millionaires don't spend their time posting motivational content at 3AM. Touch grass. 🧢💀",
+                    timestamp: Date.now() - 86400000 * 9,
+                    reactions: { fire: 234, cap: 45 }
+                }
+            ];
+            
+            // Combine seeded + player verdicts
+            const allVerdicts = [...seededVerdicts, ...verdicts].sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Filter verdicts
+            const filteredVerdicts = allVerdicts.filter(v => {
+                const matchesSearch = searchTerm === '' || 
+                    v.handle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    v.bio.toLowerCase().includes(searchTerm.toLowerCase());
+                    
+                const matchesFilter = filterType === 'all' || v.verdict === filterType;
+                
+                return matchesSearch && matchesFilter;
+            });
+            
+            // Stats
+            const stats = {
+                total: allVerdicts.length,
+                cap: allVerdicts.filter(v => v.verdict === 'cap').length,
+                nocap: allVerdicts.filter(v => v.verdict === 'nocap').length,
+                totalFire: allVerdicts.reduce((sum, v) => sum + (v.reactions?.fire || 0), 0)
+            };
+            
+            const formatTime = (timestamp) => {
+                const diff = Date.now() - timestamp;
+                const days = Math.floor(diff / 86400000);
+                const hours = Math.floor(diff / 3600000);
+                const minutes = Math.floor(diff / 60000);
+                
+                if (days > 0) return `${days}d ago`;
+                if (hours > 0) return `${hours}h ago`;
+                if (minutes > 0) return `${minutes}m ago`;
+                return 'Just now';
+            };
+            
+            const shareVerdict = (verdict) => {
+                const emoji = verdict.verdict === 'cap' ? '🧢' : '✅';
+                const text = `${emoji} Mayor Satoshi's verdict on ${verdict.handle}:\n\n"${verdict.bio}"\n\n🎩 "${verdict.mayorComment.substring(0, 100)}..."\n\nMore roasts at pump-town.xyz`;
+                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+            };
+            
+            return (
+                <div className="verdict-history">
+                    <div 
+                        className="verdict-history-header"
+                        onClick={() => setExpanded(!expanded)}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>📜</span>
+                            <span>Verdict History</span>
+                            <span className="verdict-count">{stats.total} roasts</span>
+                        </div>
+                        <span style={{ color: '#888' }}>{expanded ? '▼' : '▶'}</span>
+                    </div>
+                    
+                    {expanded && (
+                        <div className="verdict-history-content">
+                            {/* Stats Bar */}
+                            <div className="verdict-stats">
+                                <div className="verdict-stat">
+                                    <span className="stat-value">{stats.cap}</span>
+                                    <span className="stat-label">🧢 Cap</span>
+                                </div>
+                                <div className="verdict-stat">
+                                    <span className="stat-value">{stats.nocap}</span>
+                                    <span className="stat-label">✅ Legit</span>
+                                </div>
+                                <div className="verdict-stat">
+                                    <span className="stat-value">{stats.totalFire}</span>
+                                    <span className="stat-label">🔥 Total</span>
+                                </div>
+                            </div>
+                            
+                            {/* Search & Filter */}
+                            <div className="verdict-filters">
+                                <input
+                                    type="text"
+                                    placeholder="Search handles, names, bios..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="verdict-search"
+                                />
+                                <div className="verdict-filter-btns">
+                                    <button 
+                                        className={`filter-btn ${filterType === 'all' ? 'active' : ''}`}
+                                        onClick={() => setFilterType('all')}
+                                    >
+                                        All
+                                    </button>
+                                    <button 
+                                        className={`filter-btn cap ${filterType === 'cap' ? 'active' : ''}`}
+                                        onClick={() => setFilterType('cap')}
+                                    >
+                                        🧢 Cap
+                                    </button>
+                                    <button 
+                                        className={`filter-btn nocap ${filterType === 'nocap' ? 'active' : ''}`}
+                                        onClick={() => setFilterType('nocap')}
+                                    >
+                                        ✅ Legit
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* Verdicts List */}
+                            <div className="verdict-list">
+                                {filteredVerdicts.length === 0 ? (
+                                    <div className="verdict-empty">
+                                        No verdicts found matching "{searchTerm}"
+                                    </div>
+                                ) : (
+                                    filteredVerdicts.slice(0, 10).map((verdict, idx) => (
+                                        <div key={verdict.id || idx} className={`verdict-card ${verdict.verdict}`}>
+                                            <div className="verdict-card-header">
+                                                <div className="verdict-target">
+                                                    <span className="verdict-handle">{verdict.handle}</span>
+                                                    <span className="verdict-name">{verdict.name}</span>
+                                                </div>
+                                                <div className={`verdict-badge ${verdict.verdict}`}>
+                                                    {verdict.verdict === 'cap' ? '🧢 CAP' : '✅ LEGIT'}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="verdict-bio">
+                                                "{verdict.bio}"
+                                            </div>
+                                            
+                                            <div className="verdict-mayor-comment">
+                                                <span className="mayor-icon">🎩</span>
+                                                {verdict.mayorComment}
+                                            </div>
+                                            
+                                            <div className="verdict-card-footer">
+                                                <div className="verdict-reactions">
+                                                    <span className="reaction">🔥 {verdict.reactions?.fire || 0}</span>
+                                                    <span className="reaction">🧢 {verdict.reactions?.cap || 0}</span>
+                                                </div>
+                                                <span className="verdict-time">{formatTime(verdict.timestamp)}</span>
+                                                <button 
+                                                    className="verdict-share-btn"
+                                                    onClick={() => shareVerdict(verdict)}
+                                                >
+                                                    📤
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                            
+                            {filteredVerdicts.length > 10 && (
+                                <div className="verdict-more">
+                                    Showing 10 of {filteredVerdicts.length} verdicts
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ==================== CAP ALERT SYSTEM ====================
+        function CapAlertSystem() {
+            const [alerts, setAlerts] = useState([]);
+            const [enabled, setEnabled] = useState(() => {
+                const saved = localStorage.getItem('cap_alerts_enabled');
+                return saved !== 'false';
+            });
+            
+            // Simulated real-time alerts (in production, this would be websocket)
+            const alertTemplates = [
+                { type: 'roast', handle: '@CryptoMentor99', verdict: 'cap', reason: 'Claimed 500% monthly returns', mayorQuote: "500% monthly?! That's not trading, that's a Ponzi with extra steps 💀" },
+                { type: 'roast', handle: '@Web3Visionary', verdict: 'cap', reason: 'Self-proclaimed thought leader', mayorQuote: "Thought leader of WHAT exactly? The thoughts seem to be missing ser 🧠❌" },
+                { type: 'respect', handle: '@SimpleBuilder', verdict: 'nocap', reason: 'Actually ships code', mayorQuote: "No IQ flex, no fake exits. Just builds. This is the way ✅" },
+                { type: 'roast', handle: '@AlphaKing', verdict: 'cap', reason: 'IQ 280 in bio', mayorQuote: "IQ 280?! Einstein is SHAKING in his grave at this audacity 😭🧢" },
+                { type: 'game', player: 'cap_hunter_9000', score: 2900, streak: 13, message: "just hit a 13-streak in Is This Cap! 🔥" },
+                { type: 'rivalry', challenger: 'roast_master', defender: 'vibe_checker', message: "New rivalry! roast_master vs vibe_checker - 500 HOPIUM on the line! ⚔️" },
+                { type: 'roast', handle: '@NFTMillionaire', verdict: 'cap', reason: 'Claims $50M in JPEG sales', mayorQuote: "Where's the OpenSea history? Where's the Etherscan? This is FICTION 📖🧢" },
+                { type: 'respect', handle: '@AnonymousDev', verdict: 'nocap', reason: 'Open source contributor', mayorQuote: "Ships code, doesn't flex. GitHub history speaks louder than any bio ✅" },
+                { type: 'roast', handle: '@QuantGenius', verdict: 'cap', reason: 'Ex-everything prestigious', mayorQuote: "Ex-Goldman, Ex-Citadel, Ex-NASA? More like Ex-tremely full of cap 🚀🧢" },
+                { type: 'game', player: 'bs_detector_pro', score: 2750, streak: 11, message: "is on FIRE with 11 correct in a row! 🎯" },
+            ];
+            
+            // Generate random alerts periodically
+            useEffect(() => {
+                if (!enabled) return;
+                
+                // Initial alert after 5 seconds
+                const initialTimeout = setTimeout(() => {
+                    addRandomAlert();
+                }, 5000);
+                
+                // Then every 30-60 seconds
+                const interval = setInterval(() => {
+                    if (Math.random() > 0.4) { // 60% chance each interval
+                        addRandomAlert();
+                    }
+                }, 30000 + Math.random() * 30000);
+                
+                return () => {
+                    clearTimeout(initialTimeout);
+                    clearInterval(interval);
+                };
+            }, [enabled]);
+            
+            const addRandomAlert = () => {
+                const template = alertTemplates[Math.floor(Math.random() * alertTemplates.length)];
+                const newAlert = {
+                    id: Date.now(),
+                    ...template,
+                    timestamp: Date.now()
+                };
+                
+                setAlerts(prev => [newAlert, ...prev].slice(0, 5)); // Keep max 5 alerts
+                
+                // Auto-remove after 8 seconds
+                setTimeout(() => {
+                    setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                }, 8000);
+            };
+            
+            const dismissAlert = (id) => {
+                setAlerts(prev => prev.filter(a => a.id !== id));
+            };
+            
+            const toggleEnabled = () => {
+                const newValue = !enabled;
+                setEnabled(newValue);
+                localStorage.setItem('cap_alerts_enabled', newValue.toString());
+            };
+            
+            const getAlertIcon = (alert) => {
+                if (alert.type === 'roast') return alert.verdict === 'cap' ? '🧢' : '✅';
+                if (alert.type === 'game') return '🎮';
+                if (alert.type === 'rivalry') return '⚔️';
+                return '📢';
+            };
+            
+            const getAlertColor = (alert) => {
+                if (alert.type === 'roast' && alert.verdict === 'cap') return '#ff6b6b';
+                if (alert.type === 'roast' && alert.verdict === 'nocap') return '#00ff88';
+                if (alert.type === 'game') return '#ffd700';
+                if (alert.type === 'rivalry') return '#ff6b6b';
+                return '#00d4ff';
+            };
+            
+            return (
+                <>
+                    {/* Alert Toggle Button */}
+                    <button 
+                        className={`cap-alert-toggle ${enabled ? 'enabled' : 'disabled'}`}
+                        onClick={toggleEnabled}
+                        title={enabled ? 'Disable Cap Alerts' : 'Enable Cap Alerts'}
+                    >
+                        🚨 {enabled ? 'ON' : 'OFF'}
+                    </button>
+                    
+                    {/* Alert Container */}
+                    <div className="cap-alert-container">
+                        {alerts.map((alert, idx) => (
+                            <div 
+                                key={alert.id}
+                                className="cap-alert"
+                                style={{ 
+                                    borderLeftColor: getAlertColor(alert),
+                                    animationDelay: `${idx * 0.1}s`
+                                }}
+                            >
+                                <div className="cap-alert-header">
+                                    <span className="cap-alert-icon">{getAlertIcon(alert)}</span>
+                                    <span className="cap-alert-type">
+                                        {alert.type === 'roast' && alert.verdict === 'cap' && 'CAP DETECTED'}
+                                        {alert.type === 'roast' && alert.verdict === 'nocap' && 'RESPECT GIVEN'}
+                                        {alert.type === 'game' && 'GAME ALERT'}
+                                        {alert.type === 'rivalry' && 'NEW BEEF'}
+                                    </span>
+                                    <button 
+                                        className="cap-alert-dismiss"
+                                        onClick={() => dismissAlert(alert.id)}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                
+                                {alert.type === 'roast' && (
+                                    <div className="cap-alert-content">
+                                        <div className="cap-alert-handle">{alert.handle}</div>
+                                        <div className="cap-alert-reason">{alert.reason}</div>
+                                        <div className="cap-alert-quote">
+                                            🎩 "{alert.mayorQuote}"
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {alert.type === 'game' && (
+                                    <div className="cap-alert-content">
+                                        <div className="cap-alert-player">
+                                            <strong>{alert.player}</strong> {alert.message}
+                                        </div>
+                                        <div className="cap-alert-score">
+                                            Score: {alert.score} • Streak: {alert.streak}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {alert.type === 'rivalry' && (
+                                    <div className="cap-alert-content">
+                                        <div className="cap-alert-rivalry">
+                                            {alert.message}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <div className="cap-alert-progress"></div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
+        }
+
+        // ==================== CAP OR CHAD PERSONALITY QUIZ ====================
+        function CapOrChadQuiz({ playerName, onComplete }) {
+            const [quizState, setQuizState] = useState('start'); // start, playing, result
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [answers, setAnswers] = useState([]);
+            const [result, setResult] = useState(null);
+            const [showShare, setShowShare] = useState(false);
+            
+            const questions = [
+                {
+                    id: 1,
+                    question: "Your portfolio is down 80%. What do you do?",
+                    options: [
+                        { text: "Diamond hands. This is just a dip.", score: { chad: 2, degen: 1 } },
+                        { text: "Sell everything and touch grass for 6 months", score: { rational: 2 } },
+                        { text: "Double down. Average down is the way.", score: { degen: 2, chad: 1 } },
+                        { text: "Post 'still early' on Twitter while crying", score: { cap: 2, degen: 1 } }
+                    ]
+                },
+                {
+                    id: 2,
+                    question: "Someone asks for your crypto advice. You say:",
+                    options: [
+                        { text: "DYOR. Not financial advice.", score: { rational: 2 } },
+                        { text: "Buy my bags please I'm begging you", score: { cap: 2, degen: 1 } },
+                        { text: "Here's a detailed analysis with charts and research", score: { chad: 2, rational: 1 } },
+                        { text: "ALL IN on whatever's pumping today", score: { degen: 3 } }
+                    ]
+                },
+                {
+                    id: 3,
+                    question: "What's in your Twitter bio?",
+                    options: [
+                        { text: "Just my name and maybe a project I work on", score: { chad: 2, rational: 1 } },
+                        { text: "IQ 180 | Serial Entrepreneur | Thought Leader", score: { cap: 3 } },
+                        { text: "🚀💎🙌 WAGMI | NFA | Crypto since 2021", score: { degen: 2 } },
+                        { text: "Nothing. I prefer anonymity.", score: { rational: 2, chad: 1 } }
+                    ]
+                },
+                {
+                    id: 4,
+                    question: "A new memecoin launches. Your move?",
+                    options: [
+                        { text: "Ape in first, research never", score: { degen: 3 } },
+                        { text: "Wait for others to lose money first", score: { rational: 2, chad: 1 } },
+                        { text: "Create a detailed thread about why it's a scam", score: { chad: 2, rational: 1 } },
+                        { text: "Buy, shill it, then dump on followers", score: { cap: 3 } }
+                    ]
+                },
+                {
+                    id: 5,
+                    question: "How do you handle being wrong about a trade?",
+                    options: [
+                        { text: "Delete the tweet. It never happened.", score: { cap: 3 } },
+                        { text: "Own it publicly and analyze what went wrong", score: { chad: 3 } },
+                        { text: "Blame market manipulation and whales", score: { cap: 2, degen: 1 } },
+                        { text: "Double down until I'm right", score: { degen: 2 } }
+                    ]
+                },
+                {
+                    id: 6,
+                    question: "Your friend wants to invest their life savings in crypto. You:",
+                    options: [
+                        { text: "Tell them to only invest what they can afford to lose", score: { rational: 2, chad: 1 } },
+                        { text: "Give them your referral code", score: { cap: 2, degen: 1 } },
+                        { text: "Share your exact portfolio breakdown", score: { degen: 2 } },
+                        { text: "Explain both the risks and opportunities honestly", score: { chad: 3 } }
+                    ]
+                },
+                {
+                    id: 7,
+                    question: "What time do you check crypto prices?",
+                    options: [
+                        { text: "Every 5 minutes including 3 AM", score: { degen: 3 } },
+                        { text: "Once a day, maybe", score: { rational: 2 } },
+                        { text: "Only when someone mentions it", score: { rational: 2, chad: 1 } },
+                        { text: "I have price alerts for everything", score: { degen: 2, rational: 1 } }
+                    ]
+                },
+                {
+                    id: 8,
+                    question: "Someone calls your favorite project a scam. You:",
+                    options: [
+                        { text: "Engage in a 47-tweet thread war", score: { degen: 2, cap: 1 } },
+                        { text: "Consider if they might have valid points", score: { chad: 2, rational: 1 } },
+                        { text: "Block them immediately", score: { cap: 2 } },
+                        { text: "Screenshot and post to your community for backup", score: { cap: 2, degen: 1 } }
+                    ]
+                }
+            ];
+            
+            const resultTypes = {
+                chad: {
+                    title: "Sigma Chad Builder",
+                    emoji: "👑",
+                    color: "#ffd700",
+                    description: "You're the real deal. You build, you ship, you take accountability. No fake flexing, no need for validation. The space needs more people like you.",
+                    traits: ["Humble but confident", "Builds in public", "Owns mistakes", "Helps others"],
+                    mayorComment: "Now THIS is what credibility looks like! No IQ numbers, no fake exits, just pure VALUE. You're welcome in Pump Town anytime, fren. 👑✅"
+                },
+                degen: {
+                    title: "Professional Degen",
+                    emoji: "🎰",
+                    color: "#ff6b6b",
+                    description: "You live for the thrill. Green candles are your oxygen, and you've diamond-handed through things that would make normal people cry. Respect... and concern.",
+                    traits: ["High risk tolerance", "Never sleeps", "Portfolio? You mean slot machine", "WAGMI energy"],
+                    mayorComment: "A true degen of culture! Your portfolio gives me anxiety but your conviction is unmatched. May your candles be green and your rugs be few. 🎰💎"
+                },
+                rational: {
+                    title: "Galaxy Brain Analyst",
+                    emoji: "🧠",
+                    color: "#00d4ff",
+                    description: "You actually do research. You understand risk management. You've never panic sold... because you never panic bought. Are you even having fun?",
+                    traits: ["DYOR master", "Risk management king", "Probably in profit", "Boring but effective"],
+                    mayorComment: "The rarest type in crypto - someone who actually thinks before acting! You probably have a spreadsheet for your spreadsheets. Respect the discipline. 🧠📊"
+                },
+                cap: {
+                    title: "Supreme Cap Detector (Ironic)",
+                    emoji: "🧢",
+                    color: "#8a2be2",
+                    description: "Plot twist: YOU might be the cap. Your answers suggest a certain... flexibility with authenticity. But hey, at least you're self-aware now!",
+                    traits: ["Creative with facts", "Influencer energy", "Bio longer than resume", "Deletes old takes"],
+                    mayorComment: "Ser... I hate to break it to you, but the cap was coming from INSIDE THE HOUSE this whole time. 😭🧢 But recognizing it is the first step to becoming based!"
+                }
+            };
+            
+            const startQuiz = () => {
+                setQuizState('playing');
+                setCurrentQuestion(0);
+                setAnswers([]);
+                setResult(null);
+            };
+            
+            const selectAnswer = (option) => {
+                const newAnswers = [...answers, option];
+                setAnswers(newAnswers);
+                
+                if (currentQuestion < questions.length - 1) {
+                    setCurrentQuestion(currentQuestion + 1);
+                } else {
+                    // Calculate result
+                    calculateResult(newAnswers);
+                }
+            };
+            
+            const calculateResult = (allAnswers) => {
+                const scores = { chad: 0, degen: 0, rational: 0, cap: 0 };
+                
+                allAnswers.forEach(answer => {
+                    Object.entries(answer.score).forEach(([type, points]) => {
+                        scores[type] = (scores[type] || 0) + points;
+                    });
+                });
+                
+                // Find highest score
+                const maxType = Object.entries(scores).reduce((a, b) => b[1] > a[1] ? b : a)[0];
+                
+                setResult({
+                    type: maxType,
+                    ...resultTypes[maxType],
+                    scores
+                });
+                setQuizState('result');
+                
+                // Save to localStorage
+                localStorage.setItem('degen_personality_type', maxType);
+                localStorage.setItem('degen_personality_scores', JSON.stringify(scores));
+            };
+            
+            const shareResult = () => {
+                const text = `${result.emoji} My Pump Town personality type: ${result.title}!\n\n🎩 Mayor Satoshi says: "${result.mayorComment.substring(0, 100)}..."\n\nTake the quiz at pump-town.xyz 🧢`;
+                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+            };
+            
+            return (
+                <div className="cap-chad-quiz">
+                    <div 
+                        className="quiz-header"
+                        onClick={() => quizState === 'start' ? startQuiz() : null}
+                        style={{ cursor: quizState === 'start' ? 'pointer' : 'default' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>🎭</span>
+                            <span>Cap or Chad Quiz</span>
+                            {localStorage.getItem('degen_personality_type') && quizState === 'start' && (
+                                <span className="quiz-completed-badge">
+                                    {resultTypes[localStorage.getItem('degen_personality_type')]?.emoji} Done
+                                </span>
+                            )}
+                        </div>
+                        {quizState === 'start' && <span style={{ color: '#00ff88' }}>Take Quiz →</span>}
+                    </div>
+                    
+                    {quizState === 'playing' && (
+                        <div className="quiz-content">
+                            <div className="quiz-progress">
+                                <div 
+                                    className="quiz-progress-bar" 
+                                    style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+                                ></div>
+                            </div>
+                            <div className="quiz-question-count">
+                                Question {currentQuestion + 1} of {questions.length}
+                            </div>
+                            
+                            <div className="quiz-question">
+                                {questions[currentQuestion].question}
+                            </div>
+                            
+                            <div className="quiz-options">
+                                {questions[currentQuestion].options.map((option, idx) => (
+                                    <button
+                                        key={idx}
+                                        className="quiz-option"
+                                        onClick={() => selectAnswer(option)}
+                                    >
+                                        {option.text}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {quizState === 'result' && result && (
+                        <div className="quiz-result">
+                            <div 
+                                className="result-type"
+                                style={{ color: result.color }}
+                            >
+                                <span className="result-emoji">{result.emoji}</span>
+                                <span className="result-title">{result.title}</span>
+                            </div>
+                            
+                            <div className="result-description">
+                                {result.description}
+                            </div>
+                            
+                            <div className="result-traits">
+                                {result.traits.map((trait, idx) => (
+                                    <span key={idx} className="trait-tag">{trait}</span>
+                                ))}
+                            </div>
+                            
+                            <div className="result-mayor-comment">
+                                <span className="mayor-icon">🎩</span>
+                                {result.mayorComment}
+                            </div>
+                            
+                            <div className="result-scores">
+                                <div className="score-bar">
+                                    <span className="score-label">👑 Chad</span>
+                                    <div className="score-track">
+                                        <div className="score-fill chad" style={{ width: `${(result.scores.chad / 12) * 100}%` }}></div>
+                                    </div>
+                                </div>
+                                <div className="score-bar">
+                                    <span className="score-label">🎰 Degen</span>
+                                    <div className="score-track">
+                                        <div className="score-fill degen" style={{ width: `${(result.scores.degen / 12) * 100}%` }}></div>
+                                    </div>
+                                </div>
+                                <div className="score-bar">
+                                    <span className="score-label">🧠 Rational</span>
+                                    <div className="score-track">
+                                        <div className="score-fill rational" style={{ width: `${(result.scores.rational / 12) * 100}%` }}></div>
+                                    </div>
+                                </div>
+                                <div className="score-bar">
+                                    <span className="score-label">🧢 Cap</span>
+                                    <div className="score-track">
+                                        <div className="score-fill cap" style={{ width: `${(result.scores.cap / 12) * 100}%` }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="result-actions">
+                                <button className="result-btn share" onClick={shareResult}>
+                                    📤 Share Result
+                                </button>
+                                <button className="result-btn retake" onClick={startQuiz}>
+                                    🔄 Retake Quiz
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
         // ==================== MAYOR ACTION COMMENTS ====================
         function MayorActionComment({ comment, onClose }) {
             const [leaving, setLeaving] = useState(false);
@@ -23241,6 +26954,151 @@
             const [loading, setLoading] = useState(false);
             const [expanded, setExpanded] = useState(false);
             
+            // Known name-to-handle mappings for famous people
+            const knownHandles = {
+                // Tech & Crypto figures
+                'elon musk': 'elonmusk',
+                'elon': 'elonmusk',
+                'vitalik': 'VitalikButerin',
+                'vitalik buterin': 'VitalikButerin',
+                'cz': 'caborose',
+                'changpeng zhao': 'caborose',
+                'sbf': 'SBF_FTX',
+                'sam bankman': 'SBF_FTX',
+                'sam bankman-fried': 'SBF_FTX',
+                'sam bankman fried': 'SBF_FTX',
+                'brian armstrong': 'brian_armstrong',
+                'michael saylor': 'saborose',
+                'saylor': 'saborose',
+                'jack dorsey': 'jack',
+                'marc andreessen': 'pmarca',
+                'balaji': 'balajis',
+                'balaji srinivasan': 'balajis',
+                'naval': 'naval',
+                'naval ravikant': 'naval',
+                'gary gensler': 'GaryGensler',
+                'gensler': 'GaryGensler',
+                'cathie wood': 'CathieDWood',
+                'cathie': 'CathieDWood',
+                'do kwon': 'staborose',
+                'justin sun': 'justinsuntron',
+                'richard heart': 'RichardHeartWin',
+                'cobie': 'coaborose',
+                'hsaka': 'HsakaTrades',
+                'ansem': 'blaborose',
+                'murad': 'MustStopMurad',
+                // Tech CEOs
+                'zuck': 'finkd',
+                'zuckerberg': 'finkd',
+                'mark zuckerberg': 'finkd',
+                'jeff bezos': 'JeffBezos',
+                'bezos': 'JeffBezos',
+                'bill gates': 'BillGates',
+                'tim cook': 'tim_cook',
+                'sundar pichai': 'sundaborosechai',
+                'satya nadella': 'sataboroseadella',
+                'jensen huang': 'nvidia',
+                // Politicians & Public figures
+                'trump': 'realDonaldTrump',
+                'donald trump': 'realDonaldTrump',
+                'biden': 'POTUS',
+                'joe biden': 'POTUS',
+                'obama': 'BarackObama',
+                'barack obama': 'BarackObama',
+                // Entertainers
+                'mr beast': 'MrBeast',
+                'mrbeast': 'MrBeast',
+                'pewdiepie': 'pewdiepie',
+                'logan paul': 'LoganPaul',
+                'jake paul': 'jakepaul',
+                'kim kardashian': 'KimKardashian',
+                'kanye': 'kaboroseest',
+                'kanye west': 'kaboroseest',
+                'drake': 'Drake',
+                'rihanna': 'riaborosea',
+                'taylor swift': 'taylorswift13',
+                // Sports
+                'lebron': 'KingJames',
+                'lebron james': 'KingJames',
+                'ronaldo': 'Cristiano',
+                'cristiano ronaldo': 'Cristiano',
+                'messi': 'TeamMessi'
+            };
+            
+            // Detect if message is asking about an X/Twitter user
+            const detectXUserQuery = (message) => {
+                const lowerMsg = message.toLowerCase();
+                
+                // Pattern 1: Direct @handle mention
+                const handleMatch = message.match(/@([a-zA-Z0-9_]{1,15})\b/);
+                if (handleMatch) {
+                    return { type: 'handle', query: handleMatch[0], handle: handleMatch[1] };
+                }
+                
+                // Pattern 2: Check if message contains a known name
+                for (const [name, handle] of Object.entries(knownHandles)) {
+                    if (lowerMsg.includes(name)) {
+                        return { type: 'known', query: name, handle: handle };
+                    }
+                }
+                
+                // Pattern 3: "who is [name]" or "look up [name]" or "tell me about [name]"
+                const whoIsPatterns = [
+                    /who\s+is\s+([a-zA-Z0-9_\s]+?)(?:\s+on\s+(?:x|twitter))?\s*\??$/i,
+                    /look\s*up\s+([a-zA-Z0-9_\s]+?)(?:\s+on\s+(?:x|twitter))?\s*$/i,
+                    /tell\s+me\s+about\s+([a-zA-Z0-9_\s]+?)(?:\s+on\s+(?:x|twitter))?\s*$/i,
+                    /what\s+(?:do\s+you\s+)?(?:know|think)\s+(?:about|of)\s+([a-zA-Z0-9_\s]+?)(?:\s+on\s+(?:x|twitter))?\s*\??$/i,
+                    /search\s+(?:for\s+)?([a-zA-Z0-9_\s]+?)(?:\s+on\s+(?:x|twitter))?\s*$/i,
+                    /^([a-zA-Z0-9_\s]{2,30})\??\s*$/i  // Just a name with optional question mark
+                ];
+                
+                for (const pattern of whoIsPatterns) {
+                    const match = message.match(pattern);
+                    if (match && match[1] && match[1].trim().length > 1) {
+                        const name = match[1].trim().toLowerCase();
+                        // Skip common words that aren't names
+                        const skipWords = ['pump town', 'the mayor', 'this', 'that', 'you', 'me', 'us', 'it', 'what', 'how', 'why', 'when', 'where', 'hi', 'hello', 'hey'];
+                        if (!skipWords.includes(name)) {
+                            // Check if this name is in our known handles
+                            if (knownHandles[name]) {
+                                return { type: 'known', query: name, handle: knownHandles[name] };
+                            }
+                            return { type: 'name', query: match[1].trim(), handle: null };
+                        }
+                    }
+                }
+                
+                return null;
+            };
+            
+            // Look up X user info via backend (avoids CORS issues)
+            const lookupXUser = async (query, handle) => {
+                try {
+                    const lookupHandle = handle || query.replace(/\s+/g, '').replace('@', '');
+                    
+                    console.log(`🔍 Looking up X user via backend: @${lookupHandle}`);
+                    
+                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/x/lookup/${lookupHandle}`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.user) {
+                        const { displayName, bio, handle: userHandle } = data.user;
+                        console.log(`✅ Found X user: ${displayName} (@${userHandle})`);
+                        
+                        return {
+                            query: `@${userHandle}`,
+                            info: `@${userHandle} (${displayName})${bio ? ` - Bio: "${bio}"` : ' - No bio available'}`
+                        };
+                    }
+                    
+                    console.log(`❌ X lookup failed: ${data.error}`);
+                    return null;
+                } catch (error) {
+                    console.log('X lookup error (non-critical):', error.message);
+                    return null;
+                }
+            };
+            
             const sendMessage = async () => {
                 if (!input.trim() || loading) return;
                 
@@ -23250,13 +27108,54 @@
                 setLoading(true);
                 
                 try {
+                    // Check if this is an X user query
+                    let xUserContext = null;
+                    const xQuery = detectXUserQuery(userMessage);
+                    
+                    // Also check if message contains IQ claims to analyze
+                    const iqMatch = userMessage.match(/iq\s*[:\-]?\s*(\d+)|(\d+)\s*iq/i);
+                    const mentionedIQ = iqMatch ? (iqMatch[1] || iqMatch[2]) : null;
+                    
+                    if (xQuery) {
+                        console.log('🔍 Detected X user query:', xQuery);
+                        // Try to look up the user
+                        xUserContext = await lookupXUser(xQuery.query, xQuery.handle);
+                        
+                        if (xUserContext) {
+                            console.log('✅ Found X user info:', xUserContext);
+                            // If user mentioned an IQ in their message, add it to context
+                            if (mentionedIQ) {
+                                xUserContext.info += ` [USER CLAIMS IQ: ${mentionedIQ}]`;
+                            }
+                        } else {
+                            // Lookup failed - build context from the user's message
+                            let contextInfo = `User asked about "${xQuery.query}".`;
+                            if (mentionedIQ) {
+                                contextInfo += ` IMPORTANT: This person allegedly claims an IQ of ${mentionedIQ}. This is a FAKE/MADE UP number that needs to be called out!`;
+                            }
+                            contextInfo += ` No X/Twitter profile was found, but analyze based on what the citizen told you.`;
+                            
+                            xUserContext = {
+                                query: xQuery.query,
+                                info: contextInfo
+                            };
+                        }
+                    } else if (mentionedIQ && parseInt(mentionedIQ) > 160) {
+                        // User mentioned a high IQ even without a specific person query - still flag it
+                        xUserContext = {
+                            query: 'IQ claim analysis',
+                            info: `The citizen mentioned someone with an alleged IQ of ${mentionedIQ}. This is a FAKE/MADE UP number - Einstein was only 160! Call this out as BS.`
+                        };
+                    }
+                    
                     const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             message: userMessage,
                             playerName: playerName || 'Citizen',
-                            playerLevel: playerLevel || 1
+                            playerLevel: playerLevel || 1,
+                            xUserContext: xUserContext
                         })
                     });
                     
@@ -23477,12 +27376,6 @@
                         <h2 style={{ marginBottom: '15px' }}>Mayor's Address</h2>
                         <div className="mayor-quote">"{currentVote.mayorQuote}"</div>
                     </div>
-
-                    {/* Mayor Chat */}
-                    <MayorChat 
-                        playerName={character?.name || 'Citizen'} 
-                        playerLevel={character?.level || 1} 
-                    />
 
                     {aiGenerating ? (
                         <div style={{ 

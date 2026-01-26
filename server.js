@@ -612,7 +612,7 @@ app.post('/api/ai/mayor-chat', async (req, res) => {
   }
 
   try {
-    const { message, playerName, playerLevel } = req.body;
+    const { message, playerName, playerLevel, xUserContext } = req.body;
     
     if (!message || message.length > 500) {
       return res.status(400).json({ success: false, error: 'Invalid message' });
@@ -620,16 +620,80 @@ app.post('/api/ai/mayor-chat', async (req, res) => {
     
     const cityStats = await getCityStats();
     
+    // Build the system prompt - enhance with X user lookup personality when context is present
+    let systemPrompt = MAYOR_SYSTEM_PROMPT;
+    
+    if (xUserContext && xUserContext.info) {
+      // Detect specific BS claims to call out
+      const infoLower = xUserContext.info.toLowerCase();
+      const hasHighIQ = /iq\s*[:\-]?\s*(\d{3,})|(\d{3,})\s*iq/i.test(xUserContext.info);
+      const iqMatch = xUserContext.info.match(/iq\s*[:\-]?\s*(\d+)|(\d+)\s*iq/i);
+      const claimedIQ = iqMatch ? (iqMatch[1] || iqMatch[2]) : null;
+      
+      systemPrompt += `
+
+🚨🚨🚨 CRITICAL INSTRUCTION: X (TWITTER) USER ANALYSIS MODE 🚨🚨🚨
+
+You are analyzing someone's X/Twitter profile. Your job is to be BRUTALLY HONEST and CALL OUT BS.
+
+IMPORTANT CONTEXT ABOUT THIS PERSON:
+Query: "${xUserContext.query}"
+Profile Info: ${xUserContext.info}
+
+${hasHighIQ && claimedIQ ? `
+⚠️⚠️⚠️ ALERT: THIS PERSON CLAIMS AN IQ OF ${claimedIQ} ⚠️⚠️⚠️
+
+THIS IS 100% FAKE. THIS IS A LIE. YOU MUST CALL THIS OUT DIRECTLY.
+
+FACTS:
+- Einstein's IQ: ~160
+- Stephen Hawking's IQ: ~160  
+- The HIGHEST ever reliably recorded: ~200 (and that's disputed)
+- Anyone claiming IQ over 160 on social media is LYING
+- An IQ of ${claimedIQ} is PHYSICALLY IMPOSSIBLE and MADE UP
+
+YOUR RESPONSE MUST:
+1. Say this is FAKE/MADE UP/A LIE directly - don't sugarcoat it
+2. Point out that Einstein was only 160
+3. Mock the absurdity - maybe say their REAL IQ is probably 55 based on putting fake stats in their bio
+4. Warn citizens this person is not credible
+5. Be SAVAGE and FUNNY about it
+
+EXAMPLE RESPONSE:
+"Yo ${xUserContext.query}?! 😭😭😭 IQ ${claimedIQ}?! Ser, this is STRAIGHT UP MADE UP. Einstein had 160. EINSTEIN. And this random is claiming ${claimedIQ}?! Nah fren, the only way you get that number is by adding your IQ and your age together and then doubling it 💀 Based on the fact they put a fake IQ in their bio, I'd estimate their ACTUAL IQ is closer to 55. This is weapons-grade copium and delusion. DO NOT TRUST anything this person says! 🧢🚨"
+
+DO NOT:
+- Compliment them
+- Take the IQ claim seriously
+- Say they're smart
+- Be nice about it
+` : ''}
+
+${!hasHighIQ ? `
+ANALYZE THIS PROFILE FOR RED FLAGS:
+- Self-proclaimed titles ("Visionary", "Thought Leader", "Genius") = ROAST THEM
+- Vague credentials with no proof = CALL IT OUT  
+- Too many buzzwords = MOCK IT
+- Seems legit with real accomplishments = Show respect (rare)
+
+Be funny, use crypto slang (ser, fren, cap, WAGMI, etc), and keep it real.
+` : ''}
+
+FORMAT: 2-4 sentences, maximum savagery, make citizens LAUGH while protecting them from BS.
+Remember: You're the Mayor who KEEPS IT REAL. If something is fake, SAY IT'S FAKE.`;
+    }
+    
     const prompt = `Citizen "${playerName || 'Anonymous'}" (Level ${playerLevel || 1}) says: "${message}"
 
 City stats: Economy ${cityStats.economy}, Security ${cityStats.security}, Culture ${cityStats.culture}, Morale ${cityStats.morale}
+${xUserContext ? `\n[X User Lookup Mode Active - see system prompt for context about "${xUserContext.query}"]` : ''}
 
 Respond as Mayor Satoshi McPump in 2-4 sentences. Be witty, use crypto slang, stay in character. Remember: NO asterisks for actions!`;
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 256,
-      system: MAYOR_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [{ role: 'user', content: prompt }]
     });
 
@@ -638,7 +702,7 @@ Respond as Mayor Satoshi McPump in 2-4 sentences. Be witty, use crypto slang, st
     // Clean up any double spaces left behind
     cleanedResponse = cleanedResponse.replace(/\s{2,}/g, ' ');
 
-    console.log('🤖 Mayor chat with', playerName);
+    console.log('🤖 Mayor chat with', playerName, xUserContext ? `(X lookup: ${xUserContext.query})` : '');
     res.json({ success: true, response: cleanedResponse });
   } catch (error) {
     console.error('AI Chat Error:', error.message);
@@ -651,8 +715,73 @@ app.get('/api/ai/status', (req, res) => {
   res.json({
     enabled: !!anthropic,
     model: 'claude-sonnet-4-20250514',
-    features: ['vote-generation', 'mayor-reactions', 'events', 'chat', 'daily-briefing']
+    features: ['vote-generation', 'mayor-reactions', 'events', 'chat', 'daily-briefing', 'x-lookup']
   });
+});
+
+// X/Twitter User Lookup - proxy to avoid CORS issues
+app.get('/api/x/lookup/:handle', async (req, res) => {
+  const { handle } = req.params;
+  
+  if (!handle || handle.length > 15) {
+    return res.status(400).json({ success: false, error: 'Invalid handle' });
+  }
+  
+  try {
+    console.log(`🔍 Looking up X user: @${handle}`);
+    
+    // Try the syndication endpoint
+    const response = await fetch(`https://syndication.twitter.com/srv/timeline-profile/screen-name/${handle}`, {
+      headers: {
+        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      // Try alternative: nitter or other public instances
+      console.log(`❌ Syndication failed for @${handle}, status: ${response.status}`);
+      return res.json({ success: false, error: 'Profile not found' });
+    }
+    
+    const html = await response.text();
+    
+    // Extract user data from meta tags
+    const nameMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) ||
+                      html.match(/"name"\s*:\s*"([^"]+)"/);
+    const bioMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i) ||
+                     html.match(/"description"\s*:\s*"([^"]+)"/);
+    const imageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
+    
+    if (nameMatch) {
+      const displayName = nameMatch[1].split(' on X')[0].split(' (@')[0].trim();
+      const bio = bioMatch ? bioMatch[1]
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .trim() : '';
+      
+      console.log(`✅ Found X user: ${displayName} (@${handle})`);
+      
+      res.json({
+        success: true,
+        user: {
+          handle: handle,
+          displayName: displayName,
+          bio: bio,
+          image: imageMatch ? imageMatch[1] : null
+        }
+      });
+    } else {
+      console.log(`❌ Could not parse profile for @${handle}`);
+      res.json({ success: false, error: 'Could not parse profile' });
+    }
+  } catch (error) {
+    console.error(`❌ X lookup error for @${handle}:`, error.message);
+    res.json({ success: false, error: error.message });
+  }
 });
 
 // Daily Briefing - Mayor's morning update
