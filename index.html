@@ -5,21 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pump Town - AI Governed City</title>
     
-    <!-- Preload critical resources -->
-    <link rel="preload" href="styles.css" as="style">
-    <link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script">
-    <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script">
-    
-    <!-- CSS loads in parallel now (not blocking) -->
+    <!-- CSS loads in parallel -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- React loads with defer (non-blocking) -->
-    <script defer src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script defer src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- React and Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-    <!-- Loading screen shows immediately while JS loads -->
+    <!-- Loading screen shows while JS loads -->
     <div id="root">
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;font-family:system-ui,sans-serif;">
             <div style="font-size:4em;margin-bottom:20px;">🏙️</div>
@@ -28,8 +23,8 @@
         </div>
     </div>
 
-    <!-- Your app code loads last -->
-    <script defer type="text/babel" src="app.js"></script>
+    <!-- App code - Babel needs data-type not type for external files -->
+    <script data-type="text/babel" src="app.js"></script>
     
     <!-- Cloudflare Web Analytics -->
     <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "a56d86a42ca749db800efd74b9c8c418"}'></script>
