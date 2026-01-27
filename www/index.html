@@ -3809,11 +3809,16 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             cursor: pointer;
-            font-size: 1.2em;
+            font-size: 1.4em;
             transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: white;
+            /* Ensure emoji renders properly */
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Android Emoji", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            line-height: 1;
         }
         
         .reaction-option:hover {
@@ -3881,47 +3886,98 @@
             }
             
             .reaction-picker {
-                left: auto;
-                right: 0;
+                /* Position fixed to viewport on mobile */
+                position: fixed !important;
+                left: 50% !important;
+                right: auto !important;
+                bottom: auto !important;
+                top: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                margin: 0 !important;
+                z-index: 9999 !important;
             }
             
             .reaction-picker.enhanced {
-                width: 200px;
+                width: 280px;
+                max-height: 300px;
+                overflow-y: auto;
+                background: rgba(15, 15, 35, 0.98) !important;
+                border: 2px solid rgba(0, 255, 136, 0.5) !important;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
             }
             
             .reaction-emoji-grid {
                 grid-template-columns: repeat(4, 1fr);
+                padding: 15px;
+                gap: 10px;
             }
             
             .reaction-option {
-                width: 32px;
-                height: 32px;
-                font-size: 1.1em;
+                width: 50px !important;
+                height: 50px !important;
+                font-size: 1.8em !important;
+                background: rgba(255, 255, 255, 0.1) !important;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
             }
-        }
-        
-        .reaction-option {
-            background: transparent;
-            border: none;
-            font-size: 1.3em;
-            cursor: pointer;
-            padding: 5px 8px;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-        
-        .reaction-option:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: scale(1.2);
-        }
-        
-        .reaction-option.selected {
-            background: rgba(0, 255, 136, 0.2);
+            
+            .reaction-option:active {
+                background: rgba(0, 255, 136, 0.3) !important;
+                transform: scale(0.95);
+            }
+            
+            .category-btn {
+                font-size: 1.3em !important;
+                padding: 12px !important;
+            }
+            
+            /* Ensure picker container can overflow */
+            .reaction-picker-container {
+                position: static;
+            }
+            
+            /* Make sure chat messages can show the picker */
+            .chat-message {
+                overflow: visible;
+            }
+            
+            .chat-reactions-row {
+                overflow: visible;
+            }
+            
+            /* Overlay behind picker on mobile */
+            .reaction-picker::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: -1;
+            }
         }
 
         .chat-input-area {
             display: flex;
             gap: 10px;
+            position: relative;
+        }
+        
+        /* Mobile styles for chat input emoji picker */
+        @media (max-width: 480px) {
+            .chat-input-area {
+                gap: 8px;
+            }
+            
+            .chat-input {
+                padding: 10px 12px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            .chat-send-btn {
+                padding: 10px 15px;
+            }
         }
 
         .chat-input {
@@ -17848,7 +17904,7 @@
                                     <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px' }}>
                                         <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>How do I contact support?</h4>
                                         <p style={{ color: '#ccc', lineHeight: '1.7' }}>
-                                            Join our community on X (Twitter) @PumpTownGame for updates, support, and to connect with other citizens!
+                                            Join our community on X (Twitter) @Pump_Town_ for updates, support, and to connect with other citizens!
                                         </p>
                                     </div>
                                     
@@ -17894,8 +17950,42 @@
             const [activeTab, setActiveTab] = useState('global');
             const [loading, setLoading] = useState(true);
             const [sending, setSending] = useState(false);
+            const [showInputEmoji, setShowInputEmoji] = useState(false);
+            const [inputEmojiCategory, setInputEmojiCategory] = useState('popular');
             const messagesEndRef = useRef(null);
             const lastFetchTime = useRef({ global: 0, whale: 0 });
+            const inputEmojiRef = useRef(null);
+            
+            // Emoji categories for chat input
+            const inputEmojiCategories = {
+                popular: ['🔥', '😂', '🚀', '💎', '❤️', '👀', '💀', '😭'],
+                crypto: ['📈', '📉', '💰', '🐋', '🌙', '💸', '🪙', '⚡'],
+                faces: ['😀', '🤣', '😎', '🤑', '😤', '🤡', '😱', '🥺'],
+                meme: ['🦍', '🐶', '🐸', '👑', '🧠', '🙌', '💪', '🎯']
+            };
+            
+            // Add emoji to message
+            const addEmojiToMessage = (emoji) => {
+                setNewMessage(prev => prev + emoji);
+                setShowInputEmoji(false);
+            };
+            
+            // Close emoji picker when clicking outside
+            useEffect(() => {
+                const handleClickOutside = (event) => {
+                    if (inputEmojiRef.current && !inputEmojiRef.current.contains(event.target)) {
+                        setShowInputEmoji(false);
+                    }
+                };
+                if (showInputEmoji) {
+                    document.addEventListener('mousedown', handleClickOutside);
+                    document.addEventListener('touchstart', handleClickOutside);
+                }
+                return () => {
+                    document.removeEventListener('mousedown', handleClickOutside);
+                    document.removeEventListener('touchstart', handleClickOutside);
+                };
+            }, [showInputEmoji]);
             
             // Parse message text to highlight @mentions
             const renderMessageText = (text, mentions = []) => {
@@ -18125,7 +18215,116 @@
                         <div ref={messagesEndRef} />
                     </div>
                     
-                    <div className="chat-input-area">
+                    <div className="chat-input-area" style={{ position: 'relative' }}>
+                        {/* Emoji Picker Button */}
+                        <div ref={inputEmojiRef} style={{ position: 'relative' }}>
+                            <button
+                                type="button"
+                                onClick={() => setShowInputEmoji(!showInputEmoji)}
+                                style={{
+                                    background: showInputEmoji ? 'rgba(0, 255, 136, 0.2)' : 'rgba(0, 0, 0, 0.5)',
+                                    border: '2px solid rgba(0, 255, 136, 0.3)',
+                                    borderRadius: '10px',
+                                    padding: '12px',
+                                    fontSize: '1.2em',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {showInputEmoji ? '✕' : '😀'}
+                            </button>
+                            
+                            {/* Emoji Picker Popup */}
+                            {showInputEmoji && (
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '100%',
+                                    left: '0',
+                                    marginBottom: '8px',
+                                    background: 'rgba(20, 20, 40, 0.98)',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    borderRadius: '12px',
+                                    padding: '0',
+                                    zIndex: 1000,
+                                    boxShadow: '0 5px 20px rgba(0, 0, 0, 0.5)',
+                                    width: '220px',
+                                    overflow: 'hidden'
+                                }}>
+                                    {/* Category tabs */}
+                                    <div style={{
+                                        display: 'flex',
+                                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                        background: 'rgba(0, 0, 0, 0.3)'
+                                    }}>
+                                        {[
+                                            { key: 'popular', icon: '⭐' },
+                                            { key: 'crypto', icon: '📈' },
+                                            { key: 'faces', icon: '😀' },
+                                            { key: 'meme', icon: '🦍' }
+                                        ].map(cat => (
+                                            <button
+                                                key={cat.key}
+                                                onClick={() => setInputEmojiCategory(cat.key)}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '8px',
+                                                    border: 'none',
+                                                    background: inputEmojiCategory === cat.key ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                                                    cursor: 'pointer',
+                                                    fontSize: '1em',
+                                                    opacity: inputEmojiCategory === cat.key ? 1 : 0.5,
+                                                    borderBottom: inputEmojiCategory === cat.key ? '2px solid #00ff88' : '2px solid transparent'
+                                                }}
+                                            >
+                                                {cat.icon}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    {/* Emoji grid */}
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(4, 1fr)',
+                                        gap: '4px',
+                                        padding: '8px'
+                                    }}>
+                                        {inputEmojiCategories[inputEmojiCategory].map(emoji => (
+                                            <button
+                                                key={emoji}
+                                                onClick={() => addEmojiToMessage(emoji)}
+                                                style={{
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    border: 'none',
+                                                    background: 'rgba(255, 255, 255, 0.05)',
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '1.3em',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                                onMouseEnter={e => {
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.15)';
+                                                    e.target.style.transform = 'scale(1.15)';
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                    e.target.style.transform = 'scale(1)';
+                                                }}
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
                         <input 
                             type="text"
                             className="chat-input"
@@ -31303,24 +31502,28 @@ Play at pump-town.xyz
                                         <button 
                                             className={`category-btn ${activeCategory === 'popular' ? 'active' : ''}`}
                                             onClick={() => setActiveCategory('popular')}
+                                            style={{ fontSize: '1.2em', lineHeight: 1 }}
                                         >
                                             ⭐
                                         </button>
                                         <button 
                                             className={`category-btn ${activeCategory === 'bullish' ? 'active' : ''}`}
                                             onClick={() => setActiveCategory('bullish')}
+                                            style={{ fontSize: '1.2em', lineHeight: 1 }}
                                         >
                                             📈
                                         </button>
                                         <button 
                                             className={`category-btn ${activeCategory === 'bearish' ? 'active' : ''}`}
                                             onClick={() => setActiveCategory('bearish')}
+                                            style={{ fontSize: '1.2em', lineHeight: 1 }}
                                         >
                                             📉
                                         </button>
                                         <button 
                                             className={`category-btn ${activeCategory === 'meme' ? 'active' : ''}`}
                                             onClick={() => setActiveCategory('meme')}
+                                            style={{ fontSize: '1.2em', lineHeight: 1 }}
                                         >
                                             🦍
                                         </button>
@@ -31333,6 +31536,12 @@ Play at pump-town.xyz
                                                 key={emoji}
                                                 className={`reaction-option ${userReaction === emoji ? 'selected' : ''}`}
                                                 onClick={() => handleReaction(emoji)}
+                                                style={{
+                                                    fontSize: '1.5em',
+                                                    lineHeight: 1,
+                                                    color: 'white',
+                                                    WebkitFontSmoothing: 'antialiased'
+                                                }}
                                             >
                                                 {emoji}
                                             </button>
