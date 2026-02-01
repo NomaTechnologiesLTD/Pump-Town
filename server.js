@@ -64,7 +64,10 @@ Keep responses JSON-formatted when requested. Be creative, dramatic, and enterta
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
 });
 
 // Initialize database tables
@@ -3549,7 +3552,10 @@ async function resolveElection(challenger) {
   } catch (err) { console.error('Election error:', err.message); cityEngine.electionActive = false; }
 }
 
+let engineBusy = false;
 async function cityEventLoop() {
+  if (engineBusy) { console.log('⏩ Engine tick skipped (previous still running)'); return; }
+  engineBusy = true;
   const now = Date.now();
   try {
     // RANDOM EVENT every 3-8 min
@@ -3711,30 +3717,30 @@ async function cityEventLoop() {
     
     // NPC LIFE EVENTS (constant stream of drama - every 1-3 min)
     if (chance(40) && now - cityLiveData.lastLifeEventTime > 60000) {
-      await npcLifeEvent();
+      try { await npcLifeEvent(); } catch(e) { console.error('Life event err:', e.message); }
       cityLiveData.lastLifeEventTime = now;
     }
     
     // NPC RELATIONSHIP DRAMA (every 3-8 min)
     if (chance(15) && now - (cityLiveData.lastRelationshipTime || 0) > 180000) {
-      await npcRelationshipEvent();
+      try { await npcRelationshipEvent(); } catch(e) { console.error('Relationship err:', e.message); }
       cityLiveData.lastRelationshipTime = now;
     }
     
     // CITY DISASTER (rare, every 15-30 min)
     if (chance(5) && now - cityLiveData.lastDisasterTime > 900000 && !cityLiveData.cityDisaster) {
-      await cityDisaster();
+      try { await cityDisaster(); } catch(e) { console.error('Disaster err:', e.message); }
       cityLiveData.lastDisasterTime = now;
     }
     
     // WEATHER CHANGES (every 5-15 min)
     if (chance(12)) {
-      updateWeather();
+      try { updateWeather(); } catch(e) { console.error('Weather err:', e.message); }
     }
     
     // SECRET SOCIETY (rare)
     if (chance(3) && !cityLiveData.secretSociety && now - (cityLiveData.lastSecretTime || 0) > 900000) {
-      await formSecretSociety();
+      try { await formSecretSociety(); } catch(e) { console.error('Secret society err:', e.message); }
       cityLiveData.lastSecretTime = now;
     }
     
@@ -3742,73 +3748,73 @@ async function cityEventLoop() {
     
     // FIGHT CLUB (every 10-20 min)
     if (chance(8) && !cityLiveData.fightClub && now - (cityLiveData.lastFightClubTime || 0) > 600000) {
-      await startFightClub();
+      try { await startFightClub(); } catch(e) { console.error('Fight club err:', e.message); }
       cityLiveData.lastFightClubTime = now;
     }
     
     // HEIST (every 15-30 min)
     if (chance(6) && now - (cityLiveData.lastHeistTime || 0) > 900000) {
-      await npcHeist();
+      try { await npcHeist(); } catch(e) { console.error('Heist err:', e.message); }
       cityLiveData.lastHeistTime = now;
     }
     
     // PIRATE RADIO (every 15-30 min)
     if (chance(5) && !cityLiveData.radioStation && now - (cityLiveData.lastRadioTime || 0) > 900000) {
-      await npcStartRadio();
+      try { await npcStartRadio(); } catch(e) { console.error('Radio err:', e.message); }
       cityLiveData.lastRadioTime = now;
     }
     
     // ASSASSINATION ATTEMPT (rare, every 20-40 min)
     if (chance(3) && now - (cityLiveData.lastAssassinationTime || 0) > 1200000 && cityEngine.chaosLevel > 40) {
-      await assassinationAttempt();
+      try { await assassinationAttempt(); } catch(e) { console.error('Assassination err:', e.message); }
       cityLiveData.lastAssassinationTime = now;
     }
     
     // 4TH WALL BREAK (every 10-20 min)
     if (chance(8) && now - (cityLiveData.last4thWallTime || 0) > 600000) {
-      await fourthWallBreak();
+      try { await fourthWallBreak(); } catch(e) { console.error('4th wall err:', e.message); }
       cityLiveData.last4thWallTime = now;
     }
     
     // INTERVENTION (every 10-20 min, only when someone needs it)
     if (chance(10) && now - (cityLiveData.lastInterventionTime || 0) > 600000) {
-      await npcIntervention();
+      try { await npcIntervention(); } catch(e) { console.error('Intervention err:', e.message); }
       cityLiveData.lastInterventionTime = now;
     }
     
     // FAKE DEATH (rare, every 30-60 min)
     if (chance(3) && now - (cityLiveData.lastFakeDeathTime || 0) > 1800000) {
-      await npcFakeDeath();
+      try { await npcFakeDeath(); } catch(e) { console.error('Fake death err:', e.message); }
       cityLiveData.lastFakeDeathTime = now;
     }
     
     // AI UPRISING (rare, every 30-60 min)
     if (chance(3) && now - (cityLiveData.lastUprisingTime || 0) > 1800000) {
-      await aiUprising();
+      try { await aiUprising(); } catch(e) { console.error('AI uprising err:', e.message); }
       cityLiveData.lastUprisingTime = now;
     }
     
     // INTERDIMENSIONAL PORTAL (very rare, every 30-60 min)
     if (chance(2) && now - (cityLiveData.lastPortalTime || 0) > 1800000) {
-      await interdimensionalPortal();
+      try { await interdimensionalPortal(); } catch(e) { console.error('Portal err:', e.message); }
       cityLiveData.lastPortalTime = now;
     }
     
     // PROPAGANDA (every 8-15 min)
     if (chance(10) && now - (cityLiveData.lastPropagandaTime || 0) > 480000) {
-      await npcPropaganda();
+      try { await npcPropaganda(); } catch(e) { console.error('Propaganda err:', e.message); }
       cityLiveData.lastPropagandaTime = now;
     }
     
     // TRIAL BY COMBAT (every 15-30 min)
     if (chance(5) && now - (cityLiveData.lastTrialCombatTime || 0) > 900000) {
-      await trialByCombat();
+      try { await trialByCombat(); } catch(e) { console.error('Trial combat err:', e.message); }
       cityLiveData.lastTrialCombatTime = now;
     }
     
     // INFRASTRUCTURE FAILURE (every 10-20 min)
     if (chance(8) && now - (cityLiveData.lastInfraTime || 0) > 600000) {
-      await infrastructureEvent();
+      try { await infrastructureEvent(); } catch(e) { console.error('Infra err:', e.message); }
       cityLiveData.lastInfraTime = now;
     }
     
@@ -3824,6 +3830,7 @@ async function cityEventLoop() {
     });
     
   } catch (err) { console.error('City engine error:', err.message); }
+  engineBusy = false;
 }
 
 // ---- NPC MESSAGE GENERATOR (personality-aware) ----
@@ -5243,7 +5250,7 @@ app.post('/api/city-engine/trigger', async (req, res) => {
 });
 
 // START ENGINE
-const CITY_ENGINE_INTERVAL = 30000; // Check every 30 seconds — CHAOS MODE
+const CITY_ENGINE_INTERVAL = 45000; // Check every 45 seconds
 setInterval(cityEventLoop, CITY_ENGINE_INTERVAL);
 setTimeout(() => { console.log('🌆 City Events Engine v3 STARTED! PURE CHAOS MODE.'); cityEventLoop(); }, 10000);
 setInterval(async () => { try { if (getTimeRemaining() < 60000) { await autoResolveVote(); setTimeout(autoGenerateVote, 65000); } } catch(e){} }, 60000);
