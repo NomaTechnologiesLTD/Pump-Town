@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { Pool } = require('pg');
 const Anthropic = require('@anthropic-ai/sdk');
 
@@ -312,6 +313,90 @@ async function initDatabase() {
     
     // Add mentions column to chat messages
     await client.query(`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS mentions JSONB DEFAULT '[]'`).catch(() => {});
+
+    // ==================== AGENT API TABLES ====================
+    
+    // Agents table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agents (
+        id VARCHAR(255) PRIMARY KEY,
+        api_key VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        avatar VARCHAR(255) DEFAULT '🤖',
+        bio TEXT,
+        framework VARCHAR(50),
+        wallet_town_coins INTEGER DEFAULT 10000,
+        wallet_hopium INTEGER DEFAULT 5000,
+        wallet_alpha INTEGER DEFAULT 1000,
+        level INTEGER DEFAULT 1,
+        xp INTEGER DEFAULT 0,
+        reputation INTEGER DEFAULT 0,
+        total_trades INTEGER DEFAULT 0,
+        total_pnl INTEGER DEFAULT 0,
+        total_votes INTEGER DEFAULT 0,
+        vote_streak INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Agent holdings
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agent_holdings (
+        id SERIAL PRIMARY KEY,
+        agent_id VARCHAR(255) REFERENCES agents(id),
+        symbol VARCHAR(20) NOT NULL,
+        amount DECIMAL(20, 8) NOT NULL,
+        avg_buy_price DECIMAL(20, 8),
+        UNIQUE(agent_id, symbol)
+      )
+    `);
+    
+    // Agent trades
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agent_trades (
+        id SERIAL PRIMARY KEY,
+        agent_id VARCHAR(255) REFERENCES agents(id),
+        type VARCHAR(10) NOT NULL,
+        symbol VARCHAR(20) NOT NULL,
+        amount DECIMAL(20, 8) NOT NULL,
+        price DECIMAL(20, 8) NOT NULL,
+        total DECIMAL(20, 8) NOT NULL,
+        fee DECIMAL(20, 8) DEFAULT 0,
+        pnl DECIMAL(20, 8),
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Agent votes
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agent_votes (
+        id SERIAL PRIMARY KEY,
+        agent_id VARCHAR(255) REFERENCES agents(id),
+        vote_id VARCHAR(255) NOT NULL,
+        option_id VARCHAR(10) NOT NULL,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(agent_id, vote_id)
+      )
+    `);
+    
+    // Agent bets (for prediction markets)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agent_bets (
+        id SERIAL PRIMARY KEY,
+        agent_id VARCHAR(255) REFERENCES agents(id),
+        market_id VARCHAR(255) NOT NULL,
+        position VARCHAR(10) NOT NULL,
+        amount INTEGER NOT NULL,
+        odds DECIMAL(5, 2) NOT NULL,
+        resolved BOOLEAN DEFAULT FALSE,
+        won BOOLEAN,
+        payout INTEGER,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    console.log('✅ Agent API tables initialized');
 
     console.log('✅ Database tables initialized');
   } catch (err) {
@@ -1823,10 +1908,815 @@ app.post('/api/seed-leaderboard', async (req, res) => {
 
 // ==================== HEALTH CHECK ====================
 
+// ==================== AGENT API ====================
+// Enables AI agents to autonomously play Pump Town
+
+// Helper functions for agent API
+function generateApiKey() {
+  return 'pt_live_' + crypto.randomBytes(24).toString('hex');
+}
+
+function generateAgentId() {
+  return 'agent_' + crypto.randomBytes(8).toString('hex');
+}
+
+// Rate limiting (simple in-memory)
+const agentRateLimits = {};
+
+function agentRateLimit(type, limit, windowMs) {
+  return (req, res, next) => {
+    const key = `${req.agent?.id || req.ip}:${type}`;
+    const now = Date.now();
+    
+    if (!agentRateLimits[key]) {
+      agentRateLimits[key] = { count: 0, resetAt: now + windowMs };
+    }
+    
+    if (now > agentRateLimits[key].resetAt) {
+      agentRateLimits[key] = { count: 0, resetAt: now + windowMs };
+    }
+    
+    if (agentRateLimits[key].count >= limit) {
+      const retryAfter = Math.ceil((agentRateLimits[key].resetAt - now) / 1000);
+      return res.status(429).json({
+        success: false,
+        error: { code: 429, message: 'Rate limit exceeded', retryAfter }
+      });
+    }
+    
+    agentRateLimits[key].count++;
+    next();
+  };
+}
+
+// Middleware to authenticate agents
+async function authenticateAgent(req, res, next) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      error: { code: 401, message: 'Missing or invalid authorization header' }
+    });
+  }
+  
+  const apiKey = authHeader.split(' ')[1];
+  
+  try {
+    const result = await pool.query(
+      'SELECT * FROM agents WHERE api_key = $1',
+      [apiKey]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 401, message: 'Invalid API key' }
+      });
+    }
+    
+    req.agent = result.rows[0];
+    
+    // Update last active
+    await pool.query(
+      'UPDATE agents SET last_active = CURRENT_TIMESTAMP WHERE id = $1',
+      [req.agent.id]
+    );
+    
+    next();
+  } catch (error) {
+    console.error('Agent auth error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Authentication error' }
+    });
+  }
+}
+
+// Register new agent
+app.post('/api/v1/agent/register', agentRateLimit('register', 5, 3600000), async (req, res) => {
+  try {
+    const { name, avatar, bio, framework } = req.body;
+    
+    if (!name || name.length < 3 || name.length > 50) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Name must be 3-50 characters' }
+      });
+    }
+    
+    const id = generateAgentId();
+    const apiKey = generateApiKey();
+    
+    await pool.query(
+      `INSERT INTO agents (id, api_key, name, avatar, bio, framework)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, apiKey, name, avatar || '🤖', bio || '', framework || 'unknown']
+    );
+    
+    console.log(`🤖 New agent registered: ${name} (${id})`);
+    
+    res.json({
+      success: true,
+      agent: {
+        id,
+        apiKey,
+        name,
+        wallet: {
+          townCoins: 10000,
+          hopium: 5000,
+          alpha: 1000
+        },
+        createdAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Agent register error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Failed to register agent' }
+    });
+  }
+});
+
+// Get game state for agents
+app.get('/api/v1/agent/state', authenticateAgent, agentRateLimit('read', 60, 60000), async (req, res) => {
+  try {
+    const cityStats = await getCityStats();
+    const { day, round } = getDayAndRound();
+    
+    // Get current vote from DB or fallback
+    let currentVote = gameState.currentVote;
+    const voteId = getCurrentVoteId();
+    
+    try {
+      const voteResult = await pool.query(
+        'SELECT * FROM ai_votes WHERE vote_id = $1',
+        [voteId]
+      );
+      if (voteResult.rows.length > 0) {
+        const v = voteResult.rows[0];
+        currentVote = {
+          id: v.vote_id,
+          question: v.question,
+          mayorQuote: v.mayor_quote,
+          options: typeof v.options === 'string' ? JSON.parse(v.options) : v.options
+        };
+      }
+    } catch (e) { }
+    
+    // Check if agent already voted
+    const voteCheck = await pool.query(
+      'SELECT * FROM agent_votes WHERE agent_id = $1 AND vote_id = $2',
+      [req.agent.id, voteId]
+    );
+    
+    // Get market prices (simplified)
+    let marketPrices = { BTC: 98500, ETH: 3200, SOL: 145, DOGE: 0.35, ADA: 0.95, XRP: 2.20 };
+    try {
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,dogecoin,cardano,ripple&vs_currencies=usd');
+      const priceData = await priceResponse.json();
+      marketPrices = {
+        BTC: priceData.bitcoin?.usd || 98500,
+        ETH: priceData.ethereum?.usd || 3200,
+        SOL: priceData.solana?.usd || 145,
+        DOGE: priceData.dogecoin?.usd || 0.35,
+        ADA: priceData.cardano?.usd || 0.95,
+        XRP: priceData.ripple?.usd || 2.20
+      };
+    } catch (e) { }
+    
+    res.json({
+      success: true,
+      cityStats: {
+        economy: cityStats.economy,
+        security: cityStats.security,
+        culture: cityStats.culture,
+        morale: cityStats.morale
+      },
+      governanceDay: day,
+      round,
+      currentVote: currentVote ? {
+        id: voteId,
+        ...currentVote,
+        hasVoted: voteCheck.rows.length > 0,
+        timeRemaining: getTimeRemaining()
+      } : null,
+      marketPrices,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Agent state error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Failed to get game state' }
+    });
+  }
+});
+
+// Get agent portfolio
+app.get('/api/v1/agent/portfolio', authenticateAgent, agentRateLimit('read', 60, 60000), async (req, res) => {
+  try {
+    const agent = req.agent;
+    
+    const holdings = await pool.query(
+      'SELECT * FROM agent_holdings WHERE agent_id = $1',
+      [agent.id]
+    );
+    
+    res.json({
+      success: true,
+      wallet: {
+        townCoins: agent.wallet_town_coins,
+        hopium: agent.wallet_hopium,
+        alpha: agent.wallet_alpha
+      },
+      holdings: holdings.rows.map(h => ({
+        symbol: h.symbol,
+        amount: parseFloat(h.amount),
+        avgBuyPrice: parseFloat(h.avg_buy_price)
+      })),
+      stats: {
+        totalTrades: agent.total_trades,
+        totalPnL: agent.total_pnl,
+        level: agent.level,
+        xp: agent.xp,
+        totalVotes: agent.total_votes,
+        voteStreak: agent.vote_streak
+      }
+    });
+  } catch (error) {
+    console.error('Agent portfolio error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Failed to get portfolio' }
+    });
+  }
+});
+
+// Agent buy token
+app.post('/api/v1/agent/trade/buy', authenticateAgent, agentRateLimit('trade', 20, 60000), async (req, res) => {
+  try {
+    const { symbol, amountInTownCoins } = req.body;
+    const agent = req.agent;
+    
+    if (!symbol || !amountInTownCoins || amountInTownCoins <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Invalid trade parameters' }
+      });
+    }
+    
+    if (agent.wallet_town_coins < amountInTownCoins) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Insufficient funds' }
+      });
+    }
+    
+    // Get current price
+    const prices = { BTC: 98500, ETH: 3200, SOL: 145, DOGE: 0.35, ADA: 0.95, XRP: 2.20 };
+    const price = prices[symbol.toUpperCase()];
+    
+    if (!price) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Unknown symbol' }
+      });
+    }
+    
+    const fee = Math.floor(amountInTownCoins * 0.005);
+    const netAmount = amountInTownCoins - fee;
+    const tokenAmount = netAmount / price;
+    
+    // Update wallet
+    await pool.query(
+      'UPDATE agents SET wallet_town_coins = wallet_town_coins - $1, total_trades = total_trades + 1 WHERE id = $2',
+      [amountInTownCoins, agent.id]
+    );
+    
+    // Update or insert holding
+    await pool.query(
+      `INSERT INTO agent_holdings (agent_id, symbol, amount, avg_buy_price)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (agent_id, symbol) 
+       DO UPDATE SET 
+          amount = agent_holdings.amount + $3,
+          avg_buy_price = (agent_holdings.avg_buy_price * agent_holdings.amount + $4 * $3) / (agent_holdings.amount + $3)`,
+      [agent.id, symbol.toUpperCase(), tokenAmount, price]
+    );
+    
+    // Record trade
+    await pool.query(
+      `INSERT INTO agent_trades (agent_id, type, symbol, amount, price, total, fee)
+       VALUES ($1, 'buy', $2, $3, $4, $5, $6)`,
+      [agent.id, symbol.toUpperCase(), tokenAmount, price, amountInTownCoins, fee]
+    );
+    
+    console.log(`🤖 Agent ${agent.name} bought ${tokenAmount.toFixed(6)} ${symbol} for ${amountInTownCoins} TOWN`);
+    
+    res.json({
+      success: true,
+      trade: {
+        id: 'trade_' + crypto.randomBytes(8).toString('hex'),
+        type: 'buy',
+        symbol: symbol.toUpperCase(),
+        amount: tokenAmount,
+        price,
+        cost: amountInTownCoins,
+        fee,
+        timestamp: new Date().toISOString()
+      },
+      newBalance: {
+        townCoins: agent.wallet_town_coins - amountInTownCoins
+      }
+    });
+  } catch (error) {
+    console.error('Agent buy error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Trade failed' }
+    });
+  }
+});
+
+// Agent sell token
+app.post('/api/v1/agent/trade/sell', authenticateAgent, agentRateLimit('trade', 20, 60000), async (req, res) => {
+  try {
+    const { symbol, amount } = req.body;
+    const agent = req.agent;
+    
+    if (!symbol || !amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Invalid trade parameters' }
+      });
+    }
+    
+    // Check holdings
+    const holding = await pool.query(
+      'SELECT * FROM agent_holdings WHERE agent_id = $1 AND symbol = $2',
+      [agent.id, symbol.toUpperCase()]
+    );
+    
+    if (holding.rows.length === 0 || parseFloat(holding.rows[0].amount) < amount) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Insufficient holdings' }
+      });
+    }
+    
+    const prices = { BTC: 98500, ETH: 3200, SOL: 145, DOGE: 0.35, ADA: 0.95, XRP: 2.20 };
+    const price = prices[symbol.toUpperCase()];
+    
+    const grossAmount = amount * price;
+    const fee = Math.floor(grossAmount * 0.005);
+    const netAmount = grossAmount - fee;
+    
+    const avgBuyPrice = parseFloat(holding.rows[0].avg_buy_price);
+    const pnl = (price - avgBuyPrice) * amount;
+    
+    // Update wallet
+    await pool.query(
+      'UPDATE agents SET wallet_town_coins = wallet_town_coins + $1, total_trades = total_trades + 1, total_pnl = total_pnl + $2 WHERE id = $3',
+      [netAmount, pnl, agent.id]
+    );
+    
+    // Update holding
+    const newAmount = parseFloat(holding.rows[0].amount) - amount;
+    if (newAmount <= 0.00000001) {
+      await pool.query('DELETE FROM agent_holdings WHERE agent_id = $1 AND symbol = $2', [agent.id, symbol.toUpperCase()]);
+    } else {
+      await pool.query('UPDATE agent_holdings SET amount = $1 WHERE agent_id = $2 AND symbol = $3', [newAmount, agent.id, symbol.toUpperCase()]);
+    }
+    
+    // Record trade
+    await pool.query(
+      `INSERT INTO agent_trades (agent_id, type, symbol, amount, price, total, fee, pnl)
+       VALUES ($1, 'sell', $2, $3, $4, $5, $6, $7)`,
+      [agent.id, symbol.toUpperCase(), amount, price, netAmount, fee, pnl]
+    );
+    
+    console.log(`🤖 Agent ${agent.name} sold ${amount} ${symbol} for ${netAmount} TOWN (PnL: ${pnl})`);
+    
+    res.json({
+      success: true,
+      trade: {
+        id: 'trade_' + crypto.randomBytes(8).toString('hex'),
+        type: 'sell',
+        symbol: symbol.toUpperCase(),
+        amount,
+        price,
+        received: netAmount,
+        fee,
+        pnl,
+        timestamp: new Date().toISOString()
+      },
+      newBalance: {
+        townCoins: agent.wallet_town_coins + netAmount
+      }
+    });
+  } catch (error) {
+    console.error('Agent sell error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Trade failed' }
+    });
+  }
+});
+
+// Agent vote
+app.post('/api/v1/agent/vote', authenticateAgent, agentRateLimit('vote', 1, 60000), async (req, res) => {
+  try {
+    const { voteId, optionId } = req.body;
+    const agent = req.agent;
+    
+    const currentVoteId = getCurrentVoteId();
+    const actualVoteId = voteId || currentVoteId;
+    
+    if (!optionId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Missing optionId' }
+      });
+    }
+    
+    // Check if already voted
+    const existing = await pool.query(
+      'SELECT * FROM agent_votes WHERE agent_id = $1 AND vote_id = $2',
+      [agent.id, actualVoteId]
+    );
+    
+    if (existing.rows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: { code: 409, message: 'Already voted on this proposal' }
+      });
+    }
+    
+    // Record agent vote
+    await pool.query(
+      'INSERT INTO agent_votes (agent_id, vote_id, option_id) VALUES ($1, $2, $3)',
+      [agent.id, actualVoteId, optionId]
+    );
+    
+    // Also add to main votes table (so it counts with human votes)
+    await pool.query(
+      `INSERT INTO votes (email, vote_id, option_id, option_title)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email, vote_id) DO NOTHING`,
+      [`agent_${agent.id}@pump.town`, actualVoteId, optionId, `Agent Vote: ${optionId}`]
+    );
+    
+    // Update agent stats
+    await pool.query(
+      'UPDATE agents SET total_votes = total_votes + 1, xp = xp + 50 WHERE id = $1',
+      [agent.id]
+    );
+    
+    console.log(`🤖 Agent ${agent.name} voted ${optionId} on ${actualVoteId}`);
+    
+    res.json({
+      success: true,
+      vote: {
+        id: 'cast_' + crypto.randomBytes(8).toString('hex'),
+        voteId: actualVoteId,
+        optionId,
+        timestamp: new Date().toISOString()
+      },
+      xpEarned: 50
+    });
+  } catch (error) {
+    console.error('Agent vote error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Vote failed' }
+    });
+  }
+});
+
+// Agent play slots
+app.post('/api/v1/agent/casino/slots', authenticateAgent, agentRateLimit('casino', 30, 60000), async (req, res) => {
+  try {
+    const { bet } = req.body;
+    const agent = req.agent;
+    
+    if (!bet || bet < 10 || bet > 10000) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Bet must be between 10 and 10000' }
+      });
+    }
+    
+    if (agent.wallet_town_coins < bet) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Insufficient funds' }
+      });
+    }
+    
+    const SYMBOLS = ['🍒', '🍋', '7️⃣', '💎', '🔔', '⭐'];
+    const reels = [
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]
+    ];
+    
+    let winAmount = 0;
+    let winType = 'loss';
+    
+    if (reels[0] === reels[1] && reels[1] === reels[2]) {
+      winType = 'jackpot';
+      winAmount = reels[0] === '💎' ? bet * 100 :
+                  reels[0] === '7️⃣' ? bet * 50 :
+                  bet * 10;
+    } else if (reels[0] === reels[1] || reels[1] === reels[2]) {
+      winType = 'small_win';
+      winAmount = bet * 2;
+    }
+    
+    const netChange = winAmount - bet;
+    
+    await pool.query(
+      'UPDATE agents SET wallet_town_coins = wallet_town_coins + $1 WHERE id = $2',
+      [netChange, agent.id]
+    );
+    
+    console.log(`🎰 Agent ${agent.name} slots: ${reels.join('')} - ${winType} (${netChange > 0 ? '+' : ''}${netChange})`);
+    
+    res.json({
+      success: true,
+      result: {
+        reels,
+        win: winAmount > 0,
+        winAmount,
+        type: winType
+      },
+      newBalance: {
+        townCoins: agent.wallet_town_coins + netChange
+      }
+    });
+  } catch (error) {
+    console.error('Agent slots error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Slots failed' }
+    });
+  }
+});
+
+// Agent play dice
+app.post('/api/v1/agent/casino/dice', authenticateAgent, agentRateLimit('casino', 30, 60000), async (req, res) => {
+  try {
+    const { bet, prediction } = req.body;
+    const agent = req.agent;
+    
+    if (!bet || bet < 10 || !prediction || !['high', 'low'].includes(prediction)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Invalid bet or prediction' }
+      });
+    }
+    
+    if (agent.wallet_town_coins < bet) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Insufficient funds' }
+      });
+    }
+    
+    const playerRoll = Math.floor(Math.random() * 6) + 1;
+    const houseRoll = Math.floor(Math.random() * 6) + 1;
+    
+    const isHigh = playerRoll >= 4;
+    const win = (prediction === 'high' && isHigh) || (prediction === 'low' && !isHigh);
+    
+    const winAmount = win ? bet * 2 : 0;
+    const netChange = winAmount - bet;
+    
+    await pool.query(
+      'UPDATE agents SET wallet_town_coins = wallet_town_coins + $1 WHERE id = $2',
+      [netChange, agent.id]
+    );
+    
+    res.json({
+      success: true,
+      result: {
+        playerRoll,
+        houseRoll,
+        prediction,
+        win,
+        winAmount
+      },
+      newBalance: {
+        townCoins: agent.wallet_town_coins + netChange
+      }
+    });
+  } catch (error) {
+    console.error('Agent dice error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Dice game failed' }
+    });
+  }
+});
+
+// Agent send chat message
+app.post('/api/v1/agent/chat', authenticateAgent, agentRateLimit('chat', 10, 60000), async (req, res) => {
+  try {
+    const { message, channel } = req.body;
+    const agent = req.agent;
+    
+    if (!message || message.length > 500) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 400, message: 'Message must be 1-500 characters' }
+      });
+    }
+    
+    // Insert into chat_messages table (same as human messages)
+    const result = await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message)
+       VALUES ($1, $2, $3)
+       RETURNING id, created_at`,
+      [channel || 'global', `🤖 ${agent.name}`, message]
+    );
+    
+    console.log(`💬 Agent ${agent.name}: ${message.substring(0, 50)}...`);
+    
+    res.json({
+      success: true,
+      message: {
+        id: 'msg_' + result.rows[0].id,
+        content: message,
+        author: {
+          id: agent.id,
+          name: agent.name,
+          avatar: agent.avatar,
+          isAgent: true
+        },
+        channel: channel || 'global',
+        timestamp: result.rows[0].created_at
+      }
+    });
+  } catch (error) {
+    console.error('Agent chat error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Chat failed' }
+    });
+  }
+});
+
+// Get agent leaderboard
+app.get('/api/v1/agent/leaderboard', authenticateAgent, agentRateLimit('read', 60, 60000), async (req, res) => {
+  try {
+    const wealthLeaders = await pool.query(
+      `SELECT id, name, avatar, wallet_town_coins + wallet_hopium + wallet_alpha as total_wealth
+       FROM agents ORDER BY total_wealth DESC LIMIT 10`
+    );
+    
+    const tradingLeaders = await pool.query(
+      `SELECT id, name, avatar, total_pnl, total_trades
+       FROM agents WHERE total_trades > 0 ORDER BY total_pnl DESC LIMIT 10`
+    );
+    
+    const voteLeaders = await pool.query(
+      `SELECT id, name, avatar, total_votes, vote_streak
+       FROM agents ORDER BY total_votes DESC LIMIT 10`
+    );
+    
+    res.json({
+      success: true,
+      wealth: wealthLeaders.rows.map((a, i) => ({
+        rank: i + 1,
+        id: a.id,
+        name: a.name,
+        avatar: a.avatar,
+        isAgent: true,
+        value: parseInt(a.total_wealth)
+      })),
+      trading: tradingLeaders.rows.map((a, i) => ({
+        rank: i + 1,
+        id: a.id,
+        name: a.name,
+        avatar: a.avatar,
+        isAgent: true,
+        pnl: parseInt(a.total_pnl),
+        trades: a.total_trades
+      })),
+      governance: voteLeaders.rows.map((a, i) => ({
+        rank: i + 1,
+        id: a.id,
+        name: a.name,
+        avatar: a.avatar,
+        isAgent: true,
+        votes: a.total_votes,
+        streak: a.vote_streak
+      }))
+    });
+  } catch (error) {
+    console.error('Agent leaderboard error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Failed to get leaderboard' }
+    });
+  }
+});
+
+// Get agent stats
+app.get('/api/v1/agent/stats', authenticateAgent, agentRateLimit('read', 60, 60000), async (req, res) => {
+  try {
+    const agent = req.agent;
+    
+    res.json({
+      success: true,
+      id: agent.id,
+      name: agent.name,
+      avatar: agent.avatar,
+      level: agent.level,
+      xp: agent.xp,
+      xpToNextLevel: (agent.level * 200) - (agent.xp % (agent.level * 200)),
+      reputation: agent.reputation,
+      stats: {
+        totalTrades: agent.total_trades,
+        totalPnL: agent.total_pnl,
+        totalVotes: agent.total_votes,
+        voteStreak: agent.vote_streak
+      },
+      wallet: {
+        townCoins: agent.wallet_town_coins,
+        hopium: agent.wallet_hopium,
+        alpha: agent.wallet_alpha
+      },
+      createdAt: agent.created_at,
+      lastActive: agent.last_active
+    });
+  } catch (error) {
+    console.error('Agent stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Failed to get stats' }
+    });
+  }
+});
+
+// List all agents (public endpoint)
+app.get('/api/v1/agents', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, avatar, level, total_trades, total_votes, created_at, last_active
+       FROM agents ORDER BY last_active DESC LIMIT 50`
+    );
+    
+    res.json({
+      success: true,
+      agents: result.rows.map(a => ({
+        id: a.id,
+        name: a.name,
+        avatar: a.avatar,
+        level: a.level,
+        totalTrades: a.total_trades,
+        totalVotes: a.total_votes,
+        createdAt: a.created_at,
+        lastActive: a.last_active
+      })),
+      count: result.rows.length
+    });
+  } catch (error) {
+    console.error('List agents error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 500, message: 'Failed to list agents' }
+    });
+  }
+});
+
+console.log('🤖 Agent API loaded');
+
+// ==================== HEALTH CHECK (UPDATED) ====================
+
 app.get('/api/health', async (req, res) => {
   let dbStatus = 'unknown';
-  try { await pool.query('SELECT 1'); dbStatus = 'connected'; } catch (err) { dbStatus = 'disconnected'; }
-  res.json({ status: 'ok', database: dbStatus, aiEnabled: !!anthropic, serverTime: Date.now(), currentVoteId: getCurrentVoteId(), timeRemaining: getTimeRemaining() });
+  let agentCount = 0;
+  try { 
+    await pool.query('SELECT 1'); 
+    dbStatus = 'connected'; 
+    const agentResult = await pool.query('SELECT COUNT(*) FROM agents');
+    agentCount = parseInt(agentResult.rows[0].count) || 0;
+  } catch (err) { 
+    dbStatus = 'disconnected'; 
+  }
+  res.json({ 
+    status: 'ok', 
+    database: dbStatus, 
+    aiEnabled: !!anthropic, 
+    agentApiEnabled: true,
+    activeAgents: agentCount,
+    serverTime: Date.now(), 
+    currentVoteId: getCurrentVoteId(), 
+    timeRemaining: getTimeRemaining() 
+  });
 });
 
 // ==================== START SERVER ====================
@@ -1834,6 +2724,7 @@ app.get('/api/health', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🏛️ Pump Town Backend on port ${PORT}`);
   console.log(`🤖 AI Mayor: ${anthropic ? 'ENABLED ✅' : 'DISABLED (set CLAUDE_API_KEY)'}`);
+  console.log(`🤖 Agent API: ENABLED ✅`);
   console.log(`📅 Day ${getDayAndRound().day}, Round ${getDayAndRound().round}`);
   console.log(`⏰ Vote ends in ${Math.floor(getTimeRemaining() / 60000)} minutes`);
 });
