@@ -8862,6 +8862,66 @@
         .chaos-toast-exit { animation: chaosToastOut 0.3s ease forwards; }
         @keyframes chaosToastIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes chaosToastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+        
+        /* ═══════ WELCOME BACK RECAP ═══════ */
+        @keyframes recapFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes recapSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes recapPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes recapGlitch { 0%{transform:translate(0)} 20%{transform:translate(-2px,2px)} 40%{transform:translate(2px,-2px)} 60%{transform:translate(-1px,-1px)} 80%{transform:translate(1px,1px)} 100%{transform:translate(0)} }
+        @keyframes recapScanline { 0%{top:-100%} 100%{top:100%} }
+        @keyframes headlineType { from{width:0;border-right:2px solid #00ff88} to{width:100%;border-right:2px solid transparent} }
+        @keyframes dramaMeterFill { from{width:0} }
+        @keyframes recapCountUp { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
+        
+        .recap-overlay { position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;animation:recapFadeIn 0.5s ease; }
+        .recap-container { width:90%;max-width:600px;max-height:85vh;overflow-y:auto;padding:30px;position:relative; }
+        .recap-container::-webkit-scrollbar{width:4px} .recap-container::-webkit-scrollbar-track{background:transparent} .recap-container::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+        .recap-scanline { position:absolute;top:-100%;left:0;width:100%;height:4px;background:linear-gradient(transparent,rgba(0,255,136,0.1),transparent);animation:recapScanline 3s linear infinite;pointer-events:none; }
+        .recap-header { text-align:center;margin-bottom:25px;animation:recapSlideUp 0.6s ease; }
+        .recap-header h1 { font-size:1.6em;color:#fff;margin:0 0 5px 0;text-shadow:0 0 20px rgba(0,255,136,0.3); }
+        .recap-header .recap-time { color:#888;font-size:0.85em; }
+        
+        .recap-drama-meter { background:#111;border:1px solid #333;border-radius:12px;padding:15px;margin-bottom:20px;text-align:center;animation:recapSlideUp 0.8s ease; }
+        .recap-drama-meter h3 { margin:0 0 8px;color:#ffd700;font-size:0.9em;text-transform:uppercase;letter-spacing:2px; }
+        .recap-drama-bar { height:8px;background:#222;border-radius:4px;overflow:hidden;margin-bottom:8px; }
+        .recap-drama-fill { height:100%;border-radius:4px;animation:dramaMeterFill 1.5s ease;transition:width 1s; }
+        .recap-drama-label { font-size:1.4em;font-weight:bold; }
+        
+        .recap-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;animation:recapSlideUp 1s ease; }
+        .recap-stat { background:#111;border:1px solid #222;border-radius:10px;padding:12px 8px;text-align:center; }
+        .recap-stat .stat-num { font-size:1.5em;font-weight:bold;animation:recapCountUp 0.5s ease;display:block; }
+        .recap-stat .stat-label { font-size:0.7em;color:#888;text-transform:uppercase;letter-spacing:1px;margin-top:2px; }
+        
+        .recap-headlines { margin-bottom:20px; }
+        .recap-headlines h3 { color:#ff4444;font-size:0.85em;text-transform:uppercase;letter-spacing:2px;margin:0 0 10px;display:flex;align-items:center;gap:6px; }
+        .recap-headline { background:#0a0a0a;border-left:3px solid;padding:10px 12px;margin-bottom:8px;border-radius:0 8px 8px 0;animation:recapSlideUp 0.5s ease; }
+        .recap-headline.breaking { border-color:#ff4444; }
+        .recap-headline.mayor { border-color:#ffd700; }
+        .recap-headline.crime { border-color:#ff6600; }
+        .recap-headline.trial { border-color:#9966ff; }
+        .recap-headline .hl-icon { margin-right:6px; }
+        .recap-headline .hl-text { color:#ccc;font-size:0.85em;line-height:1.4; }
+        
+        .recap-mentions { background:linear-gradient(135deg,#1a0a2e,#0a1a2e);border:1px solid #6633ff;border-radius:12px;padding:15px;margin-bottom:20px; }
+        .recap-mentions h3 { color:#aa88ff;font-size:0.85em;margin:0 0 10px;text-transform:uppercase;letter-spacing:2px; }
+        .recap-mention { padding:8px 0;border-bottom:1px solid #222;font-size:0.85em; }
+        .recap-mention:last-child { border:none; }
+        .recap-mention .mention-from { color:#00ff88;font-weight:bold; }
+        .recap-mention .mention-msg { color:#ccc;margin-top:3px; }
+        
+        .recap-city-state { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;animation:recapSlideUp 1.2s ease; }
+        .recap-state-card { background:#111;border:1px solid #222;border-radius:10px;padding:12px;text-align:center; }
+        .recap-state-card .state-icon { font-size:1.5em; }
+        .recap-state-card .state-label { font-size:0.7em;color:#888;text-transform:uppercase;margin-top:4px; }
+        .recap-state-card .state-value { font-size:0.9em;font-weight:bold;margin-top:2px; }
+        
+        .recap-npc-drama { margin-bottom:20px; }
+        .recap-npc-drama h3 { color:#ff88aa;font-size:0.85em;text-transform:uppercase;letter-spacing:2px;margin:0 0 10px; }
+        .recap-npc-item { display:flex;align-items:center;gap:10px;padding:8px;background:#0a0a0a;border-radius:8px;margin-bottom:6px; }
+        .recap-npc-item .npc-status-badge { padding:2px 8px;border-radius:10px;font-size:0.7em;font-weight:bold;text-transform:uppercase; }
+        
+        .recap-enter-btn { width:100%;padding:16px;border:none;border-radius:12px;font-size:1.1em;font-weight:bold;cursor:pointer;margin-top:10px;transition:all 0.3s;text-transform:uppercase;letter-spacing:2px;animation:recapPulse 2s infinite; }
+        .recap-enter-btn:hover { transform:scale(1.02);filter:brightness(1.2); }
         @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
 
         /* ==================== MAYOR FLASH DECREE ==================== */
@@ -13612,6 +13672,9 @@
             const [showDailyReward, setShowDailyReward] = useState(false);
             const [dailyRewardData, setDailyRewardData] = useState(null);
             
+            // Welcome Back Recap state
+            const [showRecap, setShowRecap] = useState(false);
+            
             // Player Profile Modal state
             const [showPlayerProfile, setShowPlayerProfile] = useState(false);
             const [playerProfileData, setPlayerProfileData] = useState(null);
@@ -13880,6 +13943,7 @@
                     });
                     const blob = new Blob([data], { type: 'application/json' });
                     navigator.sendBeacon('https://pump-town-backend-production.up.railway.app/api/save-character', blob);
+                    localStorage.setItem('pumptown_last_visit', Date.now().toString());
                 };
                 
                 window.addEventListener('beforeunload', handleBeforeUnload);
@@ -14373,6 +14437,12 @@
                         setCharacter(char);
                         localStorage.setItem('pumptown_character', JSON.stringify(char));
                         
+                        // Trigger Welcome Back Recap if away for more than 5 minutes
+                        var lastVisit = parseInt(localStorage.getItem('pumptown_last_visit') || '0');
+                        if (lastVisit && Date.now() - lastVisit > 300000) {
+                            setShowRecap(true);
+                        }
+                        localStorage.setItem('pumptown_last_visit', Date.now().toString());
                         // ====== RESTORE PLAYER STATS FROM BACKEND ======
                         if (data.playerStats) {
                             const localStats = JSON.parse(localStorage.getItem('pumptown_player_stats') || '{}');
@@ -16024,6 +16094,7 @@
                     
                     {/* Chaos Mode Toast Notifications — polls for big events */}
                     <ChaosToastSystem />
+                    {showRecap && <WelcomeBackRecap playerName={character?.name} onDismiss={() => setShowRecap(false)} />}
                     
                     <SoundToggle />
                     
@@ -21810,6 +21881,189 @@
         }
         
         // ==================== CHAOS TOAST NOTIFICATION SYSTEM ====================
+        // ==================== WELCOME BACK RECAP ====================
+        function WelcomeBackRecap({ playerName, onDismiss }) {
+            const [recap, setRecap] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [showContent, setShowContent] = useState(false);
+            const [currentHeadline, setCurrentHeadline] = useState(0);
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+            
+            useEffect(function() {
+                var lastVisit = localStorage.getItem('pumptown_last_visit') || (Date.now() - 3600000);
+                fetch(API_BASE + '/api/city-recap?since=' + lastVisit + '&player=' + encodeURIComponent(playerName || ''))
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success && data.totalEvents > 0) {
+                            setRecap(data);
+                            setTimeout(function() { setShowContent(true); }, 300);
+                        } else {
+                            onDismiss();
+                        }
+                        setLoading(false);
+                    })
+                    .catch(function() { setLoading(false); onDismiss(); });
+                
+                // Update last visit time
+                localStorage.setItem('pumptown_last_visit', Date.now().toString());
+            }, []);
+            
+            // Auto-scroll through headlines
+            useEffect(function() {
+                if (!recap || !recap.headlines || recap.headlines.length <= 1) return;
+                var iv = setInterval(function() {
+                    setCurrentHeadline(function(prev) { return (prev + 1) % recap.headlines.length; });
+                }, 4000);
+                return function() { clearInterval(iv); };
+            }, [recap]);
+            
+            if (loading) {
+                return React.createElement('div', { className: 'recap-overlay' },
+                    React.createElement('div', { style: { textAlign: 'center', color: '#888' } },
+                        React.createElement('div', { style: { fontSize: '3em', marginBottom: '15px', animation: 'recapPulse 1s infinite' } }, '🏙️'),
+                        React.createElement('div', null, 'Loading city report...')
+                    )
+                );
+            }
+            
+            if (!recap) return null;
+            
+            var dramaColor = recap.dramaScore > 70 ? '#ff4444' : recap.dramaScore > 40 ? '#ffd700' : '#00ff88';
+            var dramaLabel = recap.dramaScore > 80 ? '🔥 ABSOLUTE CHAOS' : recap.dramaScore > 60 ? '😱 DRAMA OVERLOAD' : recap.dramaScore > 40 ? '⚡ THINGS HAPPENED' : recap.dramaScore > 20 ? '😐 RELATIVELY CALM' : '😴 QUIET DAY';
+            var sentimentEmoji = { bull: '📈', bear: '📉', mania: '🤑', panic: '😱', neutral: '😐' };
+            
+            return React.createElement('div', { className: 'recap-overlay', onClick: function(e) { if (e.target.classList.contains('recap-overlay')) onDismiss(); } },
+                React.createElement('div', { className: 'recap-container' },
+                    React.createElement('div', { className: 'recap-scanline' }),
+                    
+                    // Header
+                    React.createElement('div', { className: 'recap-header' },
+                        React.createElement('h1', null, '🏙️ Welcome Back' + (playerName ? ', ' + playerName : '') + '!'),
+                        React.createElement('div', { className: 'recap-time' }, 'You were away for ' + recap.timeAway + ' — here\'s what happened:')
+                    ),
+                    
+                    // Drama Meter
+                    React.createElement('div', { className: 'recap-drama-meter' },
+                        React.createElement('h3', null, 'DRAMA LEVEL'),
+                        React.createElement('div', { className: 'recap-drama-bar' },
+                            React.createElement('div', { className: 'recap-drama-fill', style: { width: recap.dramaScore + '%', background: 'linear-gradient(90deg, #00ff88, ' + dramaColor + ')' } })
+                        ),
+                        React.createElement('div', { className: 'recap-drama-label', style: { color: dramaColor } }, dramaLabel)
+                    ),
+                    
+                    // Quick Stats
+                    React.createElement('div', { className: 'recap-stats' },
+                        React.createElement('div', { className: 'recap-stat' },
+                            React.createElement('span', { className: 'stat-num', style: { color: '#ff4444' } }, recap.stats.breakingNews),
+                            React.createElement('span', { className: 'stat-label' }, 'Breaking News')
+                        ),
+                        React.createElement('div', { className: 'recap-stat' },
+                            React.createElement('span', { className: 'stat-num', style: { color: '#ff6600' } }, recap.stats.crimes),
+                            React.createElement('span', { className: 'stat-label' }, 'Crimes')
+                        ),
+                        React.createElement('div', { className: 'recap-stat' },
+                            React.createElement('span', { className: 'stat-num', style: { color: '#ffd700' } }, recap.stats.mayorActions),
+                            React.createElement('span', { className: 'stat-label' }, 'Mayor Acts')
+                        ),
+                        React.createElement('div', { className: 'recap-stat' },
+                            React.createElement('span', { className: 'stat-num', style: { color: '#9966ff' } }, recap.stats.trials),
+                            React.createElement('span', { className: 'stat-label' }, 'Trials')
+                        ),
+                        React.createElement('div', { className: 'recap-stat' },
+                            React.createElement('span', { className: 'stat-num', style: { color: '#00ccff' } }, recap.stats.npcMessages),
+                            React.createElement('span', { className: 'stat-label' }, 'NPC Chatter')
+                        ),
+                        React.createElement('div', { className: 'recap-stat' },
+                            React.createElement('span', { className: 'stat-num', style: { color: '#00ff88' } }, recap.totalEvents),
+                            React.createElement('span', { className: 'stat-label' }, 'Total Events')
+                        )
+                    ),
+                    
+                    // Headlines
+                    recap.headlines && recap.headlines.length > 0 && React.createElement('div', { className: 'recap-headlines' },
+                        React.createElement('h3', null, '📰 TOP HEADLINES'),
+                        recap.headlines.slice(0, 6).map(function(h, i) {
+                            return React.createElement('div', { key: i, className: 'recap-headline ' + h.type, style: { animationDelay: (i * 0.15) + 's' } },
+                                React.createElement('span', { className: 'hl-icon' }, h.icon),
+                                React.createElement('span', { className: 'hl-text' }, h.text)
+                            );
+                        })
+                    ),
+                    
+                    // Player Mentions
+                    recap.playerMentions && recap.playerMentions.length > 0 && React.createElement('div', { className: 'recap-mentions' },
+                        React.createElement('h3', null, '💬 PEOPLE TALKED ABOUT YOU (' + recap.stats.playerMentions + ')'),
+                        recap.playerMentions.map(function(m, i) {
+                            return React.createElement('div', { key: i, className: 'recap-mention' },
+                                React.createElement('div', { className: 'mention-from' }, m.from + ':'),
+                                React.createElement('div', { className: 'mention-msg' }, m.message)
+                            );
+                        })
+                    ),
+                    
+                    // City State
+                    React.createElement('div', { className: 'recap-city-state' },
+                        React.createElement('div', { className: 'recap-state-card' },
+                            React.createElement('div', { className: 'state-icon' }, '🌡️'),
+                            React.createElement('div', { className: 'state-label' }, 'Chaos Level'),
+                            React.createElement('div', { className: 'state-value', style: { color: recap.cityState.chaosLevel > 60 ? '#ff4444' : recap.cityState.chaosLevel > 30 ? '#ffd700' : '#00ff88' } }, recap.cityState.chaosLevel + '%')
+                        ),
+                        React.createElement('div', { className: 'recap-state-card' },
+                            React.createElement('div', { className: 'state-icon' }, '🎩'),
+                            React.createElement('div', { className: 'state-label' }, 'Mayor Approval'),
+                            React.createElement('div', { className: 'state-value', style: { color: recap.cityState.mayorApproval > 60 ? '#00ff88' : recap.cityState.mayorApproval > 30 ? '#ffd700' : '#ff4444' } }, recap.cityState.mayorApproval + '%')
+                        ),
+                        React.createElement('div', { className: 'recap-state-card' },
+                            React.createElement('div', { className: 'state-icon' }, sentimentEmoji[recap.cityState.marketSentiment] || '😐'),
+                            React.createElement('div', { className: 'state-label' }, 'Market'),
+                            React.createElement('div', { className: 'state-value', style: { color: '#ffd700', textTransform: 'uppercase' } }, recap.cityState.marketSentiment || 'neutral')
+                        ),
+                        React.createElement('div', { className: 'recap-state-card' },
+                            React.createElement('div', { className: 'state-icon' }, '🎭'),
+                            React.createElement('div', { className: 'state-label' }, 'Soap Operas'),
+                            React.createElement('div', { className: 'state-value', style: { color: '#ff88aa' } }, (recap.cityState.activeSoapOperas || 0) + ' active')
+                        )
+                    ),
+                    
+                    // Active Feud
+                    recap.cityState.activeFeud && React.createElement('div', { style: { background: '#1a0a0a', border: '1px solid #ff4444', borderRadius: '12px', padding: '12px', marginBottom: '20px', textAlign: 'center' } },
+                        React.createElement('div', { style: { fontSize: '1.2em', marginBottom: '5px' } }, '⚔️ ACTIVE FEUD'),
+                        React.createElement('div', { style: { color: '#ff8888', fontWeight: 'bold' } }, recap.cityState.activeFeud.npc1 + ' vs ' + recap.cityState.activeFeud.npc2),
+                        React.createElement('div', { style: { color: '#888', fontSize: '0.8em', marginTop: '3px' } }, recap.cityState.activeFeud.reason)
+                    ),
+                    
+                    // Disaster
+                    recap.cityState.disaster && React.createElement('div', { style: { background: '#1a1a0a', border: '1px solid #ff6600', borderRadius: '12px', padding: '12px', marginBottom: '20px', textAlign: 'center' } },
+                        React.createElement('div', { style: { fontSize: '1.2em', marginBottom: '5px' } }, '🚨 ACTIVE DISASTER'),
+                        React.createElement('div', { style: { color: '#ffaa44', fontWeight: 'bold' } }, recap.cityState.disaster.title)
+                    ),
+                    
+                    // NPC Drama Statuses
+                    recap.npcStatuses && Object.keys(recap.npcStatuses).length > 0 && React.createElement('div', { className: 'recap-npc-drama' },
+                        React.createElement('h3', null, '🎭 NPC STATUS REPORT'),
+                        Object.entries(recap.npcStatuses).slice(0, 6).map(function(entry) {
+                            var name = entry[0]; var npc = entry[1];
+                            var badgeColor = npc.bankrupt ? '#ff4444' : npc.drunk ? '#ffaa00' : npc.wanted ? '#ff0000' : npc.status === 'unhinged' ? '#ff44ff' : '#00ff88';
+                            var badgeText = npc.bankrupt ? 'BROKE' : npc.drunk ? 'DRUNK' : npc.wanted ? 'WANTED' : npc.status === 'unhinged' ? 'UNHINGED' : npc.partner ? 'IN LOVE' : 'DRAMA';
+                            return React.createElement('div', { key: name, className: 'recap-npc-item' },
+                                React.createElement('span', { className: 'npc-status-badge', style: { background: badgeColor + '22', color: badgeColor, border: '1px solid ' + badgeColor } }, badgeText),
+                                React.createElement('span', { style: { color: '#fff', fontWeight: 'bold', fontSize: '0.85em' } }, name),
+                                React.createElement('span', { style: { color: '#888', fontSize: '0.75em' } }, npc.role),
+                                npc.partner && React.createElement('span', { style: { color: '#ff88aa', fontSize: '0.75em' } }, '❤️ ' + npc.partner)
+                            );
+                        })
+                    ),
+                    
+                    // Enter Button
+                    React.createElement('button', {
+                        className: 'recap-enter-btn',
+                        onClick: onDismiss,
+                        style: { background: 'linear-gradient(135deg, ' + dramaColor + ', #333)', color: recap.dramaScore > 40 ? '#000' : '#fff' }
+                    }, '⚡ ENTER THE CITY ⚡')
+                )
+            );
+        }
+        
         function ChaosToastSystem() {
             const [toasts, setToasts] = useState([]);
             const [lastCheck, setLastCheck] = useState(Date.now());

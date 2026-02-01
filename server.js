@@ -3968,6 +3968,12 @@ async function cityEventLoop() {
       cityLiveData.lastInfraTime = now;
     }
     
+    // NPC TARGETS REAL PLAYERS (every 2-5 min)
+    if (chance(30) && now - (cityLiveData.lastPlayerTargetTime || 0) > 120000) {
+      try { await npcTargetPlayer(); } catch(e) { console.error('Player target err:', e.message); }
+      cityLiveData.lastPlayerTargetTime = now;
+    }
+    
     // === CITY ENGINE v6 - FULL CHAOS MODE ===
     
     // SOAP OPERA ENGINE (new arc every 8-15 min, escalate every 3-6 min)
@@ -6344,6 +6350,152 @@ app.get('/api/health', async (req, res) => {
     timeRemaining: getTimeRemaining() 
   });
 });
+
+// ==================== CITY RECAP ENGINE ====================
+
+app.get('/api/city-recap', async (req, res) => {
+  try {
+    const since = parseInt(req.query.since) || (Date.now() - 3600000);
+    const playerName = req.query.player || null;
+    const sinceDate = new Date(since);
+    
+    const chatResult = await pool.query(
+      `SELECT player_name, message, created_at FROM chat_messages 
+       WHERE channel = 'global' AND created_at > $1 ORDER BY created_at DESC LIMIT 200`, [sinceDate]
+    );
+    const crimeResult = await pool.query(
+      `SELECT perpetrator_name, crime_type, severity, status, created_at FROM crimes 
+       WHERE created_at > $1 ORDER BY created_at DESC LIMIT 20`, [sinceDate]
+    );
+    const trialResult = await pool.query(
+      `SELECT case_number, defendant_name, verdict, sentence, status, created_at FROM trials 
+       WHERE created_at > $1 ORDER BY created_at DESC LIMIT 20`, [sinceDate]
+    );
+    
+    const msgs = chatResult.rows || [];
+    const crimes = crimeResult.rows || [];
+    const trials = trialResult.rows || [];
+    
+    const breakingNews = msgs.filter(m => (m.player_name||'').includes('BREAKING') || (m.player_name||'').includes('NEWS'));
+    const mayorMessages = msgs.filter(m => (m.player_name||'').includes('Mayor') || (m.player_name||'').includes(cityEngine.currentMayor));
+    const npcDrama = msgs.filter(m => NPC_CITIZENS.includes(m.player_name));
+    const playerMentions = playerName ? msgs.filter(m => (m.message||'').toLowerCase().includes(playerName.toLowerCase())) : [];
+    const marketEvents = msgs.filter(m => (m.player_name||'').includes('Market') || (m.message||'').includes('BULL') || (m.message||'').includes('BEAR') || (m.message||'').includes('MANIA') || (m.message||'').includes('PANIC'));
+    
+    const headlines = [];
+    breakingNews.slice(0,5).forEach(n => { headlines.push({type:'breaking',icon:'🚨',text:n.message,time:new Date(n.created_at).getTime()}); });
+    mayorMessages.slice(0,3).forEach(m => { if((m.message||'').includes('DECREE')||(m.message||'').includes('PREDICTION')) headlines.push({type:'mayor',icon:'🎩',text:m.message,time:new Date(m.created_at).getTime()}); });
+    crimes.slice(0,3).forEach(c => { headlines.push({type:'crime',icon:'🚔',text:c.perpetrator_name+' arrested for '+c.crime_type.replace(/_/g,' '),time:new Date(c.created_at).getTime()}); });
+    trials.filter(t=>t.verdict).slice(0,3).forEach(t => { headlines.push({type:'trial',icon:'⚖️',text:t.defendant_name+': '+t.verdict+' — '+(t.sentence||'Case closed'),time:new Date(t.created_at).getTime()}); });
+    headlines.sort((a,b) => b.time - a.time);
+    
+    const npcStatuses = {};
+    NPC_CITIZENS.forEach(name => {
+      const life = cityLiveData.npcLives ? cityLiveData.npcLives[name] : null;
+      if(life && (life.drunk>2||life.bankrupt||life.status==='unhinged'||life.wanted||life.partner)){
+        npcStatuses[name]={role:NPC_PROFILES[name].role,mood:life.mood,status:life.status,drunk:life.drunk>2,bankrupt:life.bankrupt,wanted:life.wanted,partner:life.partner,wealth:life.wealth};
+      }
+    });
+    
+    const dramaScore = Math.min(100, headlines.length*8 + crimes.length*12 + (cityEngine.activeFeud?15:0) + (cityLiveData.cityDisaster?20:0) + (cityLiveData.warzone?15:0) + Object.keys(npcStatuses).length*3);
+    const minutesAway = Math.floor((Date.now()-since)/60000);
+    const hoursAway = Math.floor(minutesAway/60);
+    const timeLabel = hoursAway > 0 ? hoursAway+'h '+(minutesAway%60)+'m' : minutesAway+'m';
+    
+    res.json({
+      success:true, timeAway:timeLabel, minutesAway, dramaScore,
+      totalEvents: msgs.length,
+      headlines: headlines.slice(0,8),
+      stats:{breakingNews:breakingNews.length,mayorActions:mayorMessages.length,crimes:crimes.length,trials:trials.length,npcMessages:npcDrama.length,playerMentions:playerMentions.length,marketEvents:marketEvents.length},
+      playerMentions: playerMentions.slice(0,5).map(m=>({from:m.player_name,message:m.message,time:new Date(m.created_at).getTime()})),
+      npcStatuses,
+      cityState:{chaosLevel:cityEngine.chaosLevel,mayorApproval:cityEngine.mayorApproval,marketSentiment:cityEngine.marketSentiment,activeFeud:cityEngine.activeFeud?{npc1:cityEngine.activeFeud.npc1,npc2:cityEngine.activeFeud.npc2,reason:cityEngine.activeFeud.reason}:null,disaster:cityLiveData.cityDisaster?{title:cityLiveData.cityDisaster.title}:null,weather:cityLiveData.weather||'clear',activeSoapOperas:(soapOperas.arcs||[]).filter(a=>!a.resolved).length}
+    });
+  } catch(err) { console.error('City recap error:',err.message); res.json({success:false}); }
+});
+
+// ==================== NPC PLAYER TARGETING ====================
+
+async function npcTargetPlayer() {
+  try {
+    const npcParams = NPC_CITIZENS.map((_,i) => '$'+(i+1)).join(',');
+    const recentPlayers = await pool.query(
+      `SELECT DISTINCT player_name FROM chat_messages 
+       WHERE channel='global' AND player_name NOT IN (${npcParams})
+       AND player_name NOT LIKE '%BREAKING%' AND player_name NOT LIKE '%Mayor%'
+       AND player_name NOT LIKE '%Officer%' AND player_name NOT LIKE '%Judge%'
+       AND player_name NOT LIKE '%Reporter%' AND player_name NOT LIKE '%Market%'
+       AND player_name NOT LIKE '%Court%' AND player_name NOT LIKE '%System%'
+       AND player_name NOT LIKE '%Bot%' AND player_name NOT LIKE '%Pulse%'
+       AND created_at > NOW() - INTERVAL '10 minutes' LIMIT 10`,
+      NPC_CITIZENS
+    );
+    if (recentPlayers.rows.length === 0) return;
+    
+    const targetPlayer = pick(recentPlayers.rows).player_name;
+    const npcName = pick(NPC_CITIZENS);
+    const npc = NPC_PROFILES[npcName];
+    const life = cityLiveData.npcLives ? cityLiveData.npcLives[npcName] : null;
+    
+    const challenges = [
+      `@${targetPlayer} hey! I just saw your portfolio and... 😬 no comment.`,
+      `@${targetPlayer} I bet you 500 TOWN that ${pick(NPC_CITIZENS)} goes bankrupt today. you in?`,
+      `@${targetPlayer} real talk — is the mayor losing it or is it just me? 👀`,
+      `@${targetPlayer} psst... I got info on the next vote. meet me behind the casino. 🤫`,
+      `@${targetPlayer} I'm starting a revolution. you with me or against me?`,
+      `@${targetPlayer} just heard someone talking about you in the alley. didn't sound great ngl 💀`,
+      `@${targetPlayer} need a partner for a business opportunity. totally legal. probably.`,
+      `@${targetPlayer} imagine if we teamed up. we'd run this whole city. think about it.`,
+      `@${targetPlayer} I'm about to do something really stupid and I need a witness.`,
+      `@${targetPlayer} if I hypothetically robbed the city treasury, would you snitch? asking for a friend.`,
+      `@${targetPlayer} don't look now but ${pick(NPC_CITIZENS)} has been following you for 20 minutes 👀`,
+      `@${targetPlayer} the mayor just mentioned your name in a meeting. didn't sound positive.`,
+      `@${targetPlayer} I found a tunnel under the casino. want to explore it? bring a flashlight.`,
+      `@${targetPlayer} someone spray painted your name on the courthouse wall. wasn't me. maybe.`,
+      `@${targetPlayer} I'm writing a tell-all book about this city and you're Chapter 7. you're welcome.`
+    ];
+    
+    const opinions = [
+      `just saw @${targetPlayer} walking around like they OWN the place 😤`,
+      `@${targetPlayer} is either a genius or completely unhinged. respect either way.`,
+      `@${targetPlayer} you've been real quiet... too quiet. what are you planning? 👀`,
+      `unpopular opinion: @${targetPlayer} is the most interesting person here`,
+      `@${targetPlayer} I told the mayor about your trades and they LAUGHED. sorry fren.`,
+      `I had a dream about @${targetPlayer} last night and now things are weird 🤔`,
+      `everyone's sleeping on @${targetPlayer} and it's embarrassing honestly`,
+      `@${targetPlayer} vibes today: chaotic neutral. I respect it.`,
+      `hot take: @${targetPlayer} runs this city more than the mayor does. don't @ me.`,
+      `@${targetPlayer} just so you know, 3 different NPCs asked me about you today. you're famous.`
+    ];
+    
+    const roleSpecific = {
+      alpha: [`@${targetPlayer} follow my calls or stay poor. 📈`, `@${targetPlayer} I found a 100x gem. wanna split the alpha?`],
+      whale: [`@${targetPlayer} I could buy your whole portfolio before lunch. just saying.`, `@${targetPlayer} interesting trades today... I'm watching 🐋`],
+      bear: [`@${targetPlayer} enjoy the green while it lasts. I've seen this movie. 📉`],
+      meme: [`@${targetPlayer} you look like a token that just got rugged LMAO 💀`, `@${targetPlayer} I'm making a meme about you. can't stop me.`],
+      holder: [`@${targetPlayer} paper hands detected. I'm watching you. 💎`],
+      degen: [`@${targetPlayer} 100x longs together? see who gets liquidated first 🎰`],
+      fomo: [`@${targetPlayer} WAIT are you buying?! WHAT ARE YOU BUYING?! 😱`],
+      cope: [`@${targetPlayer} at least YOUR portfolio isn't as bad as mine... right? RIGHT?!`],
+      hype: [`@${targetPlayer} YOOO you're HERE! LET'S GOOO this city just got way better 🚀`],
+      victim: [`@${targetPlayer} trust nobody in this city. NOBODY. I learned the hard way. 🥴`],
+      og: [`@${targetPlayer} you remind me of myself when I first got here. young and naive.`]
+    };
+    
+    let msg;
+    const roll = Math.random();
+    if(roll < 0.35) msg = pick(challenges);
+    else if(roll < 0.65) msg = pick(opinions);
+    else if(roleSpecific[npc.archetype]) msg = pick(roleSpecific[npc.archetype]);
+    else msg = pick(opinions);
+    
+    if(life && life.drunk > 3) msg = msg.replace(/\./g, '...') + ' *hiccup*';
+    if(life && life.status === 'unhinged') msg = msg.toUpperCase();
+    
+    await pool.query('INSERT INTO chat_messages (channel,player_name,message) VALUES ($1,$2,$3)', ['global', npcName, msg]);
+    console.log('🎯 NPC ' + npcName + ' targeted player ' + targetPlayer);
+  } catch(err) { console.error('NPC target player error:', err.message); }
+}
 
 // ==================== START SERVER ====================
 
