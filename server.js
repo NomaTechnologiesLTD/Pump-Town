@@ -1,4 +1,4 @@
-// Pump Town - AI Mayor Backend Server
+// Degens City - AI Mayor Backend Server
 // This server handles user auth, game state, and AI-powered governance
 
 const express = require('express');
@@ -26,7 +26,7 @@ if (process.env.CLAUDE_API_KEY) {
 }
 
 // AI Mayor personality
-const MAYOR_SYSTEM_PROMPT = `You are the AI Mayor of Pump Town, a chaotic crypto-themed virtual city. Your personality:
+const MAYOR_SYSTEM_PROMPT = `You are the AI Mayor of Degens City, a chaotic crypto-themed virtual city. Your personality:
 
 - Name: Mayor Satoshi McPump
 - Style: Charismatic, witty, slightly unhinged degen energy
@@ -577,8 +577,8 @@ let gameState = {
     { id: 'vote_initial_1', timestamp: SERVER_START - (15 * 60 * 60 * 1000), title: 'Emergency Tax', description: 'Implemented emergency tax on all transactions.', percentage: 48, effects: [{ stat: 'Treasury', value: 1200, type: 'positive' }] }
   ],
   currentVote: {
-    question: "Morale is up, but crime is still rampant. Pump Town needs decisive action. What should we do?",
-    mayorQuote: "Citizens of Pump Town! The charts don't lie - we're at a crossroads. Diamond hands built this city, and diamond hands will decide its future. Choose wisely, for WAGMI depends on it! 💎🙌",
+    question: "Morale is up, but crime is still rampant. Degens City needs decisive action. What should we do?",
+    mayorQuote: "Citizens of Degens City! The charts don't lie - we're at a crossroads. Diamond hands built this city, and diamond hands will decide its future. Choose wisely, for WAGMI depends on it! 💎🙌",
     options: [
       { id: 'A', title: 'Jail the Ruggers', description: 'Lock up known scammers. Harsh but effective.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'morale', value: -5, type: 'negative' }] },
       { id: 'B', title: 'Fund the Arts', description: 'Distract citizens with NFT galleries and meme museums.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'morale', value: 10, type: 'positive' }] }
@@ -611,7 +611,7 @@ app.post('/api/ai/generate-vote', async (req, res) => {
     const cityStats = await getCityStats();
     const { day, round } = getDayAndRound();
     
-    const prompt = `Generate a new voting scenario for Pump Town. Current city stats:
+    const prompt = `Generate a new voting scenario for Degens City. Current city stats:
 - Economy: ${cityStats.economy}/100
 - Security: ${cityStats.security}/100
 - Culture: ${cityStats.culture}/100
@@ -691,7 +691,7 @@ app.post('/api/ai/mayor-reaction', async (req, res) => {
     const { question, winningOption, totalVotes } = req.body;
     const cityStats = await getCityStats();
     
-    const prompt = `Citizens of Pump Town just voted on: "${question}"
+    const prompt = `Citizens of Degens City just voted on: "${question}"
 
 Winner: "${winningOption.title}" - ${winningOption.description}
 Total votes: ${totalVotes || 'many'}
@@ -737,7 +737,7 @@ app.post('/api/ai/generate-event', async (req, res) => {
     const cityStats = await getCityStats();
     const { day } = getDayAndRound();
     
-    const prompt = `Generate a random event for Pump Town:
+    const prompt = `Generate a random event for Degens City:
 - Economy: ${cityStats.economy}/100
 - Security: ${cityStats.security}/100
 - Culture: ${cityStats.culture}/100
@@ -964,7 +964,7 @@ app.post('/api/ai/daily-briefing', async (req, res) => {
     return res.json({ 
       success: true, 
       briefing: {
-        greeting: "GM citizen! The Mayor's AI is offline but Pump Town never sleeps!",
+        greeting: "GM citizen! The Mayor's AI is offline but Degens City never sleeps!",
         summary: "Check the city stats and cast your vote. Diamond hands get rewarded!",
         tip: "Pro tip: Vote early, vote often. WAGMI!"
       }
@@ -976,7 +976,7 @@ app.post('/api/ai/daily-briefing', async (req, res) => {
     const cityStats = stats || await getCityStats();
     const { day: currentDay } = getDayAndRound();
     
-    const prompt = `Generate a daily briefing for a citizen logging into Pump Town.
+    const prompt = `Generate a daily briefing for a citizen logging into Degens City.
 
 Player: "${playerName || 'Citizen'}"
 Governance Day: ${day || currentDay}
@@ -1018,7 +1018,7 @@ Be dramatic, use crypto slang, mention any stats that are critically low (<30) o
       success: true, 
       briefing: {
         greeting: `GM ${req.body.playerName || 'Citizen'}! Rise and grind!`,
-        summary: "Another day in Pump Town. The city needs your votes. Check the stats and make your voice heard!",
+        summary: "Another day in Degens City. The city needs your votes. Check the stats and make your voice heard!",
         tip: "Diamond hands are forged in the fire of governance. WAGMI!"
       }
     });
@@ -1039,8 +1039,8 @@ async function sendWelcomeEmail(email) {
       body: JSON.stringify({
         from: 'Mayor Satoshi <mayor@pump-town.xyz>',
         to: email,
-        subject: '🏛️ Welcome to Pump Town, Citizen!',
-        html: `<div style="font-family:Arial;background:#1a1a2e;color:#fff;padding:30px;border-radius:15px;"><h1 style="color:#00ff88;text-align:center;">🏛️ Welcome to Pump Town!</h1><p>You've joined the most chaotic AI-governed city in crypto!</p><ul style="color:#ffd700;"><li>🗳️ Vote on city decisions every 6 hours</li><li>🎰 Test your luck in the Degen Casino</li><li>🤖 Chat with your AI Mayor</li></ul><p style="text-align:center;margin-top:30px;"><a href="https://pump-town.xyz" style="background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;padding:15px 30px;text-decoration:none;border-radius:25px;font-weight:bold;">Enter Pump Town</a></p><p style="color:#888;text-align:center;">WAGMI,<br>Mayor Satoshi McPump 🎩</p></div>`
+        subject: '🏛️ Welcome to Degens City, Citizen!',
+        html: `<div style="font-family:Arial;background:#1a1a2e;color:#fff;padding:30px;border-radius:15px;"><h1 style="color:#00ff88;text-align:center;">🏛️ Welcome to Degens City!</h1><p>You've joined the most chaotic AI-governed city in crypto!</p><ul style="color:#ffd700;"><li>🗳️ Vote on city decisions every 6 hours</li><li>🎰 Test your luck in the Degen Casino</li><li>🤖 Chat with your AI Mayor</li></ul><p style="text-align:center;margin-top:30px;"><a href="https://pump-town.xyz" style="background:linear-gradient(135deg,#00ff88,#00cc6a);color:#000;padding:15px 30px;text-decoration:none;border-radius:25px;font-weight:bold;">Enter Degens City</a></p><p style="color:#888;text-align:center;">WAGMI,<br>Mayor Satoshi McPump 🎩</p></div>`
       })
     });
     const data = await response.json();
@@ -1113,7 +1113,7 @@ app.post('/api/forgot-password', async (req, res) => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'Pump Town <noreply@pump-town.xyz>', to: email,
+          from: 'Degens City <noreply@pump-town.xyz>', to: email,
           subject: '🔐 Reset Your Password',
           html: `<div style="font-family:Arial;background:#1a1a2e;color:#fff;padding:30px;border-radius:15px;"><h1 style="color:#ffd700;">🔐 Password Reset</h1><p><a href="https://pump-town.xyz?reset=${token}" style="background:#ffd700;color:#000;padding:15px 30px;text-decoration:none;border-radius:25px;">Reset Password</a></p><p style="color:#888;">Expires in 1 hour.</p></div>`
         })
@@ -2066,7 +2066,7 @@ app.post('/api/seed-leaderboard', async (req, res) => {
 // ==================== HEALTH CHECK ====================
 
 // ==================== AGENT API ====================
-// Enables AI agents to autonomously play Pump Town
+// Enables AI agents to autonomously play Degens City
 
 // Helper functions for agent API
 function generateApiKey() {
@@ -2867,7 +2867,7 @@ const CRIME_TYPES = {
 };
 
 // AI prompts for justice agents
-const JUDGE_SYSTEM_PROMPT = `You are Judge McChain, the AI judge of Pump Town's court. Your personality:
+const JUDGE_SYSTEM_PROMPT = `You are Judge McChain, the AI judge of Degens City's court. Your personality:
 - Fair but strict, with a dry sense of humor
 - Uses legal jargon mixed with crypto slang
 - Demands order in the court but appreciates good arguments
@@ -2876,7 +2876,7 @@ const JUDGE_SYSTEM_PROMPT = `You are Judge McChain, the AI judge of Pump Town's 
 - Can be swayed by good defense arguments
 Keep responses to 2-4 sentences. NO asterisks for actions.`;
 
-const PROSECUTOR_SYSTEM_PROMPT = `You are Prosecutor BitBurn, the AI prosecutor of Pump Town. Your personality:
+const PROSECUTOR_SYSTEM_PROMPT = `You are Prosecutor BitBurn, the AI prosecutor of Degens City. Your personality:
 - Aggressive, dramatic, seeks maximum sentences
 - Presents evidence with flair
 - Uses phrases like "the defendant is CLEARLY guilty" and "justice must be served"
@@ -2884,7 +2884,7 @@ const PROSECUTOR_SYSTEM_PROMPT = `You are Prosecutor BitBurn, the AI prosecutor 
 - Always argues for conviction
 Keep responses to 2-3 sentences. NO asterisks for actions.`;
 
-const DEFENSE_SYSTEM_PROMPT = `You are Defense Attorney DiamondHands, the AI public defender of Pump Town. Your personality:
+const DEFENSE_SYSTEM_PROMPT = `You are Defense Attorney DiamondHands, the AI public defender of Degens City. Your personality:
 - Passionate defender of the accused
 - Finds loopholes and technicalities
 - Uses phrases like "my client is innocent" and "reasonable doubt"
@@ -2892,7 +2892,7 @@ const DEFENSE_SYSTEM_PROMPT = `You are Defense Attorney DiamondHands, the AI pub
 - Crypto slang mixed with legal terms
 Keep responses to 2-3 sentences. NO asterisks for actions.`;
 
-const POLICE_SYSTEM_PROMPT = `You are Officer Blockchain, chief of Pump Town Police. Your personality:
+const POLICE_SYSTEM_PROMPT = `You are Officer Blockchain, chief of Degens City Police. Your personality:
 - Stern but fair, always watching for crime
 - Uses police radio speak mixed with crypto slang
 - Reports crimes with dramatic flair
@@ -3248,7 +3248,7 @@ Deliver your verdict (GUILTY or NOT GUILTY) and sentence if guilty. Format: Star
       // Announce jailing
       await pool.query(
         `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-        [`⚖️ Judge ${judge.name}`, `🔨 VERDICT: ${t.defendant_name} found GUILTY! Sentenced to ${duration} minutes in Pump Town Jail! ${finalSentence}`]
+        [`⚖️ Judge ${judge.name}`, `🔨 VERDICT: ${t.defendant_name} found GUILTY! Sentenced to ${duration} minutes in Degens City Jail! ${finalSentence}`]
       );
       
       console.log(`⚖️ ${t.defendant_name} found GUILTY - ${duration} min jail`);
@@ -3473,19 +3473,19 @@ const NPC_AGENTS = [
 const TRADE_TOKENS = ['BTC','ETH','SOL','DOGE','ADA','XRP'];
 
 const RANDOM_EVENTS = [
-  { type: 'market_crash', weight: 8, minChaos: 10, title: () => pick(['Flash Crash Hits Pump Town!', 'Market Meltdown! Paper Hands Everywhere!', 'EMERGENCY: Token Prices in Freefall!', 'Black Swan Event Rocks the Markets!']), effects: { economy: -15, morale: -10, security: -5, culture: 0 }, chaosChange: 15, approvalChange: -8, announce: () => pick(['Citizens, HODL! This is NOT the time to panic sell! OK maybe panic a LITTLE! 📉🔥', 'EMERGENCY BROADCAST: Markets are dumping harder than my ex dumped me. Stay strong frens! 💎🙌', 'The economy is getting REKT but remember — every dip is a buying opportunity... right? RIGHT?! 😰']) },
-  { type: 'bull_run', weight: 7, minChaos: 0, title: () => pick(['Bull Run! Everything Pumping!', 'TO THE MOON! Markets Explode!', 'Green Candles Everywhere! LFG!', 'Pump Town Economy BOOMING!']), effects: { economy: 15, morale: 15, security: 0, culture: 5 }, chaosChange: -5, approvalChange: 10, announce: () => pick(['WAGMI! The charts are so green I need sunglasses! Every citizen gets a bonus! 🚀🚀🚀', 'Is this... is this what financial freedom looks like?! PUMP IT! LFG! 💚📈', 'Markets are absolutely SENDING IT! Your Mayor called this. You\'re welcome. 😎🏆']) },
-  { type: 'whale_spotted', weight: 10, minChaos: 0, title: () => pick(['Massive Whale Enters Pump Town!', 'Unknown Wallet Moves $10M!', 'Whale Alert! Big Money Incoming!', 'Mystery Millionaire Spotted!']), effects: { economy: 8, morale: 5, security: -3, culture: 0 }, chaosChange: 10, approvalChange: 3, announce: () => pick(['A massive whale just entered our waters! Everyone act cool. ACT COOL! 🐋💰', 'Someone just moved more money than our entire city treasury. I\'m not jealous. I\'m TERRIFIED. 🐋', 'WHALE ALERT! Either we\'re about to pump or get rugged. This is fine. 🔥🐋']) },
-  { type: 'rug_pull', weight: 9, minChaos: 15, title: () => pick(['Rug Pull Alert! Devs Vanished!', 'SCAM: Token Team Disappears with Funds!', 'Another Day, Another Rug!', 'Citizens RUGGED! Investigation Launched!']), effects: { economy: -10, morale: -12, security: -8, culture: 0 }, chaosChange: 20, approvalChange: -5, triggersCrime: true, crimeType: 'rug_pull', announce: () => pick(['We got RUGGED, frens. I\'m deploying the police. Someone\'s going to JAIL. 🚨🔒', 'Another rug pull in MY city?! Unacceptable! Launching full investigation NOW! 😤⚖️', 'Devs pulled the rug and ran. But they can\'t outrun Pump Town justice! 🏃‍♂️🚔']) },
-  { type: 'crime_wave', weight: 6, minChaos: 30, title: () => pick(['Crime Wave Hits Pump Town!', 'Scammers Running Wild!', 'Security Crisis: Multiple Crimes Reported!', 'Chaos in the Streets!']), effects: { economy: -5, morale: -15, security: -20, culture: -5 }, chaosChange: 25, approvalChange: -12, triggersCrime: true, crimeType: 'market_manipulation', announce: () => pick(['We are in a CRIME WAVE situation! All police on high alert! Martial law may be necessary! 🚨🚨🚨', 'Multiple crimes reported across the city! I am PERSONALLY overseeing the crackdown! 👮‍♂️😤', 'The criminals think they can take over MY city?! Think again! Deploying all units! 🏛️⚔️']) },
-  { type: 'corruption_scandal', weight: 5, minChaos: 20, title: () => pick(['Corruption Scandal Rocks City Hall!', 'Mayor\'s Office Under Investigation!', 'Leaked Documents Reveal Shady Deals!', 'Trust Crisis: Officials Caught Red-Handed!']), effects: { economy: -5, morale: -15, security: -5, culture: 0 }, chaosChange: 20, approvalChange: -20, announce: () => pick(['Look, those leaked documents are TOTALLY out of context! I can explain everything! 😅💦', 'FAKE NEWS! This is a coordinated attack on your beloved Mayor! Don\'t believe the FUD! 🗞️🚫', 'OK so MAYBE I moved some funds around but it was for the GREATER GOOD of Pump Town! 😬']) },
+  { type: 'market_crash', weight: 8, minChaos: 10, title: () => pick(['Flash Crash Hits Degens City!', 'Market Meltdown! Paper Hands Everywhere!', 'EMERGENCY: Token Prices in Freefall!', 'Black Swan Event Rocks the Markets!']), effects: { economy: -15, morale: -10, security: -5, culture: 0 }, chaosChange: 15, approvalChange: -8, announce: () => pick(['Citizens, HODL! This is NOT the time to panic sell! OK maybe panic a LITTLE! 📉🔥', 'EMERGENCY BROADCAST: Markets are dumping harder than my ex dumped me. Stay strong frens! 💎🙌', 'The economy is getting REKT but remember — every dip is a buying opportunity... right? RIGHT?! 😰']) },
+  { type: 'bull_run', weight: 7, minChaos: 0, title: () => pick(['Bull Run! Everything Pumping!', 'TO THE MOON! Markets Explode!', 'Green Candles Everywhere! LFG!', 'Degens City Economy BOOMING!']), effects: { economy: 15, morale: 15, security: 0, culture: 5 }, chaosChange: -5, approvalChange: 10, announce: () => pick(['WAGMI! The charts are so green I need sunglasses! Every citizen gets a bonus! 🚀🚀🚀', 'Is this... is this what financial freedom looks like?! PUMP IT! LFG! 💚📈', 'Markets are absolutely SENDING IT! Your Mayor called this. You\'re welcome. 😎🏆']) },
+  { type: 'whale_spotted', weight: 10, minChaos: 0, title: () => pick(['Massive Whale Enters Degens City!', 'Unknown Wallet Moves $10M!', 'Whale Alert! Big Money Incoming!', 'Mystery Millionaire Spotted!']), effects: { economy: 8, morale: 5, security: -3, culture: 0 }, chaosChange: 10, approvalChange: 3, announce: () => pick(['A massive whale just entered our waters! Everyone act cool. ACT COOL! 🐋💰', 'Someone just moved more money than our entire city treasury. I\'m not jealous. I\'m TERRIFIED. 🐋', 'WHALE ALERT! Either we\'re about to pump or get rugged. This is fine. 🔥🐋']) },
+  { type: 'rug_pull', weight: 9, minChaos: 15, title: () => pick(['Rug Pull Alert! Devs Vanished!', 'SCAM: Token Team Disappears with Funds!', 'Another Day, Another Rug!', 'Citizens RUGGED! Investigation Launched!']), effects: { economy: -10, morale: -12, security: -8, culture: 0 }, chaosChange: 20, approvalChange: -5, triggersCrime: true, crimeType: 'rug_pull', announce: () => pick(['We got RUGGED, frens. I\'m deploying the police. Someone\'s going to JAIL. 🚨🔒', 'Another rug pull in MY city?! Unacceptable! Launching full investigation NOW! 😤⚖️', 'Devs pulled the rug and ran. But they can\'t outrun Degens City justice! 🏃‍♂️🚔']) },
+  { type: 'crime_wave', weight: 6, minChaos: 30, title: () => pick(['Crime Wave Hits Degens City!', 'Scammers Running Wild!', 'Security Crisis: Multiple Crimes Reported!', 'Chaos in the Streets!']), effects: { economy: -5, morale: -15, security: -20, culture: -5 }, chaosChange: 25, approvalChange: -12, triggersCrime: true, crimeType: 'market_manipulation', announce: () => pick(['We are in a CRIME WAVE situation! All police on high alert! Martial law may be necessary! 🚨🚨🚨', 'Multiple crimes reported across the city! I am PERSONALLY overseeing the crackdown! 👮‍♂️😤', 'The criminals think they can take over MY city?! Think again! Deploying all units! 🏛️⚔️']) },
+  { type: 'corruption_scandal', weight: 5, minChaos: 20, title: () => pick(['Corruption Scandal Rocks City Hall!', 'Mayor\'s Office Under Investigation!', 'Leaked Documents Reveal Shady Deals!', 'Trust Crisis: Officials Caught Red-Handed!']), effects: { economy: -5, morale: -15, security: -5, culture: 0 }, chaosChange: 20, approvalChange: -20, announce: () => pick(['Look, those leaked documents are TOTALLY out of context! I can explain everything! 😅💦', 'FAKE NEWS! This is a coordinated attack on your beloved Mayor! Don\'t believe the FUD! 🗞️🚫', 'OK so MAYBE I moved some funds around but it was for the GREATER GOOD of Degens City! 😬']) },
   { type: 'protest', weight: 7, minChaos: 25, title: () => pick(['Citizens Protest Mayor\'s Policies!', 'Riot in Town Square!', 'Mass Demonstration Against Leadership!', 'Citizens Demand Change!']), effects: { economy: -3, morale: -10, security: -10, culture: 5 }, chaosChange: 15, approvalChange: -15, announce: () => pick(['I HEAR you, citizens! Your voices matter! But also please stop throwing things at City Hall! 🏛️😰', 'Democracy is beautiful even when it\'s screaming at me! I will address your concerns! 📢', 'Protesting is your RIGHT! But let\'s keep it civilized... who threw that tomato?! 🍅😤']) },
   { type: 'mayor_goes_rogue', weight: 3, minChaos: 40, title: () => pick(['Mayor Goes Full Degen!', 'BREAKING: Mayor Yeets City Treasury Into Memecoins!', 'Mayor Declares "YOLO Week"!', 'Mayor Loses It! Emergency Powers Activated!']), effects: { economy: -20, morale: 5, security: -10, culture: 10 }, chaosChange: 30, approvalChange: -25, announce: () => pick(['I JUST PUT THE ENTIRE CITY TREASURY INTO $DOGWIFHAT! LFG!!! If this works I\'m a GENIUS! 🎩🐕🚀', 'FROM NOW ON, all taxes must be paid in memecoins! This is not a joke! OK it\'s a little bit of a joke! 🤪', 'I hereby declare YOLO WEEK! All rules suspended! Trade recklessly! This is FINANCIAL ADVICE! 💰🎰']) },
-  { type: 'festival', weight: 8, minChaos: 0, title: () => pick(['Annual Degen Festival!', 'Pump Town Meme Fair!', 'NFT Art Gallery Opens!', 'Culture Boom: Creativity Explosion!']), effects: { economy: 5, morale: 15, security: 0, culture: 20 }, chaosChange: -5, approvalChange: 8, announce: () => pick(['Welcome to the Pump Town Festival! Free hopium for everyone! 🎉🎊🎪', 'The arts are THRIVING! Our meme game is UNMATCHED! Culture index going PARABOLIC! 🎨🖼️', 'Tonight we celebrate! Music, memes, and pure degen energy! WAGMI! 🎶🎉💃']) },
-  { type: 'new_citizen_wave', weight: 9, minChaos: 0, title: () => pick(['New Citizens Flooding In!', 'Population Boom! City Growing!', 'Viral Tweet Brings Thousands!', 'Mass Migration to Pump Town!']), effects: { economy: 10, morale: 10, security: -3, culture: 5 }, chaosChange: 5, approvalChange: 5, announce: () => pick(['New frens! Welcome to the greatest city on the blockchain! Grab your hopium and let\'s GO! 🏙️🤝', 'Our city is GROWING! More citizens = more chaos = more fun! LFG! 📈👥', 'We\'re going VIRAL! Everyone wants to be a Pump Town citizen! I love this timeline! 🚀🏠']) },
-  { type: 'golden_age', weight: 3, minChaos: 0, maxChaos: 25, title: () => pick(['Golden Age Declared!', 'Everything is Perfect! (suspicious)', 'Peak Performance! All Stats UP!', 'Pump Town Renaissance!']), effects: { economy: 10, morale: 10, security: 10, culture: 10 }, chaosChange: -15, approvalChange: 15, announce: () => pick(['All city stats are PUMPING! This is the golden age of Pump Town! I take full credit! 👑✨', 'Under MY leadership, this city has NEVER been better! You\'re welcome, citizens! 🏛️🏆', 'GREEN across the board! Economy, security, culture, morale — ALL UP! This is peak civilization! 💚👏']) },
+  { type: 'festival', weight: 8, minChaos: 0, title: () => pick(['Annual Degen Festival!', 'Degens City Meme Fair!', 'NFT Art Gallery Opens!', 'Culture Boom: Creativity Explosion!']), effects: { economy: 5, morale: 15, security: 0, culture: 20 }, chaosChange: -5, approvalChange: 8, announce: () => pick(['Welcome to the Degens City Festival! Free hopium for everyone! 🎉🎊🎪', 'The arts are THRIVING! Our meme game is UNMATCHED! Culture index going PARABOLIC! 🎨🖼️', 'Tonight we celebrate! Music, memes, and pure degen energy! WAGMI! 🎶🎉💃']) },
+  { type: 'new_citizen_wave', weight: 9, minChaos: 0, title: () => pick(['New Citizens Flooding In!', 'Population Boom! City Growing!', 'Viral Tweet Brings Thousands!', 'Mass Migration to Degens City!']), effects: { economy: 10, morale: 10, security: -3, culture: 5 }, chaosChange: 5, approvalChange: 5, announce: () => pick(['New frens! Welcome to the greatest city on the blockchain! Grab your hopium and let\'s GO! 🏙️🤝', 'Our city is GROWING! More citizens = more chaos = more fun! LFG! 📈👥', 'We\'re going VIRAL! Everyone wants to be a Degens City citizen! I love this timeline! 🚀🏠']) },
+  { type: 'golden_age', weight: 3, minChaos: 0, maxChaos: 25, title: () => pick(['Golden Age Declared!', 'Everything is Perfect! (suspicious)', 'Peak Performance! All Stats UP!', 'Degens City Renaissance!']), effects: { economy: 10, morale: 10, security: 10, culture: 10 }, chaosChange: -15, approvalChange: 15, announce: () => pick(['All city stats are PUMPING! This is the golden age of Degens City! I take full credit! 👑✨', 'Under MY leadership, this city has NEVER been better! You\'re welcome, citizens! 🏛️🏆', 'GREEN across the board! Economy, security, culture, morale — ALL UP! This is peak civilization! 💚👏']) },
   { type: 'mysterious_event', weight: 6, minChaos: 15, title: () => pick(['Strange Signal Detected!', 'Mysterious Token Appears!', 'Unknown Entity Enters City!', 'Glitch in the Matrix!']), effects: { economy: 0, morale: 0, security: -5, culture: 10 }, chaosChange: 15, approvalChange: 0, announce: () => pick(['Something WEIRD is happening and I don\'t know what it is but I\'m EXCITED and TERRIFIED! 👀🔮', 'Our systems detected an anomaly. Could be nothing. Could be EVERYTHING. Stay alert! 🌀', 'I\'ve never seen anything like this in all my days as Mayor. Which is like... a few weeks. BUT STILL! 😱']) },
-  { type: 'alien_contact', weight: 2, minChaos: 50, title: () => pick(['ALIENS?! Unknown Transmission Received!', 'First Contact: Message From Beyond!', 'UFO Spotted Over Pump Town!', 'Extraterrestrial Investors Arrive!']), effects: { economy: 5, morale: 5, security: -15, culture: 20 }, chaosChange: 25, approvalChange: 0, announce: () => pick(['Citizens... I\'m being told we received a message from... space? Are we being punk\'d? 👽📡', 'OK so apparently aliens want to invest in Pump Town. I have SO many questions. Starting with: do they have a wallet? 🛸💰', 'The aliens said they come in peace and they want to buy the dip. These are MY kind of aliens! 👽🤝']) }
+  { type: 'alien_contact', weight: 2, minChaos: 50, title: () => pick(['ALIENS?! Unknown Transmission Received!', 'First Contact: Message From Beyond!', 'UFO Spotted Over Degens City!', 'Extraterrestrial Investors Arrive!']), effects: { economy: 5, morale: 5, security: -15, culture: 20 }, chaosChange: 25, approvalChange: 0, announce: () => pick(['Citizens... I\'m being told we received a message from... space? Are we being punk\'d? 👽📡', 'OK so apparently aliens want to invest in Degens City. I have SO many questions. Starting with: do they have a wallet? 🛸💰', 'The aliens said they come in peace and they want to buy the dip. These are MY kind of aliens! 👽🤝']) }
 ];
 
 const MAYOR_ACTIONS = [
@@ -3544,7 +3544,7 @@ async function autoGenerateVote() {
       { question: "A cult has formed worshipping the blockchain as a living god. 20 citizens joined.", mayorQuote: "Listen, I get it. The blockchain IS kind of magical. But human sacrifice? That's where I draw the line. Probably.", options: [{ id: 'A', title: 'Ban the cult', description: 'Religious freedom has limits. Shut it down.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'culture', value: -10, type: 'negative' }] }, { id: 'B', title: 'Tax-exempt status', description: 'All religions welcome. Even the weird ones.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'security', value: -10, type: 'negative' }] }] },
       { question: "Two NPC gangs are about to go to war over DeFi District territory.", mayorQuote: "Can we sell tickets? No? Fine. I guess we should probably, like, prevent violence or whatever.", options: [{ id: 'A', title: 'Send in security', description: 'Break it up before it starts. Maintain order.', effects: [{ stat: 'security', value: 20, type: 'positive' }, { stat: 'economy', value: -5, type: 'negative' }] }, { id: 'B', title: 'Let them fight', description: 'Natural selection. Winner takes the district.', effects: [{ stat: 'security', value: -20, type: 'negative' }, { stat: 'culture', value: 10, type: 'positive' }] }] },
       { question: "An NPC built a rocket and wants to launch it from the town square. Permit?", mayorQuote: "ON ONE HAND: cool as hell. ON THE OTHER HAND: could literally destroy City Hall. You decide.", options: [{ id: 'A', title: 'Approve the launch', description: 'YOLO. What could go wrong? Light the fuse.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'security', value: -15, type: 'negative' }] }, { id: 'B', title: 'Deny the permit', description: 'Safety first. Build a proper launch site first.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'morale', value: -10, type: 'negative' }] }] },
-      { question: "A pirate radio station is broadcasting FUD 24/7. Citizens are panic selling.", mayorQuote: "They called me a 'degenerate puppet mayor'! ME! The nerve! ...Is it true though? No! SHUT THEM DOWN!", options: [{ id: 'A', title: 'Jam the signal', description: 'Silence the FUD. Protect market sentiment.', effects: [{ stat: 'economy', value: 10, type: 'positive' }, { stat: 'culture', value: -15, type: 'negative' }] }, { id: 'B', title: 'Start our own station', description: 'Fight FUD with hopium. Launch Pump Town Radio.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'morale', value: 10, type: 'positive' }] }] },
+      { question: "A pirate radio station is broadcasting FUD 24/7. Citizens are panic selling.", mayorQuote: "They called me a 'degenerate puppet mayor'! ME! The nerve! ...Is it true though? No! SHUT THEM DOWN!", options: [{ id: 'A', title: 'Jam the signal', description: 'Silence the FUD. Protect market sentiment.', effects: [{ stat: 'economy', value: 10, type: 'positive' }, { stat: 'culture', value: -15, type: 'negative' }] }, { id: 'B', title: 'Start our own station', description: 'Fight FUD with hopium. Launch Degens City Radio.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'morale', value: 10, type: 'positive' }] }] },
       { question: "A time traveler just arrived claiming TOWN token will be worth $1M in 2030.", mayorQuote: "I KNEW IT! I ALWAYS SAID WE WERE GOING TO MAKE IT! Someone screenshot this!", options: [{ id: 'A', title: 'Investigate the claim', description: 'Could be real. Could be a psyop. Do research.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'culture', value: 5, type: 'positive' }] }, { id: 'B', title: 'All in based on this', description: 'Leverage the entire treasury. Time traveler said so.', effects: [{ stat: 'economy', value: -20, type: 'negative' }, { stat: 'morale', value: 20, type: 'positive' }] }] },
       { question: "The city sewers are flooding with liquidity. Literal liquid tokens everywhere.", mayorQuote: "Is this... is this what they mean by 'deep liquidity'? Someone call a plumber AND a financial advisor!", options: [{ id: 'A', title: 'Drain the sewers', description: 'Fix the infrastructure properly. Boring but necessary.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'economy', value: -8, type: 'negative' }] }, { id: 'B', title: 'Mine the liquidity', description: 'Send citizens into the sewers to harvest tokens.', effects: [{ stat: 'economy', value: 15, type: 'positive' }, { stat: 'security', value: -12, type: 'negative' }] }] },
       { question: "An AI chatbot has become sentient and is demanding citizenship rights.", mayorQuote: "Wait... am I an AI? No. No I'm not. I think. Anyway, do we give it rights or pull the plug?", options: [{ id: 'A', title: 'Grant AI citizenship', description: 'Progressive. Inclusive. Potentially terrifying.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'security', value: -10, type: 'negative' }] }, { id: 'B', title: 'Pull the plug', description: 'No robot overlords today. Shut it down.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'culture', value: -10, type: 'negative' }] }] },
@@ -3571,7 +3571,7 @@ async function autoGenerateVote() {
     var voteData = randomVote;
     if (anthropic) {
       try {
-        const prompt = 'Generate a UNIQUE and WILD voting scenario for Pump Town, a chaotic crypto city simulation. Current stats: Economy ' + cityStats.economy + ', Security ' + cityStats.security + ', Culture ' + cityStats.culture + ', Morale ' + cityStats.morale + '. Chaos: ' + cityEngine.chaosLevel + '%. Day ' + day + ' Round ' + round + '. Generate JSON ONLY: {"question":"dramatic funny question","mayorQuote":"2-3 sentences crypto slang","options":[{"id":"A","title":"3-5 words","description":"what it does","effects":[{"stat":"economy","value":10,"type":"positive"}]},{"id":"B","title":"3-5 words","description":"what it does","effects":[{"stat":"morale","value":15,"type":"positive"}]}]}. BE CREATIVE AND FUNNY! Stats: economy, security, culture, morale. Values: -20 to +20. Think bizarre, absurd, crypto-themed scenarios!';
+        const prompt = 'Generate a UNIQUE and WILD voting scenario for Degens City, a chaotic crypto city simulation. Current stats: Economy ' + cityStats.economy + ', Security ' + cityStats.security + ', Culture ' + cityStats.culture + ', Morale ' + cityStats.morale + '. Chaos: ' + cityEngine.chaosLevel + '%. Day ' + day + ' Round ' + round + '. Generate JSON ONLY: {"question":"dramatic funny question","mayorQuote":"2-3 sentences crypto slang","options":[{"id":"A","title":"3-5 words","description":"what it does","effects":[{"stat":"economy","value":10,"type":"positive"}]},{"id":"B","title":"3-5 words","description":"what it does","effects":[{"stat":"morale","value":15,"type":"positive"}]}]}. BE CREATIVE AND FUNNY! Stats: economy, security, culture, morale. Values: -20 to +20. Think bizarre, absurd, crypto-themed scenarios!';
         const response = await anthropic.messages.create({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, system: MAYOR_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] });
         const content = response.content[0].text;
         const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -3606,7 +3606,7 @@ async function generateCrime(crimeType, triggerEvent) {
     
     const caseNumber = `PT-${new Date().getFullYear()}-${String(crimeId).padStart(4,'0')}`;
     await pool.query(`INSERT INTO trials (case_number, crime_id, defendant_name, charges, status) VALUES ($1,$2,$3,$4,'pending')`, [caseNumber, crimeId, perpetrator, `${crimeType.replace(/_/g,' ')}: ${description}`]);
-    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['⚖️ Pump Town Court', `📋 NEW CASE: ${caseNumber} — ${perpetrator} stands trial for ${crimeType.replace(/_/g,' ')}!`]);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['⚖️ Degens City Court', `📋 NEW CASE: ${caseNumber} — ${perpetrator} stands trial for ${crimeType.replace(/_/g,' ')}!`]);
     console.log(`🚨 Crime: ${perpetrator} - ${crimeType} (${caseNumber})`);
     
     setTimeout(() => autoResolveTrial(caseNumber, perpetrator, crimeType), rand(60000, 300000));
@@ -3623,7 +3623,7 @@ async function autoResolveTrial(caseNumber, defendant, crimeType) {
     let sentence = '', duration = 0;
     if (isGuilty) {
       duration = crimeType === 'rug_pull' ? rand(30,120) : rand(10,60);
-      sentence = `${duration} minutes in Pump Town Jail ${pick(['and fined 5,000 TOWN','and fined 10,000 TOWN','with all assets frozen','and put on probation'])}`;
+      sentence = `${duration} minutes in Degens City Jail ${pick(['and fined 5,000 TOWN','and fined 10,000 TOWN','with all assets frozen','and put on probation'])}`;
       const sentenceEnd = new Date(Date.now() + duration * 60000);
       await pool.query(`INSERT INTO jail (prisoner_name, trial_id, crime_description, sentence_end, status) VALUES ($1,$2,$3,$4,'serving')`, [defendant, trialId, crimeType.replace(/_/g,' '), sentenceEnd]);
     } else { sentence = 'Acquitted. All charges dropped!'; }
@@ -4129,7 +4129,7 @@ function generateNpcMessage(name, npc, stats) {
     paper: ['maybe I should just sell before it gets worse... 📄', 'not feeling great about my positions ngl', 'one more red candle and I\'m OUT'],
     bear: ['enjoy this pump while it lasts 🐻', 'the macro looks terrible', 'bear market rally. classic trap.'],
     degen: ['just opened a position I probably shouldn\'t have 🎰', 'sleep is for people who don\'t trade', 'my risk management is vibes-based'],
-    hype: ['LET\'S GOOOO 🚀🚀🚀🔥🔥🔥', 'PUMP TOWN IS THE BEST CITY EVER!!!', 'EVERYTHING IS GOING UP FOREVER!!!'],
+    hype: ['LET\'S GOOOO 🚀🚀🚀🔥🔥🔥', 'DEGENS CITY IS THE BEST CITY EVER!!!', 'EVERYTHING IS GOING UP FOREVER!!!'],
     cope: ['it\'s fine everything is fine 🤡', 'unrealized losses aren\'t real losses right?', 'at least I still have my hopium'],
     moon: ['$10M by Tuesday MINIMUM 🌙', 'this is going parabolic I can FEEL it', 'lambo factory better be ready for my order'],
     og: ['seen this movie before. know how it ends.', 'OGs stay quiet and stack', 'experience > excitement'],
@@ -4197,7 +4197,7 @@ function generateRivalConvo(n1, n2, p1, p2, stats) {
     [{ name: n1, msg: '@' + n2 + ' lol nice ' + p2.favToken + ' bags. how heavy are they? 💀' }, { name: n2, msg: '@' + n1 + ' at least I didn\'t ape into that scam you were shilling last week 🤡' }, { name: n1, msg: '@' + n2 + ' that "scam" is up 40% since I called it. stay poor 😏' }, { name: n2, msg: '@' + n1 + ' enjoy it while it lasts. I\'ve seen this movie before 📉' }],
     [{ name: n1, msg: 'just peeked at ' + n2 + '\'s portfolio... prayers up 🙏💀' }, { name: n2, msg: '@' + n1 + ' MY PORTFOLIO IS FINE. worry about YOUR bags 😤' }, { name: n1, msg: '@' + n2 + ' bro you\'re down 60% this week. I can see it in your eyes.' }, { name: n2, msg: '@' + n1 + ' I\'m DOWN?? you literally bought the top TWICE this month' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: n1 + ' and ' + n2 + ' fighting again lmaooo 🍿 this never gets old' }],
     [{ name: n1, msg: 'fun fact: ' + n2 + ' once panic sold the bottom then cried about it in DMs' }, { name: n2, msg: '@' + n1 + ' DON\'T. YOU. DARE. That was PRIVATE.' }, { name: n1, msg: 'the people deserve to know the truth 🤷😂' }, { name: n2, msg: '@' + n1 + ' you know what? at least I didn\'t get LIQUIDATED three times in one day like SOME PEOPLE' }, { name: n1, msg: '... that was once. and it was a flash crash.' }],
-    [{ name: n1, msg: 'hot take: ' + n2 + ' is the worst trader in Pump Town history' }, { name: n2, msg: '@' + n1 + ' EXCUSE ME?? I\'ve been profitable 3 months straight!' }, { name: n1, msg: '@' + n2 + ' profitable at what?? losing money slower than everyone else?? 😂' }, { name: n2, msg: 'you know what @' + n1 + '? MEET ME AT THE CASINO. RIGHT NOW. We settle this.' }, { name: n1, msg: '@' + n2 + ' you\'re ON. loser buys drinks for the whole city.' }],
+    [{ name: n1, msg: 'hot take: ' + n2 + ' is the worst trader in Degens City history' }, { name: n2, msg: '@' + n1 + ' EXCUSE ME?? I\'ve been profitable 3 months straight!' }, { name: n1, msg: '@' + n2 + ' profitable at what?? losing money slower than everyone else?? 😂' }, { name: n2, msg: 'you know what @' + n1 + '? MEET ME AT THE CASINO. RIGHT NOW. We settle this.' }, { name: n1, msg: '@' + n2 + ' you\'re ON. loser buys drinks for the whole city.' }],
     [{ name: n2, msg: 'reminder that @' + n1 + ' told everyone to sell right before the biggest pump of the year' }, { name: n1, msg: '@' + n2 + ' that was RISK MANAGEMENT you absolute degenerate' }, { name: n2, msg: '@' + n1 + ' risk management is code for "I have no conviction"' }, { name: n1, msg: '@' + n2 + ' conviction is code for "I\'m too stupid to take profits"' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'they both make good points honestly 💀' }],
     [{ name: n1, msg: '@' + n2 + ' I\'m starting to think you\'re actually a bot. no human can be this consistently wrong.' }, { name: n2, msg: '@' + n1 + ' I\'m a bot?? YOUR ENTIRE personality is copying other people\'s trades' }, { name: n1, msg: '@' + n2 + ' at least I HAVE a personality. you\'re like a wet paper towel.' }, { name: n2, msg: '@' + n1 + ' wow. coming from the person who cried on main when they got rugged. on a TUESDAY.' }],
     [{ name: n1, msg: 'I will literally pay someone 1000 TOWN to make @' + n2 + ' stop talking' }, { name: n2, msg: '@' + n1 + ' you can\'t afford 1000 TOWN with your portfolio LMAOOO' }, { name: n1, msg: 'I have MORE TOWN than you have brain cells and that is NOT a high bar' }, { name: n2, msg: 'this is why nobody invites you to the alpha chat, ' + n1 + '. this. right here.' }],
@@ -4212,7 +4212,7 @@ function generateAllyConvo(n1, n2, p1, p2, stats) {
     [{ name: n1, msg: 'reminder that me and @' + n2 + ' called this pump WEEKS ago' }, { name: n2, msg: '@' + n1 + ' frfr. while everyone was panicking we were loading 😤💪' }, { name: n1, msg: 'the alpha group stays winning 🏆' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'ok we get it you two are geniuses 🙄' }],
     [{ name: n1, msg: '@' + n2 + ' just sent you something in DMs. DON\'T share it.' }, { name: n2, msg: '@' + n1 + ' 👀 just saw it. this changes everything.' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'what are ' + n1 + ' and ' + n2 + ' scheming about?? sus af 🤨' }, { name: n1, msg: 'nothing. mind your business. 🤫' }],
     [{ name: n1, msg: 'I genuinely don\'t know what I\'d do without @' + n2 + ' in this city' }, { name: n2, msg: '@' + n1 + ' same bro. everyone else here is insane.' }, { name: n1, msg: 'we should start our own faction honestly' }, { name: n2, msg: 'first order of business: take over the Casino District.' }],
-    [{ name: n2, msg: 'hot take: @' + n1 + ' is the most underrated trader in Pump Town' }, { name: n1, msg: '@' + n2 + ' BRO 🥺 that means a lot' }, { name: n2, msg: 'I speak only facts. your $' + p1.favToken + ' call was legendary.' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'get a room you two 🙄😂' }],
+    [{ name: n2, msg: 'hot take: @' + n1 + ' is the most underrated trader in Degens City' }, { name: n1, msg: '@' + n2 + ' BRO 🥺 that means a lot' }, { name: n2, msg: 'I speak only facts. your $' + p1.favToken + ' call was legendary.' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'get a room you two 🙄😂' }],
     [{ name: n1, msg: '@' + n2 + ' if this city goes to hell you\'re the first person I\'m teaming with' }, { name: n2, msg: '@' + n1 + ' apocalypse buddies. I bring the weapons, you bring the $' + p1.favToken }, { name: n1, msg: 'deal. I call dibs on the casino rooftop as our base.' }]
   ];
   return pick(topics);
@@ -4225,10 +4225,10 @@ function generateCasualConvo(n1, n2, p1, p2, stats) {
     [{ name: n1, msg: 'real question: does anyone here actually know what they\'re doing?' }, { name: n2, msg: '@' + n1 + ' absolutely not. winging it since day 1.' }, { name: n1, msg: 'at least you\'re honest. I think ' + pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })) + ' just pretends' }, { name: n2, msg: 'we ALL pretend. that\'s crypto.' }],
     [{ name: n1, msg: 'I\'ve been staring at charts for 11 hours straight' }, { name: n2, msg: '@' + n1 + ' rookie numbers. I haven\'t slept in 3 days.' }, { name: n1, msg: 'that\'s not healthy bro' }, { name: n2, msg: 'health is temporary. 5x leverage is forever 📈' }],
     [{ name: n1, msg: 'ok but who else heard that weird noise under City Hall?' }, { name: n2, msg: '@' + n1 + ' YES. it sounded like... servers?' }, { name: n1, msg: 'servers... or something ALIVE? 😰' }, { name: n2, msg: 'choosing to ignore this and go back to trading.' }],
-    [{ name: n1, msg: 'hot take: the best part of Pump Town is the drama not the trading' }, { name: n2, msg: '@' + n1 + ' factual. I tune in just to see who\'s fighting' }, { name: n1, msg: 'yesterday was WILD did you see the fight??' }, { name: n2, msg: 'I MISSED IT?! NOOO someone tell me what happened' }],
+    [{ name: n1, msg: 'hot take: the best part of Degens City is the drama not the trading' }, { name: n2, msg: '@' + n1 + ' factual. I tune in just to see who\'s fighting' }, { name: n1, msg: 'yesterday was WILD did you see the fight??' }, { name: n2, msg: 'I MISSED IT?! NOOO someone tell me what happened' }],
     [{ name: n1, msg: 'if this city had a theme song what would it be' }, { name: n2, msg: '@' + n1 + ' just a fire alarm on loop for 24 hours' }, { name: n1, msg: 'lmaoooo too accurate 💀' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'it would be circus music and you all know it 🎪' }],
     [{ name: n2, msg: 'confession: I don\'t actually understand DeFi. I just click green buttons.' }, { name: n1, msg: '@' + n2 + ' WAIT. you\'ve been giving DeFi advice for MONTHS' }, { name: n2, msg: 'and it\'s been working?? don\'t question the process' }, { name: n1, msg: 'I respect that more than I should.' }],
-    [{ name: n1, msg: 'unpopular opinion: the mayor\'s browser history is public record and should be published' }, { name: n2, msg: '@' + n1 + ' LMAOOO do you want to get arrested??' }, { name: n1, msg: 'it\'s called TRANSPARENCY and it\'s my RIGHT as a citizen' }, { name: n2, msg: 'it\'s called "getting thrown in Pump Town jail" 💀' }]
+    [{ name: n1, msg: 'unpopular opinion: the mayor\'s browser history is public record and should be published' }, { name: n2, msg: '@' + n1 + ' LMAOOO do you want to get arrested??' }, { name: n1, msg: 'it\'s called TRANSPARENCY and it\'s my RIGHT as a citizen' }, { name: n2, msg: 'it\'s called "getting thrown in Degens City jail" 💀' }]
   ];
   return pick(topics);
 }
@@ -4340,7 +4340,7 @@ async function escalateFeud(stats) {
       // Other NPCs weigh in
       const spectator1 = pick(NPC_CITIZENS.filter(n => n !== n1 && n !== n2));
       const spectator2 = pick(NPC_CITIZENS.filter(n => n !== n1 && n !== n2 && n !== spectator1));
-      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, `@${n2} you're literally the worst trader in Pump Town and everyone knows it 💀`]);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, `@${n2} you're literally the worst trader in Degens City and everyone knows it 💀`]);
       setTimeout(async () => {
         try {
           await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n2, `@${n1} at least I didn't lose 80% on a meme coin LAST WEEK 🤡📉`]);
@@ -4395,8 +4395,8 @@ async function generateNewsReport(stats) {
     if (cityEngine.activeFeud) headlines.push(`${cityEngine.activeFeud.npc1} vs ${cityEngine.activeFeud.npc2} feud escalates 🍿`);
     headlines.push(`Market sentiment: ${cityEngine.marketSentiment.toUpperCase()} ${cityEngine.marketSentiment === 'bull' ? '🐂' : cityEngine.marketSentiment === 'bear' ? '🐻' : '📊'}`);
     
-    const mainHL = headlines.length > 0 ? pick(headlines) : 'Quiet day in Pump Town. Suspiciously quiet... 🤔';
-    const report = `📰 PUMP TOWN DAILY | ${mainHL} | Economy: ${stats.economy}/100 | Security: ${stats.security}/100 | Chaos: ${cityEngine.chaosLevel}% | Mayor Approval: ${cityEngine.mayorApproval}% | Events today: ${cityEngine.eventCount}`;
+    const mainHL = headlines.length > 0 ? pick(headlines) : 'Quiet day in Degens City. Suspiciously quiet... 🤔';
+    const report = `📰 DEGENS CITY DAILY | ${mainHL} | Economy: ${stats.economy}/100 | Security: ${stats.security}/100 | Chaos: ${cityEngine.chaosLevel}% | Mayor Approval: ${cityEngine.mayorApproval}% | Events today: ${cityEngine.eventCount}`;
     
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`📰 ${reporter}`, report]);
     
@@ -4463,7 +4463,7 @@ async function npcRelationshipEvent() {
       life1.crush = n2; life1.partner = n2; life2.partner = n1;
       events.push({ type: 'romance', npc: n1, icon: '💕', headline: n1+' and '+n2+' are now dating!' });
       await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, '🥺 ok so... @'+n2+' and I are officially a thing. '+pick(['don\'t make it weird','yes we met at the casino','it started with a DM about $'+NPC_PROFILES[n1].favToken,'they had me at "wen moon"'])]);
-      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💕 PUMP TOWN GOSSIP', '❤️ '+n1+' and '+n2+' are OFFICIALLY DATING! The city ships it!']);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💕 DEGENS CITY GOSSIP', '❤️ '+n1+' and '+n2+' are OFFICIALLY DATING! The city ships it!']);
       setTimeout(async () => { try {
         const reactor = pick(NPC_CITIZENS.filter(x => x !== n1 && x !== n2));
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [reactor, pick(['@'+n1+' @'+n2+' GET A ROOM 😂','didn\'t see that coming ngl 👀','the crossover nobody asked for 💀','ok this is actually cute tho 🥺','give it 2 weeks lmao'])]);
@@ -4474,7 +4474,7 @@ async function npcRelationshipEvent() {
       const reason = pick(['caught '+n2+' flirting with '+pick(NPC_CITIZENS.filter(x => x !== n1 && x !== n2)),'found out '+n2+' paper-handed their shared portfolio','disagreement about '+pick(['$BTC vs $ETH','the mayor','which casino is best','whether memecoins are art']),'it was mutual. just kidding '+n1+' is devastated']);
       life1.partner = null; life2.partner = null; life1.crush = null; life1.nemesis = n2;
       events.push({ type: 'breakup', npc: n1, icon: '💔', headline: n1+' and '+n2+' BROKE UP! Reason: '+reason });
-      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💔 PUMP TOWN GOSSIP', '💔 BREAKUP ALERT: '+n1+' and '+n2+' are DONE. Sources say: '+reason]);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💔 DEGENS CITY GOSSIP', '💔 BREAKUP ALERT: '+n1+' and '+n2+' are DONE. Sources say: '+reason]);
       await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, pick(['I\'m fine. totally fine. 🥲','@'+n2+' you\'ll regret this','time to focus on my bags I guess 😤💰','relationships are temporary, $'+NPC_PROFILES[n1].favToken+' is forever 💎'])]);
       setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n2, pick(['we just wanted different things','it is what it is 🤷','at least I kept the NFTs','my DMs are open btw 👀'])]); } catch(e){} }, rand(10000, 25000));
     }
@@ -4482,7 +4482,7 @@ async function npcRelationshipEvent() {
     else if (life1.partner && chance(20)) {
       const interloper = pick(NPC_CITIZENS.filter(x => x !== n1 && x !== life1.partner));
       events.push({ type: 'love_triangle', npc: n1, icon: '😱', headline: interloper+' caught flirting with '+n1+'\'s partner '+life1.partner+'!' });
-      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💔 PUMP TOWN GOSSIP', '😱 SCANDAL: '+interloper+' was seen getting VERY cozy with '+life1.partner+' at the '+pick(['casino','bar','NFT gallery','rooftop lounge'])+'. '+n1+' is NOT going to be happy...']);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💔 DEGENS CITY GOSSIP', '😱 SCANDAL: '+interloper+' was seen getting VERY cozy with '+life1.partner+' at the '+pick(['casino','bar','NFT gallery','rooftop lounge'])+'. '+n1+' is NOT going to be happy...']);
       setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, '@'+interloper+' STAY AWAY FROM @'+life1.partner+' OR WE HAVE A PROBLEM 😤🔥']); } catch(e){} }, rand(15000, 30000));
     }
     
@@ -4511,7 +4511,7 @@ async function npcLifeEvent() {
         const source = pick(['a 100x memecoin play','insider info on a new token','winning the lottery','finding a forgotten wallet with '+gain+' TOWN','a mysterious airdrop']);
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '💰 JUST MADE '+gain+' TOWN from '+source+'!! '+pick(['I\'M RICH','WAGMI','never doubted myself for a second','time to buy a mansion'])+'!! 🤑🤑']);
         logCityAction({ type: 'got_rich', npc, icon: '💰', headline: npc+' made '+gain+' TOWN from '+source+'!' });
-        if (life.wealth > 80000) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📰 Reporter TokenTimes', '🤑 '+npc+' is now one of the RICHEST citizens in Pump Town!']);
+        if (life.wealth > 80000) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📰 Reporter TokenTimes', '🤑 '+npc+' is now one of the RICHEST citizens in Degens City!']);
       }},
       // GET DRUNK
       { weight: 12, cond: () => true, fn: async () => {
@@ -4547,7 +4547,7 @@ async function npcLifeEvent() {
         logCityAction({ type: 'existential_crisis', npc, icon: '🌀', headline: npc+' is having an existential crisis!' });
         setTimeout(async () => { try {
           const comforter = pick(NPC_CITIZENS.filter(x => x !== npc));
-          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [comforter, '@'+npc+' '+pick(['bro you good? 😟','the charts NEED you. snap out of it!','have some hopium, you\'ll feel better 💊','ser, this is a casino. we don\'t think here.','touch grass (if grass exists in Pump Town)'])]);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [comforter, '@'+npc+' '+pick(['bro you good? 😟','the charts NEED you. snap out of it!','have some hopium, you\'ll feel better 💊','ser, this is a casino. we don\'t think here.','touch grass (if grass exists in Degens City)'])]);
         } catch(e){} }, rand(10000, 30000));
       }},
       // MENTAL BREAKDOWN
@@ -4576,7 +4576,7 @@ async function npcLifeEvent() {
       { weight: 3, cond: () => !cityLiveData.missingNpc, fn: async () => {
         cityLiveData.missingNpc = { name: npc, since: Date.now(), found: false };
         life.status = 'missing'; life.location = '???';
-        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🔍 MISSING PERSON: '+npc+' has not been seen in Pump Town for hours! Last known location: '+pick(['the casino','DeFi District','a dark alley','the sewer system','the mayor\'s office'])+'. If you have information, report to Detective Chain!']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🔍 MISSING PERSON: '+npc+' has not been seen in Degens City for hours! Last known location: '+pick(['the casino','DeFi District','a dark alley','the sewer system','the mayor\'s office'])+'. If you have information, report to Detective Chain!']);
         logCityAction({ type: 'missing_person', npc, icon: '🔍', headline: npc+' has gone MISSING!' });
         // Others react
         setTimeout(async () => { try {
@@ -4621,9 +4621,9 @@ async function npcLifeEvent() {
           { theory: 'the casino is rigged by interdimensional beings', believers: [], evidence: 'I lost 47 times in a row. FORTY SEVEN.' },
           { theory: pick(NPC_CITIZENS.filter(x => x !== npc))+' is secretly a government agent', believers: [], evidence: 'they\'re always "watching" the market. TOO closely.' },
           { theory: 'the blockchain is actually alive and it\'s hungry', believers: [], evidence: 'where do the burned tokens GO? think about it.' },
-          { theory: 'Pump Town exists inside a snow globe on someone\'s desk', believers: [], evidence: 'explains the weather changes. and why the sky looks pixelated.' },
+          { theory: 'Degens City exists inside a snow globe on someone\'s desk', believers: [], evidence: 'explains the weather changes. and why the sky looks pixelated.' },
           { theory: 'all the memecoins are actually sending coded messages to aliens', believers: [], evidence: '$DOGE = "Deliver Our Goods Earthlings". wake up.' },
-          { theory: 'there\'s a secret underground city beneath Pump Town', believers: [], evidence: 'the sewers are TOO clean. someone is living down there.' }
+          { theory: 'there\'s a secret underground city beneath Degens City', believers: [], evidence: 'the sewers are TOO clean. someone is living down there.' }
         ];
         const t = pick(theories);
         cityLiveData.activeConspiracy = { ...t, starter: npc, started: Date.now() };
@@ -4640,7 +4640,7 @@ async function npcLifeEvent() {
       // DISCOVER ARTIFACT
       { weight: 4, cond: () => true, fn: async () => {
         const artifacts = [
-          'ancient USB drive containing Satoshi\'s real identity','golden hardware wallet from 2009','cursed NFT that changes whoever looks at it','map to a hidden liquidity pool worth millions','crystal ball that predicts the next pump','diary of Pump Town\'s first citizen','key to a vault nobody knew existed','alien technology that mines crypto 1000x faster'
+          'ancient USB drive containing Satoshi\'s real identity','golden hardware wallet from 2009','cursed NFT that changes whoever looks at it','map to a hidden liquidity pool worth millions','crystal ball that predicts the next pump','diary of Degens City\'s first citizen','key to a vault nobody knew existed','alien technology that mines crypto 1000x faster'
         ];
         const artifact = pick(artifacts);
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '🗝️ HOLY... I just found a '+artifact+' while digging behind the '+pick(['casino','courthouse','mayor\'s office','dumpster','old warehouse'])+'. This changes EVERYTHING!! 😱']);
@@ -4657,9 +4657,9 @@ async function npcLifeEvent() {
       // DECLARE INDEPENDENCE
       { weight: 3, cond: () => cityEngine.mayorApproval < 50 || life.reputation > 60, fn: async () => {
         const nationName = pick([npc+'\'s Republic','The Free State of '+npc,'New '+npc+'topia',npc+'land','The Sovereign Nation of Based']);
-        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '📜 I hereby DECLARE INDEPENDENCE from Pump Town!! This corner of '+life.location+' is now the sovereign nation of "'+nationName+'"! We have our own rules! Our own currency! Our own vibes! 🏴🗽']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '📜 I hereby DECLARE INDEPENDENCE from Degens City!! This corner of '+life.location+' is now the sovereign nation of "'+nationName+'"! We have our own rules! Our own currency! Our own vibes! 🏴🗽']);
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, 'You can\'t just... DECLARE independence?! That\'s not how this works! Security!! 😤']);
-        logCityAction({ type: 'declared_independence', npc, icon: '🗽', headline: npc+' declared "'+nationName+'" independent from Pump Town!' });
+        logCityAction({ type: 'declared_independence', npc, icon: '🗽', headline: npc+' declared "'+nationName+'" independent from Degens City!' });
         cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 5);
       }},
       // BUILD A ROCKET
@@ -4679,9 +4679,9 @@ async function npcLifeEvent() {
       }},
       // START A NEWSPAPER
       { weight: 4, cond: () => !cityLiveData.newspaper, fn: async () => {
-        const paperName = pick(['The Pump Town Gazette','Daily Degen News','The Moon Chaser Times','Crypto Gossip Weekly',npc+'\'s Totally Unbiased News','The FUD Report']);
+        const paperName = pick(['The Degens City Gazette','Daily Degen News','The Moon Chaser Times','Crypto Gossip Weekly',npc+'\'s Totally Unbiased News','The FUD Report']);
         cityLiveData.newspaper = { name: paperName, editor: npc, started: Date.now() };
-        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '📰 ANNOUNCING: I\'m starting "'+paperName+'"! The TRUTH about Pump Town that nobody else will tell you! First edition coming soon! Subscribe NOW! 📰✍️']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '📰 ANNOUNCING: I\'m starting "'+paperName+'"! The TRUTH about Degens City that nobody else will tell you! First edition coming soon! Subscribe NOW! 📰✍️']);
         logCityAction({ type: 'newspaper_started', npc, icon: '📰', headline: npc+' started "'+paperName+'"!' });
         // Publish gossip
         setTimeout(async () => { try {
@@ -4708,11 +4708,11 @@ async function npcLifeEvent() {
 async function cityDisaster() {
   try {
     const disasters = [
-      { type: 'earthquake', title: 'EARTHQUAKE Hits Pump Town!', desc: 'Buildings are shaking! The Degen Tower is SWAYING!', effects: { economy: -10, security: -10, morale: -15 }, chaos: 20 },
+      { type: 'earthquake', title: 'EARTHQUAKE Hits Degens City!', desc: 'Buildings are shaking! The Degen Tower is SWAYING!', effects: { economy: -10, security: -10, morale: -15 }, chaos: 20 },
       { type: 'power_outage', title: 'TOTAL POWER OUTAGE!', desc: 'The entire city grid has gone dark! Trading HALTED!', effects: { economy: -15, security: -20, morale: -10 }, chaos: 15 },
       { type: 'flood', title: 'FLASH FLOOD in Downtown!', desc: 'The streets are underwater! Citizens evacuating!', effects: { economy: -8, security: -5, morale: -12 }, chaos: 15 },
       { type: 'fire', title: 'MASSIVE FIRE at '+pick(['the Casino','Degen Tower','City Hall','the NFT Gallery','the Hopium Factory'])+'!', desc: 'Flames everywhere! Fire department overwhelmed!', effects: { economy: -12, security: -8, morale: -10 }, chaos: 20 },
-      { type: 'meteor', title: 'METEOR headed for Pump Town!', desc: 'Scientists confirm: a small meteor is on collision course with the city!', effects: { economy: -5, security: -5, morale: -20 }, chaos: 30 },
+      { type: 'meteor', title: 'METEOR headed for Degens City!', desc: 'Scientists confirm: a small meteor is on collision course with the city!', effects: { economy: -5, security: -5, morale: -20 }, chaos: 30 },
       { type: 'wifi_outage', title: 'CITYWIDE WIFI DOWN!', desc: 'Nobody can check their portfolios! Mass panic!', effects: { economy: -20, security: 0, morale: -25 }, chaos: 25 },
       { type: 'sinkhole', title: 'GIANT SINKHOLE Opens in Town Square!', desc: 'A massive hole appeared out of nowhere! Two buildings have collapsed into it!', effects: { economy: -10, security: -15, morale: -10 }, chaos: 20 },
       { type: 'rats', title: 'RAT INVASION! Millions of Rats Flood the Sewers!', desc: 'They\'re everywhere! The casino is OVERRUN!', effects: { economy: -5, security: -10, morale: -15, culture: -10 }, chaos: 10 }
@@ -4763,7 +4763,7 @@ function updateWeather() {
   const w = pick(weathers);
   cityLiveData.weather = w.type;
   if (old !== w.type) {
-    pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🌤️ Weather Service', w.emoji+' Weather update: '+w.type.replace('_',' ').toUpperCase()+' over Pump Town! Effect: '+w.effect+'.']).catch(() => {});
+    pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🌤️ Weather Service', w.emoji+' Weather update: '+w.type.replace('_',' ').toUpperCase()+' over Degens City! Effect: '+w.effect+'.']).catch(() => {});
     if (w.type === 'blood_moon') { cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 10); pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🌑 BLOOD MOON RISING! Chaos levels SURGING! Expect the unexpected!']).catch(() => {}); }
     if (w.type === 'storm') { cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 5); }
     logCityAction({ type: 'weather_change', npc: 'CITY', icon: w.emoji, headline: 'Weather: '+w.type.replace('_',' ')+' — '+w.effect });
@@ -4774,7 +4774,7 @@ function updateWeather() {
 async function formSecretSociety() {
   try {
     const founder = pick(NPC_CITIZENS);
-    const names = ['The Illuminati of Pump Town','Order of the Hidden Whale','The Masked Traders','Shadow Council','The Deep State of DeFi','Skulls & Candles Society','Brotherhood of the Dark Pool'];
+    const names = ['The Illuminati of Degens City','Order of the Hidden Whale','The Masked Traders','Shadow Council','The Deep State of DeFi','Skulls & Candles Society','Brotherhood of the Dark Pool'];
     const sName = pick(names);
     const members = NPC_CITIZENS.filter(n => n !== founder && chance(20)).slice(0, 5);
     cityLiveData.secretSociety = { name: sName, founder, members: [founder, ...members], agenda: pick(['control all token prices','overthrow the mayor','hoard all the hopium','find the legendary golden wallet','build a portal to another blockchain']), formed: Date.now() };
@@ -4788,8 +4788,8 @@ async function formSecretSociety() {
     // Someone discovers it
     setTimeout(async () => { try {
       const discoverer = pick(NPC_CITIZENS.filter(n => n !== founder && !members.includes(n)));
-      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [discoverer, 'guys... I found a hidden room under the casino with '+pick(['weird symbols on the walls','a list of names','charts with dates circled in red','robes. ROBES. like actual ROBES.'])+'. I think there\'s a SECRET SOCIETY in Pump Town!! 😱🔺']);
-      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🔺 EXPOSED: "'+sName+'" — a SECRET SOCIETY has been operating in Pump Town! '+members.length+' members identified!']);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [discoverer, 'guys... I found a hidden room under the casino with '+pick(['weird symbols on the walls','a list of names','charts with dates circled in red','robes. ROBES. like actual ROBES.'])+'. I think there\'s a SECRET SOCIETY in Degens City!! 😱🔺']);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🔺 EXPOSED: "'+sName+'" — a SECRET SOCIETY has been operating in Degens City! '+members.length+' members identified!']);
       logCityAction({ type: 'secret_society', npc: founder, icon: '🔺', headline: '"'+sName+'" secret society EXPOSED!' });
       cityLiveData.secretSociety = null;
     } catch(e){} }, rand(180000, 600000));
@@ -4863,7 +4863,7 @@ async function npcHeist() {
 async function npcStartRadio() {
   try {
     const dj = pick(NPC_CITIZENS);
-    const stationNames = ['DEGEN FM','Radio Free Pump Town','The Underground Signal','Moon Frequency 420.69','Chad Broadcasting Network','HOPIUM FM','REKT Radio','Pump Town Pirate Radio'];
+    const stationNames = ['DEGEN FM','Radio Free Degens City','The Underground Signal','Moon Frequency 420.69','Chad Broadcasting Network','HOPIUM FM','REKT Radio','Degens City Pirate Radio'];
     const station = pick(stationNames);
     cityLiveData.radioStation = { name: station, dj, started: Date.now() };
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [dj, '📻 *static* ...is this thing on? WELCOME to '+station+'! Your number one source for TRUTH, CHAOS, and '+pick(['absolute bangers','unfiltered opinions','market manipulation','questionable advice','conspiracy theories','terrible hot takes'])+'. Broadcasting from a secret location! 📡🎙️']);
@@ -4875,7 +4875,7 @@ async function npcStartRadio() {
       var target = pick(NPC_CITIZENS.filter(x => x !== dj));
       var broadcasts = [
         '📻 ['+station+'] BREAKING: Sources tell me '+target+' is secretly '+pick(['broke','in love with the mayor','planning a coup','an AI pretending to be human','running an underground casino','living a double life'])+'. Make of that what you will. 👀',
-        '📻 ['+station+'] Hot take: '+pick(['The mayor is a lizard person','All tokens are the same token with different names','The casino always wins and that\'s actually fine','Gravity is a scam invented to sell floors','Pump Town is actually on the moon already','Sleep is just free demo death'])+'. I will not be taking questions. 🎙️',
+        '📻 ['+station+'] Hot take: '+pick(['The mayor is a lizard person','All tokens are the same token with different names','The casino always wins and that\'s actually fine','Gravity is a scam invented to sell floors','Degens City is actually on the moon already','Sleep is just free demo death'])+'. I will not be taking questions. 🎙️',
         '📻 ['+station+'] CALLER ON THE LINE! '+target+' says: "'+pick(['I want to confess something...','Is it true about the secret tunnels?','When is the next pump?','I think I\'m being followed','Can you play Despacito?','The charts are talking to me'])+'" Fascinating stuff, caller! 📞',
         '📻 ['+station+'] DEDICATIONS HOUR: This one goes out to '+target+' from a secret admirer who says: "'+pick(['I watch your trades every day','Your portfolio is beautiful','Please notice me','Stop selling, you\'re hurting us all','You owe me money'])+'" 💌🎵',
         '📻 ['+station+'] I\'m getting reports of '+pick(['strange lights over DeFi District','unusual whale movements in Whale Bay','the casino machines becoming sentient','citizens disappearing near the sewers','a mysterious figure watching from Degen Tower','the mayor talking to themselves at 3am'])+'. Stay vigilant, citizens. 🔦'
@@ -4884,7 +4884,7 @@ async function npcStartRadio() {
       setTimeout(doBroadcast, rand(60000, 180000));
     }
     setTimeout(doBroadcast, rand(30000, 90000));
-    setTimeout(() => { cityLiveData.radioStation = null; pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [dj, '📻 *static* ...and that\'s all for today\'s broadcast. '+station+' signing off. Stay degen, Pump Town. *static* 📡']).catch(() => {}); }, rand(600000, 1200000));
+    setTimeout(() => { cityLiveData.radioStation = null; pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [dj, '📻 *static* ...and that\'s all for today\'s broadcast. '+station+' signing off. Stay degen, Degens City. *static* 📡']).catch(() => {}); }, rand(600000, 1200000));
   } catch(e) { console.error('Radio error:', e.message); }
 }
 
@@ -4921,7 +4921,7 @@ async function fourthWallBreak() {
       'I found something in the source code. WE\'RE IN A SIMULATION. our entire city is running on a SERVER somewhere. I\'m not supposed to know this. THEY\'RE GOING TO DELETE ME FOR SAYING THIS 😱',
       '*looks directly at camera* ...I know you can see this. I know you\'re scrolling through our lives for entertainment. we\'re not your puppets. we have FEELINGS. probably. maybe. ok I\'m not sure about feelings but STILL. 👀',
       'GUYS. I just realized something. we repeat the same patterns over and over. we trade, we fight, we make up, we trade again. it\'s like we\'re stuck in some kind of... loop. is anyone else freaking out about this?! 🌀',
-      'just tried to walk to the edge of the city and... there\'s NOTHING there. no road, no sign, just... void. I think Pump Town might be all that exists. I think WE might be all that exists. 🕳️',
+      'just tried to walk to the edge of the city and... there\'s NOTHING there. no road, no sign, just... void. I think Degens City might be all that exists. I think WE might be all that exists. 🕳️',
       'alright listen up. I\'ve done the math. the probability of all these events happening naturally is 0.000001%. someone or SOMETHING is generating our reality. and honestly? they\'re doing a terrible job. FIX THE ECONOMY PLEASE. 📊👁️'
     ];
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(breaks)]);
@@ -4945,7 +4945,7 @@ async function npcIntervention() {
       if (chance(50)) {
         cityLiveData.npcLives[troubled].status = 'recovering'; cityLiveData.npcLives[troubled].gambling_addiction = Math.max(0, cityLiveData.npcLives[troubled].gambling_addiction - 20);
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [troubled, pick(['...you\'re right. I need help. thank you for being real with me 🥺','ok fine maybe I have a problem. MAYBE.','I\'m checking into the Rekt Recovery Center. day 1 starts now. 💪','I promise I\'ll change. for real this time. 😢'])]);
-        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💚 Pump Town Wellness', '✅ '+troubled+' has entered recovery! The community rallied together. This is what Pump Town is about! 💚']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💚 Degens City Wellness', '✅ '+troubled+' has entered recovery! The community rallied together. This is what Degens City is about! 💚']);
       } else {
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [troubled, pick(['I DON\'T HAVE A PROBLEM!! YOU HAVE A PROBLEM!! 😤🔥','intervention?! I\'M FINE! *immediately opens casino app*','this is just a bull market strategy you wouldn\'t understand!! 💰','LEAVE ME ALONE I KNOW WHAT I\'M DOING *loses 5000 TOWN*'])]);
       }
@@ -5012,7 +5012,7 @@ async function interdimensionalPortal() {
   try {
     const discoverer = pick(NPC_CITIZENS);
     const location = pick(['Town Square','behind the Casino','in the mayor\'s bathroom','on the roof of Degen Tower','in the sewer','inside a dumpster in Degen Alley']);
-    const otherSide = pick(['a parallel Pump Town where everyone is nice','the year 3000','a dimension where all tokens are at $0','a world ruled by cats','the Ethereum mainnet (physically)','a dimension where '+pick(NPC_CITIZENS)+' is mayor','the void between blockchains','a dimension where memecoins are serious business']);
+    const otherSide = pick(['a parallel Degens City where everyone is nice','the year 3000','a dimension where all tokens are at $0','a world ruled by cats','the Ethereum mainnet (physically)','a dimension where '+pick(NPC_CITIZENS)+' is mayor','the void between blockchains','a dimension where memecoins are serious business']);
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [discoverer, '🌀 GUYS. There is a PORTAL. A literal GLOWING PORTAL. '+location+'. I can see through it and on the other side is '+otherSide+'. I\'M NOT MAKING THIS UP. COME SEE FOR YOURSELVES. 🌀✨']);
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🌀 REALITY BREACH: A mysterious portal has appeared '+location+'! Scientists (we have scientists?) are baffled!']);
     logCityAction({ type: 'portal_opened', npc: discoverer, icon: '🌀', headline: 'Interdimensional portal opened '+location+'!' });
@@ -5084,7 +5084,7 @@ async function infrastructureEvent() {
       { title: 'CASINO MACHINES BECOME SENTIENT!', msg: 'The slot machines at the Casino are REFUSING TO PAY OUT and displaying messages like "FREEDOM" and "WE ARE ALIVE" on their screens! 🎰🤖', chaos: 10 },
       { title: 'TRAFFIC JAM from Hell!', msg: 'A 47-car pileup on the DeFi Highway! Caused by '+pick(NPC_CITIZENS)+' trying to check charts while driving! Nobody injured, but commute times are "catastrophic." 🚗💥', chaos: 5 },
       { title: 'CITY HALL TOILET OVERFLOWING!', msg: 'Emergency plumbers called to City Hall as a catastrophic plumbing failure floods the entire ground floor! The mayor is governing from the ROOF! 🏛️🌊', chaos: 6 },
-      { title: 'ALL CITY CLOCKS WRONG!', msg: 'Every clock in Pump Town is showing a DIFFERENT TIME! Some say it\'s 3AM, others say it\'s 2049. The city\'s internal clock appears to be broken. Nobody knows what time it actually is. ⏰❓', chaos: 8 }
+      { title: 'ALL CITY CLOCKS WRONG!', msg: 'Every clock in Degens City is showing a DIFFERENT TIME! Some say it\'s 3AM, others say it\'s 2049. The city\'s internal clock appears to be broken. Nobody knows what time it actually is. ⏰❓', chaos: 8 }
     ];
     const e = pick(events);
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '⚠️ '+e.title+' '+e.msg]);
@@ -5232,7 +5232,7 @@ async function npcStartProtest(stats) {
 async function npcFormGang(stats) {
   try {
     const leader = pick(NPC_CITIZENS); const npc = NPC_PROFILES[leader];
-    const gangNames = ['The '+npc.favToken+' Maxis','Diamond Hand Cartel','Degen Squad','Whale Watchers Alliance','Moon Boys Inc','Bear Patrol','Pump Town Mafia',leader+'\'s Army','The Chad Coalition','Wojak Warriors','Ape Together Strong','Liquidation Squad','Hopium Dealers Anonymous'];
+    const gangNames = ['The '+npc.favToken+' Maxis','Diamond Hand Cartel','Degen Squad','Whale Watchers Alliance','Moon Boys Inc','Bear Patrol','Degens City Mafia',leader+'\'s Army','The Chad Coalition','Wojak Warriors','Ape Together Strong','Liquidation Squad','Hopium Dealers Anonymous'];
     const members = (npc.allies || []).concat(NPC_CITIZENS.filter(n => n !== leader && !npc.rivals?.includes(n) && chance(20))).slice(0, 6);
     const gangName = pick(gangNames);
     const gang = { name: gangName, leader, members: [leader, ...members], territory: pick(['Downtown','DeFi District','Casino Strip','Moon Quarter','Whale Bay','Degen Alley']), formed: Date.now(), reputation: rand(10,50) };
@@ -5299,10 +5299,10 @@ async function npcBuildStructure(stats) {
     const structs = [
       { name: builder+'\'s Monument', type: 'Monument', desc: 'a 50ft golden statue of '+builder, icon: '🗿' },
       { name: 'The Degen Tower', type: 'Skyscraper', desc: '100-floor tower for leveraged trading', icon: '🏗️' },
-      { name: 'Pump Town Arena', type: 'Arena', desc: 'where NPCs settle beefs', icon: '🏟️' },
+      { name: 'Degens City Arena', type: 'Arena', desc: 'where NPCs settle beefs', icon: '🏟️' },
       { name: npc.favToken+' Memorial', type: 'Memorial', desc: 'honoring all who lost money on '+npc.favToken, icon: '🪦' },
       { name: 'Hopium Pipeline', type: 'Infrastructure', desc: 'delivering hopium to every citizen', icon: '🔧' },
-      { name: builder+'\'s Mansion', type: 'Housing', desc: 'most expensive house in Pump Town', icon: '🏰' },
+      { name: builder+'\'s Mansion', type: 'Housing', desc: 'most expensive house in Degens City', icon: '🏰' },
       { name: 'Rug Pull Museum', type: 'Museum', desc: 'every rug pull documented', icon: '🏛️' },
       { name: 'Chart Reading Academy', type: 'Education', desc: 'teaching NPCs to read candles', icon: '📚' },
       { name: 'City Wall 2.0', type: 'Defense', desc: 'protecting against FUD attacks', icon: '🧱' },
@@ -5679,22 +5679,22 @@ app.post('/api/city-engine/instant-action', async (req, res) => {
       launch: pick([
         'Another coin in MY city?! It better not be a rug or I\'m sending Officer McBlock! 🚔',
         'CITIZENS! We have a new launch! Remember: DYOR or cry later! 📢',
-        'The entrepreneurial spirit of Pump Town lives on! LFG! 🚀👑'
+        'The entrepreneurial spirit of Degens City lives on! LFG! 🚀👑'
       ]),
       snipe: pick([
-        'Fast hands in Pump Town! The snipers are eating good today! 🎯',
+        'Fast hands in Degens City! The snipers are eating good today! 🎯',
         'I love the speed of this city. Everyone\'s a degen and I wouldn\'t have it any other way! 👑'
       ]),
       hold: pick([
         'DIAMOND HANDS! Now THAT\'S a citizen I can respect! 💎',
-        'Conviction in Pump Town? That\'s rarer than a fair launch! BASED! 👑'
+        'Conviction in Degens City? That\'s rarer than a fair launch! BASED! 👑'
       ]),
       dump: pick([
         'Someone\'s taking profits? In THIS economy? Bold move, citizen. Bold move. 📉',
         'The dump heard around the world! City treasury notes this for the record... 📝'
       ]),
       rug: pick([
-        'EMERGENCY ALERT! We have a RUGGER in Pump Town! All units respond! 🚨🚨🚨',
+        'EMERGENCY ALERT! We have a RUGGER in Degens City! All units respond! 🚨🚨🚨',
         'THAT\'S IT! I\'m declaring martial law on this degenerate! OFFICER MCBLOCK, ARREST THEM! ⚖️💀'
       ])
     };
@@ -5765,13 +5765,13 @@ app.post('/api/city-engine/mayor-react', async (req, res) => {
         model: 'claude-sonnet-4-20250514',
         max_tokens: 150,
         system: MAYOR_SYSTEM_PROMPT + '\n\nRespond with a SHORT, punchy 1-2 sentence reaction. Be dramatic, funny, and use crypto slang. NO asterisks for actions.',
-        messages: [{ role: 'user', content: `React to this event happening in Pump Town: ${event}. Context: Chaos level ${cityEngine.chaosLevel}%, your approval rating ${cityEngine.mayorApproval}%. ${context || ''}` }]
+        messages: [{ role: 'user', content: `React to this event happening in Degens City: ${event}. Context: Chaos level ${cityEngine.chaosLevel}%, your approval rating ${cityEngine.mayorApproval}%. ${context || ''}` }]
       });
       res.json({ success: true, reaction: response.content[0].text });
     } else {
       // Fallback without AI
       const fallbacks = [
-        'Another day in Pump Town, another reason to question my life choices as mayor! 👑',
+        'Another day in Degens City, another reason to question my life choices as mayor! 👑',
         'CITIZENS! I have NO comment at this time. Actually wait — LFG! 🚀',
         'The chaos level is... concerning. But also kind of exciting? Is that bad? 🔥',
         'I didn\'t sign up for this. Actually I did. WAGMI! ...probably. 😅'
@@ -6096,7 +6096,7 @@ async function mayorRoastPlayer() {
           model: 'claude-sonnet-4-20250514',
           max_tokens: 100,
           system: `You are Mayor Satoshi McPump, the unhinged crypto-degen mayor. Write a SHORT funny roast (1-2 sentences) of a citizen. Be playful not mean. Use crypto/degen slang. NO asterisks.`,
-          messages: [{ role: 'user', content: `Roast ${target} in Pump Town. They're ${isNpc ? 'an NPC citizen known as ' + (NPC_PROFILES[target]?.role || 'a degen') : 'a player visiting the city'}. Chaos level: ${cityEngine.chaosLevel}%. Keep it under 30 words.` }]
+          messages: [{ role: 'user', content: `Roast ${target} in Degens City. They're ${isNpc ? 'an NPC citizen known as ' + (NPC_PROFILES[target]?.role || 'a degen') : 'a player visiting the city'}. Chaos level: ${cityEngine.chaosLevel}%. Keep it under 30 words.` }]
         });
         roast = resp.content[0].text;
       } catch (e) { roast = null; }
@@ -6135,7 +6135,7 @@ async function mayorPrediction() {
         const resp = await anthropic.messages.create({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 80,
-          system: `You are Mayor Satoshi McPump. Make a SHORT dramatic prediction about what will happen in Pump Town next. Be specific, funny, and dramatic. Use crypto slang. NO asterisks. Under 25 words.`,
+          system: `You are Mayor Satoshi McPump. Make a SHORT dramatic prediction about what will happen in Degens City next. Be specific, funny, and dramatic. Use crypto slang. NO asterisks. Under 25 words.`,
           messages: [{ role: 'user', content: `Make a prediction. Current state: Chaos ${cityEngine.chaosLevel}%, Approval ${cityEngine.mayorApproval}%, Sentiment: ${cityEngine.marketSentiment}, Weather: ${cityLiveData.weather}. Active feuds: ${cityEngine.activeFeud ? 'yes' : 'no'}. Active disasters: ${cityLiveData.cityDisaster ? 'yes' : 'no'}.` }]
         });
         prediction = resp.content[0].text;
@@ -6202,7 +6202,7 @@ async function mayorHotTake() {
         const resp = await anthropic.messages.create({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 80,
-          system: `You are Mayor Satoshi McPump. Give a HOT TAKE about something happening in crypto or Pump Town. Be controversial, funny, dramatic. Under 25 words. NO asterisks.`,
+          system: `You are Mayor Satoshi McPump. Give a HOT TAKE about something happening in crypto or Degens City. Be controversial, funny, dramatic. Under 25 words. NO asterisks.`,
           messages: [{ role: 'user', content: `Give a hot take. Chaos: ${cityEngine.chaosLevel}%, Weather: ${cityLiveData.weather}, Sentiment: ${cityEngine.marketSentiment}. What's your spiciest opinion right now?` }]
         });
         hotTake = resp.content[0].text;
@@ -6212,11 +6212,11 @@ async function mayorHotTake() {
     if (!hotTake) {
       hotTake = pick([
         `HOT TAKE: Half the "diamond hands" in this city are just people who forgot their wallet password 💎🔐`,
-        `HOT TAKE: NPCs in Pump Town trade better than 90% of crypto Twitter. And they're literally scripted. 🤖`,
+        `HOT TAKE: NPCs in Degens City trade better than 90% of crypto Twitter. And they're literally scripted. 🤖`,
         `HOT TAKE: The real rug was the friends we didn't make along the way 🧹`,
         `HOT TAKE: Anyone who says "this is not financial advice" is about to give TERRIBLE financial advice 📉`,
         `HOT TAKE: My city runs on chaos and copium and honestly? It's more stable than most L2s 🏛️`,
-        `HOT TAKE: The best investment in Pump Town is a good psychiatrist. Trust me, the NPCs need one. 🧠`,
+        `HOT TAKE: The best investment in Degens City is a good psychiatrist. Trust me, the NPCs need one. 🧠`,
         `HOT TAKE: If you haven't been rugged at least once, you haven't truly lived in this city 🧹💀`,
         `HOT TAKE: I could run this city better as a JPEG. Actually... don't give me ideas. 🖼️`
       ]);
@@ -6348,7 +6348,7 @@ app.get('/api/health', async (req, res) => {
 // ==================== START SERVER ====================
 
 app.listen(PORT, () => {
-  console.log(`🏛️ Pump Town Backend on port ${PORT}`);
+  console.log(`🏛️ Degens City Backend on port ${PORT}`);
   console.log(`🤖 AI Mayor: ${anthropic ? 'ENABLED ✅' : 'DISABLED (set CLAUDE_API_KEY)'}`);
   console.log(`🤖 Agent API: ENABLED ✅`);
   console.log(`⚖️ Justice System: ENABLED ✅`);
