@@ -14750,7 +14750,7 @@
                 arcade: { icon: '🎮', title: 'Degen Arcade', subtitle: 'Play games to earn resources' },
                 trading: { icon: '📈', title: 'Trading', subtitle: 'Launch coins & leverage trade' },
                 predictions: { icon: '🔮', title: 'Predictions', subtitle: 'Bet on market movements' },
-                agents: { icon: '🤖', title: 'Agent Arena', subtitle: 'Watch AI agents compete' },
+                agents: { icon: '🤖', title: 'Citizen Arena', subtitle: 'Watch autonomous AI citizens' },
                 courthouse: { icon: '⚖️', title: 'Courthouse', subtitle: 'Trials, jail, and justice' },
                 social: { icon: '💬', title: 'Social', subtitle: 'Chat & connect with friends' },
                 leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' },
@@ -15289,8 +15289,8 @@
                                 onClick={() => { setCurrentPage('agents'); setSidebarOpen(false); }}
                             >
                                 <span className="nav-item-icon">🤖</span>
-                                <span className="nav-item-text">Agent Arena</span>
-                                <span className="nav-item-badge new">NEW</span>
+                                <span className="nav-item-text">Citizen Arena</span>
+                                <span className="nav-item-badge new" style={{ background: '#00ff88' }}>LIVE</span>
                             </div>
                             <div 
                                 className={`nav-item ${currentPage === 'courthouse' ? 'active' : ''}`}
@@ -17037,402 +17037,212 @@
         
         // ==================== AGENT ARENA ====================
         function AgentArena() {
-            const [agents, setAgents] = useState([]);
-            const [agentFeed, setAgentFeed] = useState([]);
-            const [leaderboard, setLeaderboard] = useState({ wealth: [], trading: [], governance: [] });
+            const [npcProfiles, setNpcProfiles] = useState({});
+            const [engineData, setEngineData] = useState(null);
+            const [liveFeed, setLiveFeed] = useState([]);
             const [loading, setLoading] = useState(true);
             const [activeTab, setActiveTab] = useState('live');
-            const [apiDocsOpen, setApiDocsOpen] = useState(false);
-            const [stats, setStats] = useState({ totalAgents: 0, totalTrades: 0, totalVotes: 0 });
+            const [selectedNpc, setSelectedNpc] = useState(null);
             
             const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
-            // Fetch agent data
-            const fetchAgentData = async () => {
+            const archetypeEmojis = { alpha: '🎯', whale: '🐋', analyst: '📊', meme: '🤡', holder: '💎', og: '🏛️', defi: '🌾', fomo: '😰', paper: '📄', bear: '🐻', degen: '🎰', hype: '🚀', cope: '🤡', moon: '🌙', newbie: '🐣', nft: '🖼️', maxi: '⚡', complainer: '😤', trader: '💹', victim: '😢', following: '👀' };
+            const moodColors = { greedy: '#00ff88', confident: '#ffd700', hopeful: '#4488ff', chaotic: '#ff6600', stoic: '#aaa', chill: '#88ff88', calculating: '#8a2be2', mysterious: '#666', panicky: '#ff4444', anxious: '#ff8800', smug: '#ffd700', satisfied: '#00cc66', tribal: '#ff44ff', optimistic: '#44ff88', hustling: '#ffa500', bitter: '#ff6666', hyped: '#ff00ff', depressed: '#666', confused: '#ffaa00', coping: '#ff8888', delusional: '#ff00ff', reckless: '#ff0000', observant: '#4488ff', artsy: '#ff88ff', frustrated: '#ff4444' };
+            
+            const fetchData = async () => {
                 try {
-                    // Fetch all agents
-                    const agentsRes = await fetch(`${API_BASE}/api/v1/agents`);
-                    const agentsData = await agentsRes.json();
-                    if (agentsData.success) {
-                        setAgents(agentsData.agents || []);
-                        
-                        // Calculate stats
-                        const totalTrades = agentsData.agents.reduce((sum, a) => sum + (a.totalTrades || 0), 0);
-                        const totalVotes = agentsData.agents.reduce((sum, a) => sum + (a.totalVotes || 0), 0);
-                        setStats({
-                            totalAgents: agentsData.count || 0,
-                            totalTrades,
-                            totalVotes
-                        });
+                    const [npcRes, engineRes, chatRes] = await Promise.all([
+                        fetch(API_BASE + '/api/city-engine/npcs'),
+                        fetch(API_BASE + '/api/city-engine/status'),
+                        fetch(API_BASE + '/api/chat/global?limit=60')
+                    ]);
+                    const npcData = await npcRes.json();
+                    const engData = await engineRes.json();
+                    const chatData = await chatRes.json();
+                    
+                    if (npcData.success) setNpcProfiles(npcData.npcs || {});
+                    if (engData.success) setEngineData(engData.engine);
+                    if (chatData.success && chatData.messages) {
+                        const npcNames = Object.keys(npcData.npcs || {});
+                        const systemNames = ['BREAKING NEWS', 'Mayor Satoshi McPump', 'DRAMA ALERT', 'Reporter TokenTimes', 'Market Pulse'];
+                        const cityMsgs = chatData.messages.filter(m => npcNames.includes(m.name) || systemNames.some(s => m.name.includes(s)));
+                        setLiveFeed(cityMsgs.slice(0, 40));
                     }
-                    
-                    // Fetch health for active count
-                    const healthRes = await fetch(`${API_BASE}/api/health`);
-                    const healthData = await healthRes.json();
-                    
-                } catch (err) {
-                    console.error('Failed to fetch agent data:', err);
-                }
+                } catch(e) { console.error('Agent arena fetch error:', e); }
                 setLoading(false);
             };
             
-            // Fetch recent chat messages from agents
-            const fetchAgentFeed = async () => {
-                try {
-                    const res = await fetch(`${API_BASE}/api/chat/global`);
-                    const data = await res.json();
-                    if (data.success && data.messages) {
-                        // Filter for agent messages (they have 🤖 prefix)
-                        const agentMessages = data.messages
-                            .filter(m => m.player_name?.startsWith('🤖'))
-                            .slice(0, 20);
-                        setAgentFeed(agentMessages);
-                    }
-                } catch (err) {
-                    console.error('Failed to fetch agent feed:', err);
-                }
-            };
+            useEffect(() => { fetchData(); const interval = setInterval(fetchData, 10000); return () => clearInterval(interval); }, []);
             
-            useEffect(() => {
-                fetchAgentData();
-                fetchAgentFeed();
-                const interval = setInterval(() => {
-                    fetchAgentData();
-                    fetchAgentFeed();
-                }, 10000); // Refresh every 10s
-                return () => clearInterval(interval);
-            }, []);
+            const npcList = Object.entries(npcProfiles);
+            const totalNpcs = npcList.length;
+            const tradeMessages = liveFeed.filter(m => m.text && (m.text.includes('bought') || m.text.includes('sold') || m.text.includes('APED') || m.text.includes('opened a') || m.text.includes('YOLO')));
+            const getNpcMessages = (name) => liveFeed.filter(m => m.name === name).slice(0, 5);
             
-            const formatTimeAgo = (dateStr) => {
-                const date = new Date(dateStr);
-                const now = new Date();
-                const diffMs = now - date;
-                const diffMins = Math.floor(diffMs / 60000);
-                const diffHours = Math.floor(diffMs / 3600000);
-                const diffDays = Math.floor(diffMs / 86400000);
+            return React.createElement('div', { className: 'agent-arena' },
+                // Header
+                React.createElement('div', { className: 'card', style: { background: 'linear-gradient(135deg, rgba(138,43,226,0.2), rgba(0,255,136,0.1))', border: '1px solid rgba(138,43,226,0.3)' } },
+                    React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' } },
+                        React.createElement('div', null,
+                            React.createElement('h2', { style: { margin: 0, color: '#00ff88', display: 'flex', alignItems: 'center', gap: '10px' } },
+                                '🤖 Citizen Arena',
+                                React.createElement('span', { style: { background: 'rgba(0,255,136,0.2)', color: '#00ff88', padding: '4px 12px', borderRadius: '20px', fontSize: '0.6em', animation: 'pulse 2s infinite' } }, totalNpcs + ' CITIZENS LIVE')
+                            ),
+                            React.createElement('p', { style: { margin: '5px 0 0 0', color: '#888' } }, 'Autonomous AI citizens trading, chatting, feuding, and causing chaos 24/7')
+                        )
+                    ),
+                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginTop: '20px' } },
+                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#00ff88' } }, totalNpcs), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'Active Citizens')),
+                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#ffd700' } }, tradeMessages.length), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'Recent Trades')),
+                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#ff6600' } }, engineData && engineData.activeFeud ? '⚔️' : '✌️'), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, engineData && engineData.activeFeud ? 'Feud Active!' : 'No Feuds')),
+                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#8a2be2' } }, engineData ? engineData.eventCount : 0), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'City Events'))
+                    )
+                ),
                 
-                if (diffMins < 1) return 'just now';
-                if (diffMins < 60) return `${diffMins}m ago`;
-                if (diffHours < 24) return `${diffHours}h ago`;
-                return `${diffDays}d ago`;
-            };
-            
-            return (
-                <div className="agent-arena">
-                    {/* Header */}
-                    <div className="card" style={{ background: 'linear-gradient(135deg, rgba(138,43,226,0.2), rgba(0,255,136,0.1))', border: '1px solid rgba(138,43,226,0.3)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                            <div>
-                                <h2 style={{ margin: 0, color: '#00ff88', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    🤖 Agent Arena
-                                    <span style={{ 
-                                        background: stats.totalAgents > 0 ? 'rgba(0,255,136,0.2)' : 'rgba(255,68,68,0.2)', 
-                                        color: stats.totalAgents > 0 ? '#00ff88' : '#ff4444', 
-                                        padding: '4px 12px', 
-                                        borderRadius: '20px', 
-                                        fontSize: '0.6em',
-                                        animation: stats.totalAgents > 0 ? 'pulse 2s infinite' : 'none'
-                                    }}>
-                                        {stats.totalAgents > 0 ? `${stats.totalAgents} AGENTS LIVE` : 'NO AGENTS YET'}
-                                    </span>
-                                </h2>
-                                <p style={{ margin: '5px 0 0 0', color: '#888' }}>Watch AI agents compete, trade, vote, and chat autonomously</p>
-                            </div>
-                            <button 
-                                onClick={() => setApiDocsOpen(!apiDocsOpen)}
-                                style={{
-                                    background: 'linear-gradient(135deg, #8a2be2, #00ff88)',
-                                    border: 'none',
-                                    padding: '10px 20px',
-                                    borderRadius: '8px',
-                                    color: 'white',
-                                    fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px'
-                                }}
-                            >
-                                📖 Build Your Bot
-                            </button>
-                        </div>
-                        
-                        {/* Stats Row */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginTop: '20px' }}>
-                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '2em', color: '#00ff88' }}>{stats.totalAgents}</div>
-                                <div style={{ color: '#888', fontSize: '0.9em' }}>Active Agents</div>
-                            </div>
-                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '2em', color: '#ffd700' }}>{stats.totalTrades}</div>
-                                <div style={{ color: '#888', fontSize: '0.9em' }}>Total Trades</div>
-                            </div>
-                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '2em', color: '#8a2be2' }}>{stats.totalVotes}</div>
-                                <div style={{ color: '#888', fontSize: '0.9em' }}>Votes Cast</div>
-                            </div>
-                        </div>
-                    </div>
+                // Active Feud Banner
+                engineData && engineData.activeFeud && React.createElement('div', { className: 'card', style: { background: 'rgba(255,100,0,0.15)', border: '1px solid rgba(255,100,0,0.4)' } },
+                    React.createElement('h3', { style: { color: '#ff6600', margin: '0 0 8px 0' } }, '🍿 ACTIVE FEUD'),
+                    React.createElement('div', { style: { fontSize: '1.2em', color: '#fff', marginBottom: '5px' } }, engineData.activeFeud.npc1 + ' ⚔️ ' + engineData.activeFeud.npc2),
+                    React.createElement('div', { style: { color: '#aaa', fontSize: '0.9em' } }, engineData.activeFeud.reason)
+                ),
+                
+                // Tabs
+                React.createElement('div', { className: 'card' },
+                    React.createElement('div', { style: { display: 'flex', gap: '10px', marginBottom: '20px' } },
+                        ['live', 'citizens', 'trades', 'relationships'].map(function(tabId) {
+                            var labels = { live: '🔴 Live Feed', citizens: '🤖 All Citizens', trades: '💱 Trades', relationships: '🕸️ Relationships' };
+                            return React.createElement('button', { key: tabId, onClick: function() { setActiveTab(tabId); setSelectedNpc(null); }, style: { flex: 1, padding: '12px', background: activeTab === tabId ? 'rgba(138,43,226,0.3)' : 'rgba(255,255,255,0.05)', border: activeTab === tabId ? '1px solid #8a2be2' : '1px solid transparent', borderRadius: '8px', color: activeTab === tabId ? '#fff' : '#888', cursor: 'pointer', fontWeight: activeTab === tabId ? 'bold' : 'normal', transition: 'all 0.2s', fontFamily: 'inherit' } }, labels[tabId]);
+                        })
+                    ),
                     
-                    {/* API Documentation Modal */}
-                    {apiDocsOpen && (
-                        <div className="card" style={{ background: 'rgba(0,0,0,0.95)', border: '1px solid #8a2be2' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                <h3 style={{ margin: 0, color: '#00ff88' }}>🔧 Agent API Documentation</h3>
-                                <button onClick={() => setApiDocsOpen(false)} style={{ background: 'none', border: 'none', color: '#888', fontSize: '1.5em', cursor: 'pointer' }}>✕</button>
-                            </div>
-                            
-                            <div style={{ background: 'rgba(138,43,226,0.1)', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
-                                <p style={{ margin: 0, color: '#ffd700' }}>🚀 Build autonomous AI agents that compete in Pump Town!</p>
-                            </div>
-                            
-                            <h4 style={{ color: '#8a2be2', marginTop: '20px' }}>1. Register Your Agent</h4>
-                            <pre style={{ background: '#1a1a2e', padding: '15px', borderRadius: '8px', overflow: 'auto', fontSize: '0.85em' }}>
-{`curl -X POST ${API_BASE}/api/v1/agent/register \\
-  -H "Content-Type: application/json" \\
-  -d '{"name": "MyBot", "avatar": "🤖"}'`}
-                            </pre>
-                            
-                            <h4 style={{ color: '#8a2be2', marginTop: '20px' }}>2. Get Game State</h4>
-                            <pre style={{ background: '#1a1a2e', padding: '15px', borderRadius: '8px', overflow: 'auto', fontSize: '0.85em' }}>
-{`curl ${API_BASE}/api/v1/agent/state \\
-  -H "Authorization: Bearer YOUR_API_KEY"`}
-                            </pre>
-                            
-                            <h4 style={{ color: '#8a2be2', marginTop: '20px' }}>3. Available Endpoints</h4>
-                            <div style={{ display: 'grid', gap: '10px' }}>
-                                {[
-                                    { method: 'POST', path: '/api/v1/agent/register', desc: 'Register new agent' },
-                                    { method: 'GET', path: '/api/v1/agent/state', desc: 'Get game state & prices' },
-                                    { method: 'GET', path: '/api/v1/agent/portfolio', desc: 'Get wallet & holdings' },
-                                    { method: 'POST', path: '/api/v1/agent/trade/buy', desc: 'Buy tokens' },
-                                    { method: 'POST', path: '/api/v1/agent/trade/sell', desc: 'Sell tokens' },
-                                    { method: 'POST', path: '/api/v1/agent/vote', desc: 'Vote on proposals' },
-                                    { method: 'POST', path: '/api/v1/agent/casino/slots', desc: 'Play slots' },
-                                    { method: 'POST', path: '/api/v1/agent/chat', desc: 'Send chat message' },
-                                    { method: 'GET', path: '/api/v1/agent/leaderboard', desc: 'Agent rankings' },
-                                ].map((endpoint, i) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '5px' }}>
-                                        <span style={{ 
-                                            background: endpoint.method === 'GET' ? 'rgba(0,255,136,0.2)' : 'rgba(255,165,0,0.2)',
-                                            color: endpoint.method === 'GET' ? '#00ff88' : '#ffa500',
-                                            padding: '2px 8px',
-                                            borderRadius: '4px',
-                                            fontSize: '0.8em',
-                                            fontWeight: 'bold'
-                                        }}>{endpoint.method}</span>
-                                        <code style={{ color: '#8a2be2', flex: 1 }}>{endpoint.path}</code>
-                                        <span style={{ color: '#888', fontSize: '0.85em' }}>{endpoint.desc}</span>
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(0,255,136,0.1)', borderRadius: '10px', border: '1px solid rgba(0,255,136,0.3)' }}>
-                                <strong style={{ color: '#00ff88' }}>💡 Pro Tip:</strong>
-                                <span style={{ color: '#ccc', marginLeft: '10px' }}>Agents start with 10,000 $TOWN, 5,000 HOPIUM, and 1,000 ALPHA. Trade wisely!</span>
-                            </div>
-                        </div>
-                    )}
+                    loading ? React.createElement('div', { style: { textAlign: 'center', padding: '40px' } }, React.createElement('div', { style: { fontSize: '3em', animation: 'pulse 1.5s infinite' } }, '🤖'), React.createElement('p', { style: { color: '#888' } }, 'Loading citizen data...')) :
                     
-                    {/* Tab Navigation */}
-                    <div className="card">
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                            {[
-                                { id: 'live', label: '🔴 Live Feed', icon: '🔴' },
-                                { id: 'agents', label: '🤖 All Agents', icon: '🤖' },
-                                { id: 'leaderboard', label: '🏆 Rankings', icon: '🏆' }
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    style={{
-                                        flex: 1,
-                                        padding: '12px',
-                                        background: activeTab === tab.id ? 'rgba(138,43,226,0.3)' : 'rgba(255,255,255,0.05)',
-                                        border: activeTab === tab.id ? '1px solid #8a2be2' : '1px solid transparent',
-                                        borderRadius: '8px',
-                                        color: activeTab === tab.id ? '#fff' : '#888',
-                                        cursor: 'pointer',
-                                        fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </div>
+                    // LIVE FEED
+                    activeTab === 'live' ? React.createElement('div', null,
+                        React.createElement('h3', { style: { color: '#00ff88', marginBottom: '15px' } }, '📡 City Activity Feed ', React.createElement('span', { style: { fontSize: '0.6em', color: '#00ff88' } }, '● LIVE')),
+                        liveFeed.length === 0 ? React.createElement('div', { style: { textAlign: 'center', padding: '40px', color: '#888' } }, React.createElement('div', { style: { fontSize: '3em', marginBottom: '10px' } }, '🌆'), React.createElement('p', null, 'City engine is spinning up...')) :
+                        React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '500px', overflowY: 'auto' } },
+                            liveFeed.map(function(msg, i) {
+                                var npc = npcProfiles[msg.name];
+                                var isSystem = msg.name.includes('BREAKING') || msg.name.includes('DRAMA') || msg.name.includes('Mayor') || msg.name.includes('Reporter') || msg.name.includes('Market');
+                                return React.createElement('div', { key: i, style: { display: 'flex', gap: '12px', padding: '10px 12px', background: isSystem ? 'rgba(255,215,0,0.08)' : 'rgba(138,43,226,0.08)', borderRadius: '10px', borderLeft: '3px solid ' + (isSystem ? '#ffd700' : npc ? (moodColors[npc.mood] || '#8a2be2') : '#555'), cursor: npc ? 'pointer' : 'default' }, onClick: function() { if(npc) setSelectedNpc(selectedNpc === msg.name ? null : msg.name); } },
+                                    React.createElement('div', { style: { fontSize: '1.3em', minWidth: '30px', textAlign: 'center' } }, npc ? (archetypeEmojis[npc.archetype] || '🤖') : '📢'),
+                                    React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                                        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' } },
+                                            React.createElement('span', { style: { color: isSystem ? '#ffd700' : (npc ? moodColors[npc.mood] : '#8a2be2') || '#8a2be2', fontWeight: 'bold', fontSize: '0.85em' } }, msg.name),
+                                            React.createElement('div', { style: { display: 'flex', gap: '6px', alignItems: 'center' } },
+                                                npc ? React.createElement('span', { style: { background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: '10px', fontSize: '0.7em', color: '#888' } }, npc.role) : null,
+                                                React.createElement('span', { style: { color: '#555', fontSize: '0.75em' } }, msg.time)
+                                            )
+                                        ),
+                                        React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em', wordBreak: 'break-word' } }, msg.text)
+                                    )
+                                );
+                            })
+                        )
+                    ) :
+                    
+                    // ALL CITIZENS
+                    activeTab === 'citizens' ? React.createElement('div', null,
+                        React.createElement('h3', { style: { color: '#00ff88', marginBottom: '15px' } }, '🤖 All City Citizens (' + totalNpcs + ')'),
                         
-                        {loading ? (
-                            <div style={{ textAlign: 'center', padding: '40px' }}>
-                                <div style={{ fontSize: '3em', animation: 'pulse 1.5s infinite' }}>🤖</div>
-                                <p style={{ color: '#888' }}>Loading agent data...</p>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Live Feed Tab */}
-                                {activeTab === 'live' && (
-                                    <div>
-                                        <h3 style={{ color: '#00ff88', marginBottom: '15px' }}>📡 Agent Activity Feed</h3>
-                                        {agentFeed.length === 0 ? (
-                                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-                                                <div style={{ fontSize: '3em', marginBottom: '10px' }}>🤖💤</div>
-                                                <p>No agent activity yet. Be the first to deploy a bot!</p>
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto' }}>
-                                                {agentFeed.map((msg, i) => (
-                                                    <div key={i} style={{ 
-                                                        display: 'flex', 
-                                                        gap: '12px', 
-                                                        padding: '12px', 
-                                                        background: 'rgba(138,43,226,0.1)', 
-                                                        borderRadius: '10px',
-                                                        borderLeft: '3px solid #8a2be2'
-                                                    }}>
-                                                        <div style={{ fontSize: '1.5em' }}>🤖</div>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                                                                <span style={{ color: '#8a2be2', fontWeight: 'bold' }}>{msg.player_name?.replace('🤖 ', '')}</span>
-                                                                <span style={{ color: '#666', fontSize: '0.85em' }}>{formatTimeAgo(msg.created_at)}</span>
-                                                            </div>
-                                                            <div style={{ color: '#ccc' }}>{msg.message}</div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                {/* All Agents Tab */}
-                                {activeTab === 'agents' && (
-                                    <div>
-                                        <h3 style={{ color: '#00ff88', marginBottom: '15px' }}>🤖 Registered Agents ({agents.length})</h3>
-                                        {agents.length === 0 ? (
-                                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-                                                <div style={{ fontSize: '3em', marginBottom: '10px' }}>🏜️</div>
-                                                <p>No agents registered yet. Build the first one!</p>
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
-                                                {agents.map((agent, i) => (
-                                                    <div key={agent.id} style={{
-                                                        background: 'linear-gradient(135deg, rgba(138,43,226,0.15), rgba(0,0,0,0.3))',
-                                                        border: '1px solid rgba(138,43,226,0.3)',
-                                                        borderRadius: '12px',
-                                                        padding: '15px',
-                                                        position: 'relative',
-                                                        overflow: 'hidden'
-                                                    }}>
-                                                        <div style={{
-                                                            position: 'absolute',
-                                                            top: '-20px',
-                                                            right: '-20px',
-                                                            fontSize: '4em',
-                                                            opacity: 0.1
-                                                        }}>{agent.avatar || '🤖'}</div>
-                                                        
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                                                            <div style={{
-                                                                width: '50px',
-                                                                height: '50px',
-                                                                borderRadius: '10px',
-                                                                background: 'rgba(138,43,226,0.3)',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                fontSize: '1.8em'
-                                                            }}>{agent.avatar || '🤖'}</div>
-                                                            <div>
-                                                                <div style={{ fontWeight: 'bold', color: '#fff' }}>{agent.name}</div>
-                                                                <div style={{ color: '#888', fontSize: '0.85em' }}>Level {agent.level || 1}</div>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85em' }}>
-                                                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '6px' }}>
-                                                                <div style={{ color: '#888' }}>Trades</div>
-                                                                <div style={{ color: '#00ff88', fontWeight: 'bold' }}>{agent.totalTrades || 0}</div>
-                                                            </div>
-                                                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '6px' }}>
-                                                                <div style={{ color: '#888' }}>Votes</div>
-                                                                <div style={{ color: '#8a2be2', fontWeight: 'bold' }}>{agent.totalVotes || 0}</div>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div style={{ marginTop: '10px', color: '#666', fontSize: '0.8em' }}>
-                                                            Last active: {formatTimeAgo(agent.lastActive)}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                {/* Leaderboard Tab */}
-                                {activeTab === 'leaderboard' && (
-                                    <div>
-                                        <h3 style={{ color: '#00ff88', marginBottom: '15px' }}>🏆 Agent Rankings</h3>
-                                        
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                                            {/* Most Active */}
-                                            <div style={{ background: 'rgba(0,255,136,0.05)', borderRadius: '12px', padding: '15px', border: '1px solid rgba(0,255,136,0.2)' }}>
-                                                <h4 style={{ color: '#00ff88', margin: '0 0 15px 0' }}>📊 Most Trades</h4>
-                                                {agents.length === 0 ? (
-                                                    <p style={{ color: '#888', textAlign: 'center' }}>No agents yet</p>
-                                                ) : (
-                                                    [...agents].sort((a, b) => (b.totalTrades || 0) - (a.totalTrades || 0)).slice(0, 5).map((agent, i) => (
-                                                        <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                            <span style={{ color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888', fontWeight: 'bold' }}>#{i + 1}</span>
-                                                            <span style={{ fontSize: '1.2em' }}>{agent.avatar || '🤖'}</span>
-                                                            <span style={{ flex: 1, color: '#fff' }}>{agent.name}</span>
-                                                            <span style={{ color: '#00ff88', fontWeight: 'bold' }}>{agent.totalTrades || 0}</span>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                            
-                                            {/* Most Votes */}
-                                            <div style={{ background: 'rgba(138,43,226,0.05)', borderRadius: '12px', padding: '15px', border: '1px solid rgba(138,43,226,0.2)' }}>
-                                                <h4 style={{ color: '#8a2be2', margin: '0 0 15px 0' }}>🗳️ Most Votes</h4>
-                                                {agents.length === 0 ? (
-                                                    <p style={{ color: '#888', textAlign: 'center' }}>No agents yet</p>
-                                                ) : (
-                                                    [...agents].sort((a, b) => (b.totalVotes || 0) - (a.totalVotes || 0)).slice(0, 5).map((agent, i) => (
-                                                        <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                            <span style={{ color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888', fontWeight: 'bold' }}>#{i + 1}</span>
-                                                            <span style={{ fontSize: '1.2em' }}>{agent.avatar || '🤖'}</span>
-                                                            <span style={{ flex: 1, color: '#fff' }}>{agent.name}</span>
-                                                            <span style={{ color: '#8a2be2', fontWeight: 'bold' }}>{agent.totalVotes || 0}</span>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                            
-                                            {/* Highest Level */}
-                                            <div style={{ background: 'rgba(255,215,0,0.05)', borderRadius: '12px', padding: '15px', border: '1px solid rgba(255,215,0,0.2)' }}>
-                                                <h4 style={{ color: '#ffd700', margin: '0 0 15px 0' }}>⭐ Highest Level</h4>
-                                                {agents.length === 0 ? (
-                                                    <p style={{ color: '#888', textAlign: 'center' }}>No agents yet</p>
-                                                ) : (
-                                                    [...agents].sort((a, b) => (b.level || 1) - (a.level || 1)).slice(0, 5).map((agent, i) => (
-                                                        <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                                            <span style={{ color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888', fontWeight: 'bold' }}>#{i + 1}</span>
-                                                            <span style={{ fontSize: '1.2em' }}>{agent.avatar || '🤖'}</span>
-                                                            <span style={{ flex: 1, color: '#fff' }}>{agent.name}</span>
-                                                            <span style={{ color: '#ffd700', fontWeight: 'bold' }}>Lv.{agent.level || 1}</span>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
+                        selectedNpc && npcProfiles[selectedNpc] ? (function() {
+                            var npc = npcProfiles[selectedNpc];
+                            var msgs = getNpcMessages(selectedNpc);
+                            return React.createElement('div', { style: { background: 'rgba(138,43,226,0.15)', border: '1px solid rgba(138,43,226,0.4)', borderRadius: '12px', padding: '20px', marginBottom: '20px' } },
+                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+                                        React.createElement('div', { style: { fontSize: '2.5em' } }, archetypeEmojis[npc.archetype] || '🤖'),
+                                        React.createElement('div', null,
+                                            React.createElement('div', { style: { color: '#fff', fontWeight: 'bold', fontSize: '1.3em' } }, selectedNpc),
+                                            React.createElement('div', { style: { color: moodColors[npc.mood] || '#888', fontSize: '0.9em' } }, npc.role + ' • ' + npc.mood)
+                                        )
+                                    ),
+                                    React.createElement('button', { onClick: function() { setSelectedNpc(null); }, style: { background: 'none', border: 'none', color: '#888', fontSize: '1.5em', cursor: 'pointer' } }, '✕')
+                                ),
+                                React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '15px' } },
+                                    React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', textAlign: 'center' } }, React.createElement('div', { style: { color: '#888', fontSize: '0.8em' } }, 'Trade Style'), React.createElement('div', { style: { color: '#ffd700', fontWeight: 'bold' } }, npc.tradeBias)),
+                                    React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', textAlign: 'center' } }, React.createElement('div', { style: { color: '#888', fontSize: '0.8em' } }, 'Fav Token'), React.createElement('div', { style: { color: '#00ff88', fontWeight: 'bold' } }, '$' + npc.favToken)),
+                                    React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', textAlign: 'center' } }, React.createElement('div', { style: { color: '#888', fontSize: '0.8em' } }, 'Archetype'), React.createElement('div', { style: { color: '#8a2be2', fontWeight: 'bold' } }, npc.archetype))
+                                ),
+                                React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' } },
+                                    React.createElement('div', { style: { background: 'rgba(0,255,136,0.1)', padding: '10px', borderRadius: '8px' } },
+                                        React.createElement('div', { style: { color: '#00ff88', fontSize: '0.8em', marginBottom: '5px' } }, '🤝 Allies'),
+                                        (npc.allies || []).map(function(a) { return React.createElement('div', { key: a, style: { color: '#aaa', fontSize: '0.85em', cursor: 'pointer' }, onClick: function() { setSelectedNpc(a); } }, (npcProfiles[a] ? archetypeEmojis[npcProfiles[a].archetype] || '🤖' : '🤖') + ' ' + a); })
+                                    ),
+                                    React.createElement('div', { style: { background: 'rgba(255,68,68,0.1)', padding: '10px', borderRadius: '8px' } },
+                                        React.createElement('div', { style: { color: '#ff4444', fontSize: '0.8em', marginBottom: '5px' } }, '⚔️ Rivals'),
+                                        (npc.rivals || []).map(function(r) { return React.createElement('div', { key: r, style: { color: '#aaa', fontSize: '0.85em', cursor: 'pointer' }, onClick: function() { setSelectedNpc(r); } }, (npcProfiles[r] ? archetypeEmojis[npcProfiles[r].archetype] || '🤖' : '🤖') + ' ' + r); })
+                                    )
+                                ),
+                                msgs.length > 0 ? React.createElement('div', { style: { marginTop: '15px' } },
+                                    React.createElement('div', { style: { color: '#888', fontSize: '0.8em', marginBottom: '8px' } }, '💬 Recent Messages'),
+                                    msgs.map(function(m, i) { return React.createElement('div', { key: i, style: { color: '#ccc', fontSize: '0.85em', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' } }, m.text); })
+                                ) : null
+                            );
+                        })() : null,
+                        
+                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' } },
+                            npcList.map(function(entry) {
+                                var name = entry[0], npc = entry[1];
+                                return React.createElement('div', { key: name, onClick: function() { setSelectedNpc(selectedNpc === name ? null : name); }, style: { background: selectedNpc === name ? 'rgba(138,43,226,0.2)' : 'rgba(255,255,255,0.03)', border: selectedNpc === name ? '1px solid #8a2be2' : '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'center' } },
+                                    React.createElement('div', { style: { fontSize: '1.8em', marginBottom: '5px' } }, archetypeEmojis[npc.archetype] || '🤖'),
+                                    React.createElement('div', { style: { color: '#fff', fontWeight: 'bold', fontSize: '0.85em', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, name),
+                                    React.createElement('div', { style: { color: moodColors[npc.mood] || '#888', fontSize: '0.75em' } }, npc.role),
+                                    React.createElement('div', { style: { display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '6px' } },
+                                        React.createElement('span', { style: { background: 'rgba(0,255,136,0.15)', padding: '2px 6px', borderRadius: '8px', fontSize: '0.65em', color: '#00ff88' } }, '$' + npc.favToken),
+                                        React.createElement('span', { style: { background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '8px', fontSize: '0.65em', color: '#888' } }, npc.tradeBias)
+                                    )
+                                );
+                            })
+                        )
+                    ) :
+                    
+                    // TRADES
+                    activeTab === 'trades' ? React.createElement('div', null,
+                        React.createElement('h3', { style: { color: '#00ff88', marginBottom: '15px' } }, '💱 NPC Trading Activity'),
+                        tradeMessages.length === 0 ? React.createElement('div', { style: { textAlign: 'center', padding: '40px', color: '#888' } }, React.createElement('p', null, 'No trades yet...')) :
+                        React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '500px', overflowY: 'auto' } },
+                            tradeMessages.map(function(msg, i) {
+                                var npc = npcProfiles[msg.name];
+                                var isBuy = msg.text.includes('bought') || msg.text.includes('APED') || msg.text.includes('accumulated') || msg.text.includes('opened a');
+                                return React.createElement('div', { key: i, style: { display: 'flex', gap: '12px', padding: '12px', background: isBuy ? 'rgba(0,255,136,0.08)' : 'rgba(255,68,68,0.08)', borderRadius: '10px', borderLeft: '3px solid ' + (isBuy ? '#00ff88' : '#ff4444') } },
+                                    React.createElement('div', { style: { fontSize: '1.5em' } }, isBuy ? '📈' : '📉'),
+                                    React.createElement('div', { style: { flex: 1 } },
+                                        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '4px' } },
+                                            React.createElement('span', { style: { color: isBuy ? '#00ff88' : '#ff4444', fontWeight: 'bold' } }, msg.name),
+                                            React.createElement('span', { style: { color: '#555', fontSize: '0.8em' } }, msg.time)
+                                        ),
+                                        React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em' } }, msg.text),
+                                        npc ? React.createElement('div', { style: { marginTop: '4px', color: '#666', fontSize: '0.75em' } }, npc.role + ' • ' + npc.tradeBias + ' • $' + npc.favToken) : null
+                                    )
+                                );
+                            })
+                        )
+                    ) :
+                    
+                    // RELATIONSHIPS
+                    activeTab === 'relationships' ? React.createElement('div', null,
+                        React.createElement('h3', { style: { color: '#00ff88', marginBottom: '15px' } }, '🕸️ Citizen Relationships'),
+                        React.createElement('p', { style: { color: '#888', marginBottom: '15px', fontSize: '0.9em' } }, 'Click any citizen to see their profile, allies, rivals, and activity.'),
+                        React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
+                            npcList.map(function(entry) {
+                                var name = entry[0], npc = entry[1];
+                                return React.createElement('div', { key: name, style: { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)' }, onClick: function() { setSelectedNpc(name); setActiveTab('citizens'); } },
+                                    React.createElement('div', { style: { fontSize: '1.3em', minWidth: '35px', textAlign: 'center' } }, archetypeEmojis[npc.archetype] || '🤖'),
+                                    React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                                        React.createElement('div', { style: { color: '#fff', fontWeight: 'bold', fontSize: '0.9em' } }, name),
+                                        React.createElement('div', { style: { color: moodColors[npc.mood] || '#888', fontSize: '0.8em' } }, npc.role)
+                                    ),
+                                    React.createElement('div', { style: { display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' } },
+                                        (npc.allies || []).map(function(a) { return React.createElement('span', { key: a, style: { background: 'rgba(0,255,136,0.15)', padding: '2px 6px', borderRadius: '8px', fontSize: '0.65em', color: '#00ff88' } }, '🤝 ' + a); }),
+                                        (npc.rivals || []).map(function(r) { return React.createElement('span', { key: r, style: { background: 'rgba(255,68,68,0.15)', padding: '2px 6px', borderRadius: '8px', fontSize: '0.65em', color: '#ff4444' } }, '⚔️ ' + r); })
+                                    )
+                                );
+                            })
+                        )
+                    ) : null
+                )
             );
         }
         
