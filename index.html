@@ -14062,32 +14062,14 @@
                             stats: data.stats,
                             currentVote: {
                                 id: data.currentVote.id,
-                                question: data.currentVote.question || "A time traveler appeared claiming they're from 2030. They say $TOWN will either moon 1000x or go to zero depending on today's vote.",
+                                question: data.currentVote.question || "The city awaits a new vote...",
                                 options: data.currentVote.options || [
-                                    {
-                                        id: 'A',
-                                        title: 'Follow the Prophecy 🔮',
-                                        description: 'Do exactly what the time traveler says. They recommended burning 50% of treasury.',
-                                        effects: [
-                                            { stat: 'Treasury', value: -50, type: 'negative' },
-                                            { stat: 'Morale', value: 20, type: 'positive' },
-                                            { stat: 'Reputation', value: 25, type: 'positive' }
-                                        ]
-                                    },
-                                    {
-                                        id: 'B',
-                                        title: 'Ignore the Schizo 🧠',
-                                        description: "Time travel isn't real. This person needs help. Call security.",
-                                        effects: [
-                                            { stat: 'Morale', value: -10, type: 'negative' },
-                                            { stat: 'Crime', value: -5, type: 'positive' },
-                                            { stat: 'Treasury', value: 5, type: 'positive' }
-                                        ]
-                                    }
+                                    { id: 'A', title: 'Awaiting Options...', description: 'New vote generating soon.', effects: [{ stat: 'morale', value: 5, type: 'positive' }] },
+                                    { id: 'B', title: 'Patience, degen', description: 'The mayor is cooking something up.', effects: [{ stat: 'culture', value: 5, type: 'positive' }] }
                                 ],
                                 timeRemaining: data.currentVote.timeRemaining,
                                 endsAt: data.currentVote.endsAt,
-                                mayorQuote: data.currentVote.mayorQuote || "Look, they showed me some wild shit. Flying cars, robot mayors, the works. Could be legit. Could be a schizo. Either way, pressure's on."
+                                mayorQuote: data.currentVote.mayorQuote || "Hold tight citizens, the next vote is being prepared..."
                             },
                             voteHistory: mergedHistory,
                             leaderboard: [
@@ -14650,7 +14632,7 @@
             // Function to get current vote based on time cycle
             const getCurrentVoteFromPool = () => {
                 // Use time-based selection so everyone sees the same vote
-                const CYCLE_MS = 6 * 60 * 60 * 1000; // 6 hours
+                const CYCLE_MS = 2 * 60 * 60 * 1000; // 6 hours
                 const now = Date.now();
                 
                 // Calculate cycle number since a fixed epoch
@@ -33484,7 +33466,7 @@ Play at pump-town.xyz
             // Calculate time remaining in current 6-hour cycle CLIENT-SIDE
             // This ensures the timer is always accurate regardless of backend
             const calculateTimeRemaining = () => {
-                const CYCLE_MS = 6 * 60 * 60 * 1000; // 6 hours in ms
+                const CYCLE_MS = 2 * 60 * 60 * 1000; // 6 hours in ms
                 const now = Date.now();
                 
                 // Align to 6-hour windows starting from midnight UTC
