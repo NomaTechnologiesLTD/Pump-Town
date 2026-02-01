@@ -1096,69 +1096,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ==================== GUEST LOGIN ====================
-
-app.post('/api/guest-login', async (req, res) => {
-  try {
-    // Generate a unique guest identifier
-    const guestId = 'guest_' + crypto.randomBytes(8).toString('hex');
-    const guestEmail = guestId + '@guest.degenscity.com';
-    
-    // Create a guest user row (no real password - random hash so it can't be logged into)
-    const fakePasswordHash = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 4);
-    const result = await pool.query(
-      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id',
-      [guestEmail, fakePasswordHash]
-    );
-    
-    console.log('👻 Guest login:', guestId);
-    res.json({ success: true, userId: result.rows[0].id, guestId, guestEmail });
-  } catch (err) {
-    console.error('Guest login error:', err);
-    res.status(500).json({ success: false, error: 'Guest login failed' });
-  }
-});
-
-// ==================== UPGRADE GUEST TO FULL ACCOUNT ====================
-
-app.post('/api/upgrade-guest', async (req, res) => {
-  const { guestEmail, newEmail, password } = req.body;
-  if (!guestEmail || !newEmail || !password) return res.status(400).json({ success: false, error: 'All fields required' });
-  if (password.length < 6) return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
-  if (!guestEmail.includes('@guest.degenscity.com')) return res.status(400).json({ success: false, error: 'Not a guest account' });
-  
-  try {
-    // Check if the new email is already taken
-    const existing = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [newEmail]);
-    if (existing.rows.length > 0) return res.status(400).json({ success: false, error: 'Email already registered' });
-    
-    // Check if guest account exists
-    const guestResult = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [guestEmail]);
-    if (guestResult.rows.length === 0) return res.status(400).json({ success: false, error: 'Guest account not found' });
-    
-    const passwordHash = await bcrypt.hash(password, 10);
-    
-    // Update the user record: swap guest email to real email and set real password
-    await pool.query('UPDATE users SET email = $1, password_hash = $2 WHERE LOWER(email) = LOWER($3)', [newEmail.toLowerCase(), passwordHash, guestEmail]);
-    
-    // Update the character record to the new email
-    await pool.query('UPDATE characters SET email = $1 WHERE LOWER(email) = LOWER($2)', [newEmail.toLowerCase(), guestEmail]);
-    
-    // Update votes
-    await pool.query('UPDATE votes SET email = $1 WHERE LOWER(email) = LOWER($2)', [newEmail.toLowerCase(), guestEmail]);
-    
-    // Update chat messages player name stays the same, but we track by email in some places
-    // Update activity feed stays by player_name so no change needed
-    
-    console.log('⬆️ Guest upgraded:', guestEmail, '→', newEmail);
-    sendWelcomeEmail(newEmail);
-    res.json({ success: true, newEmail: newEmail.toLowerCase() });
-  } catch (err) {
-    console.error('Upgrade guest error:', err);
-    res.status(500).json({ success: false, error: 'Upgrade failed' });
-  }
-});
-
 app.post('/api/forgot-password', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ success: false, error: 'Email required' });
