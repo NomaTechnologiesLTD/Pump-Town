@@ -20766,153 +20766,187 @@
         function CityPulse() {
             const [engineData, setEngineData] = useState(null);
             const [loading, setLoading] = useState(true);
-            const [expandedSection, setExpandedSection] = useState(null);
+            const [chatMessages, setChatMessages] = useState([]);
+            const [flashEvent, setFlashEvent] = useState(null);
+            const [prevActionCount, setPrevActionCount] = useState(0);
             const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const fetchEngine = async () => {
                 try {
-                    const res = await fetch(API_BASE + '/api/city-engine/status');
-                    const data = await res.json();
-                    if (data.success) setEngineData(data.engine);
+                    const [engRes, chatRes] = await Promise.all([
+                        fetch(API_BASE + '/api/city-engine/status'),
+                        fetch(API_BASE + '/api/chat/global?limit=20')
+                    ]);
+                    const engData = await engRes.json();
+                    const chatData = await chatRes.json();
+                    if (engData.success) {
+                        var e = engData.engine;
+                        // Flash new events
+                        var acts = e.actionLog || [];
+                        if (acts.length > 0 && prevActionCount > 0 && acts.length !== prevActionCount) {
+                            setFlashEvent(acts[0]);
+                            setTimeout(function() { setFlashEvent(null); }, 5000);
+                        }
+                        setPrevActionCount(acts.length);
+                        setEngineData(e);
+                    }
+                    if (chatData.success && chatData.messages) setChatMessages(chatData.messages.slice(0, 15));
                 } catch(e) { console.error('CityPulse error:', e); }
                 setLoading(false);
             };
-            useEffect(function() { fetchEngine(); var iv = setInterval(fetchEngine, 12000); return function() { clearInterval(iv); }; }, []);
+            useEffect(function() { fetchEngine(); var iv = setInterval(fetchEngine, 8000); return function() { clearInterval(iv); }; }, [prevActionCount]);
             
-            if (loading || !engineData) return React.createElement('div', { className: 'card', style: { textAlign: 'center', padding: '30px' } }, React.createElement('div', { style: { fontSize: '2em', animation: 'pulse 1.5s infinite' } }, '🌆'), React.createElement('p', { style: { color: '#888' } }, 'Loading city...'));
+            if (loading || !engineData) return React.createElement('div', { style: { textAlign: 'center', padding: '60px 20px' } }, React.createElement('div', { style: { fontSize: '4em', animation: 'pulse 1s infinite' } }, '🌆'), React.createElement('p', { style: { color: '#888', marginTop: '15px' } }, 'Connecting to Pump Town...'));
             
-            var sentimentEmojis = { bull: '🐂', bear: '🐻', mania: '🤑', panic: '😱', neutral: '😐' };
-            var sentimentColors = { bull: '#00ff88', bear: '#ff4444', mania: '#ffd700', panic: '#ff6600', neutral: '#888' };
             var cs = engineData.cityStats || {};
             var actions = engineData.actionLog || [];
-            var topActions = actions.slice(0, 6);
+            var chaos = engineData.chaosLevel || 0;
+            var approval = engineData.mayorApproval || 50;
+            var weather = engineData.weather || 'clear';
+            var wEmojis = { clear:'☀️', rain:'🌧️', storm:'⛈️', fog:'🌫️', snow:'❄️', heatwave:'🔥', aurora:'🌌', blood_moon:'🌑', rainbow:'🌈' };
+            var chaosText = chaos > 80 ? 'ABSOLUTE MAYHEM' : chaos > 60 ? 'OUT OF CONTROL' : chaos > 40 ? 'GETTING WILD' : chaos > 20 ? 'Slightly Chaotic' : 'Suspiciously Calm';
+            var chaosColor = chaos > 80 ? '#ff0000' : chaos > 60 ? '#ff4444' : chaos > 40 ? '#ff8800' : chaos > 20 ? '#ffd700' : '#00ff88';
+            var bgGlow = chaos > 60 ? 'rgba(255,0,0,0.08)' : chaos > 40 ? 'rgba(255,136,0,0.06)' : 'rgba(0,255,136,0.04)';
             
-            return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } },
-                // MAIN STATS BAR
-                React.createElement('div', { className: 'card', style: { background: 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(138,43,226,0.1))', border: '1px solid rgba(0,255,136,0.2)', padding: '15px' } },
+            var typeIcons = { memecoin_launch:'🚀', memecoin_rugged:'💀', memecoin_pump:'📈', business_opened:'🏪', protest_started:'✊', riot:'🔥', gang_formed:'🏴', gang_war:'⚔️', cult_formed:'🙏', structure_built:'🏗️', npc_election:'🗳️', hack:'💻', romance:'💕', breakup:'💔', love_triangle:'😱', gambling_loss:'🎰', bankruptcy:'💀', got_rich:'💰', got_drunk:'🍺', existential_crisis:'🌀', mental_breakdown:'🤯', poetry:'✍️', missing_person:'🔍', person_found:'✅', duel_challenge:'⚔️', duel_result:'🏆', conspiracy:'🔺', artifact_found:'🗝️', time_traveler:'⏰', declared_independence:'🗽', rocket_launch:'🚀', newspaper_started:'📰', disaster:'🌋', disaster_resolved:'✅', weather_change:'🌤️', secret_society:'👁️', fight_club:'👊', fight_result:'🥊', heist_planned:'🎯', heist_success:'💰', heist_failed:'🚔', radio_started:'📻', assassination_attempt:'🗡️', fourth_wall_break:'👁️', intervention:'🫂', npc_death:'💀', fake_death_revealed:'😱', ai_uprising:'🤖', propaganda:'📢', trial_by_combat:'⚔️', portal_opened:'🌀', infrastructure:'🏗️' };
+            var typeColors = { memecoin_launch:'#00ff88', memecoin_rugged:'#ff4444', memecoin_pump:'#ffd700', business_opened:'#4488ff', protest_started:'#ff8800', riot:'#ff0000', gang_formed:'#8a2be2', gang_war:'#ff4444', cult_formed:'#ff88ff', structure_built:'#4488ff', npc_election:'#ffd700', hack:'#ff00ff', romance:'#ff69b4', breakup:'#ff4444', love_triangle:'#ff8800', gambling_loss:'#ff8800', bankruptcy:'#ff0000', got_rich:'#ffd700', got_drunk:'#ff8800', existential_crisis:'#8a2be2', mental_breakdown:'#ff0000', poetry:'#88aaff', missing_person:'#ff8800', person_found:'#00ff88', duel_challenge:'#ffd700', duel_result:'#00ff88', conspiracy:'#ff88ff', artifact_found:'#ffd700', time_traveler:'#4488ff', declared_independence:'#ff8800', rocket_launch:'#00ff88', newspaper_started:'#4488ff', disaster:'#ff0000', disaster_resolved:'#00ff88', weather_change:'#88bbff', secret_society:'#aa44aa', fight_club:'#ff4444', fight_result:'#ff8800', heist_planned:'#ffd700', heist_success:'#00ff88', heist_failed:'#ff4444', radio_started:'#4488ff', assassination_attempt:'#ff0000', fourth_wall_break:'#aa44aa', intervention:'#00ff88', npc_death:'#ff0000', fake_death_revealed:'#ff8800', ai_uprising:'#ff00ff', propaganda:'#ff8800', trial_by_combat:'#ffd700', portal_opened:'#8a2be2', infrastructure:'#ff8800' };
+            
+            // Collect all active situations for the ticker
+            var situations = [];
+            if (engineData.cityDisaster) situations.push({ icon: '🌋', text: 'DISASTER: ' + (engineData.cityDisaster.title || 'Unknown'), color: '#ff0000', flash: true });
+            if (engineData.warzone) situations.push({ icon: '⚔️', text: 'GANG WAR: ' + engineData.warzone.gang1 + ' vs ' + engineData.warzone.gang2, color: '#ff4444', flash: true });
+            if (engineData.activeFeud) situations.push({ icon: '🍿', text: 'BEEF: ' + engineData.activeFeud.npc1 + ' vs ' + engineData.activeFeud.npc2, color: '#ff8800' });
+            if (engineData.activeDuel) situations.push({ icon: '⚔️', text: 'DUEL: ' + engineData.activeDuel.challenger + ' vs ' + engineData.activeDuel.opponent, color: '#ffd700' });
+            if (engineData.fightClub) situations.push({ icon: '👊', text: 'UNDERGROUND FIGHT CLUB ACTIVE', color: '#ff4444', flash: true });
+            if (engineData.activeCult) situations.push({ icon: '🙏', text: 'CULT: ' + engineData.activeCult.name, color: '#8a2be2' });
+            if (engineData.activeConspiracy) situations.push({ icon: '🔺', text: (engineData.activeConspiracy.theory || '').substring(0, 40), color: '#ff88ff' });
+            if (engineData.secretSociety) situations.push({ icon: '👁️', text: engineData.secretSociety.name + ' operates in shadows...', color: '#aa44aa' });
+            if (engineData.missingNpc) situations.push({ icon: '🔍', text: engineData.missingNpc.name + ' IS MISSING', color: '#ff8800' });
+            if (engineData.radioStation) situations.push({ icon: '📻', text: 'PIRATE RADIO: ' + engineData.radioStation.name, color: '#4488ff' });
+            if (engineData.newspaper) situations.push({ icon: '📰', text: engineData.newspaper.name + ' publishing gossip', color: '#4488ff' });
+            if (engineData.protests) engineData.protests.forEach(function(p) { situations.push({ icon: p.status === 'riot' ? '🔥' : '✊', text: (p.status === 'riot' ? 'RIOT' : 'PROTEST') + ': ' + p.cause, color: p.status === 'riot' ? '#ff0000' : '#ff8800', flash: p.status === 'riot' }); });
+            if (engineData.electionActive) situations.push({ icon: '🗳️', text: 'ELECTION IN PROGRESS', color: '#ffd700' });
+            
+            return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
+                
+                // ═══════ BREAKING EVENT FLASH ═══════
+                flashEvent && React.createElement('div', { style: { background: 'linear-gradient(90deg, ' + (typeColors[flashEvent.type] || '#ffd700') + '22, transparent)', border: '1px solid ' + (typeColors[flashEvent.type] || '#ffd700') + '44', borderRadius: '12px', padding: '12px 16px', animation: 'pulse 0.5s ease-in-out 3' } },
+                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } },
+                        React.createElement('span', { style: { fontSize: '1.5em' } }, typeIcons[flashEvent.type] || '⚡'),
+                        React.createElement('div', { style: { flex: 1 } },
+                            React.createElement('div', { style: { color: typeColors[flashEvent.type] || '#ffd700', fontWeight: 'bold', fontSize: '0.85em', textTransform: 'uppercase' } }, 'JUST NOW'),
+                            React.createElement('div', { style: { color: '#fff', fontSize: '0.95em' } }, flashEvent.headline || 'Something happened!')
+                        )
+                    )
+                ),
+                
+                // ═══════ CITY HEADER — feels like a war room ═══════
+                React.createElement('div', { style: { background: bgGlow, borderRadius: '14px', padding: '16px', border: '1px solid ' + chaosColor + '33', position: 'relative', overflow: 'hidden' } },
+                    // Chaos level bar at the top
+                    React.createElement('div', { style: { position: 'absolute', top: 0, left: 0, height: '3px', width: chaos + '%', background: 'linear-gradient(90deg, #00ff88, ' + chaosColor + ')', transition: 'width 1s ease' } }),
+                    
                     React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' } },
-                        React.createElement('h3', { style: { margin: 0, color: '#00ff88', fontSize: '1em' } }, '🌆 PUMP TOWN LIVE'),
-                        React.createElement('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
-                            React.createElement('span', { style: { background: 'rgba(0,255,136,0.2)', padding: '3px 10px', borderRadius: '12px', fontSize: '0.7em', color: '#00ff88', animation: 'pulse 2s infinite' } }, '● LIVE'),
-                            React.createElement('span', { style: { background: sentimentColors[engineData.marketSentiment] ? 'rgba(0,0,0,0.3)' : 'transparent', padding: '3px 10px', borderRadius: '12px', fontSize: '0.75em', color: sentimentColors[engineData.marketSentiment] || '#888' } }, (sentimentEmojis[engineData.marketSentiment] || '') + ' ' + (engineData.marketSentiment || '').toUpperCase())
-                        )
-                    ),
-                    // Stats grid
-                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' } },
-                        [
-                            { label: 'Mayor', value: Math.round(engineData.mayorApproval) + '%', color: engineData.mayorApproval > 60 ? '#00ff88' : engineData.mayorApproval > 30 ? '#ffd700' : '#ff4444' },
-                            { label: 'Chaos', value: Math.round(engineData.chaosLevel) + '%', color: engineData.chaosLevel > 60 ? '#ff4444' : engineData.chaosLevel > 30 ? '#ff8800' : '#00ff88' },
-                            { label: 'Economy', value: (cs.economy || 50), color: (cs.economy||50) > 60 ? '#00ff88' : '#ff8800' },
-                            { label: 'Security', value: (cs.security || 50), color: (cs.security||50) > 50 ? '#00ff88' : '#ff4444' },
-                            { label: 'Culture', value: (cs.culture || 50), color: '#8a2be2' },
-                            { label: 'Morale', value: (cs.morale || 50), color: (cs.morale||50) > 50 ? '#00ff88' : '#ff8800' }
-                        ].map(function(s) {
-                            return React.createElement('div', { key: s.label, style: { background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '8px', textAlign: 'center' } },
-                                React.createElement('div', { style: { color: s.color, fontWeight: 'bold', fontSize: '1.1em' } }, s.value),
-                                React.createElement('div', { style: { color: '#666', fontSize: '0.65em', marginTop: '2px' } }, s.label)
-                            );
-                        })
-                    ),
-                    // Mayor name
-                    React.createElement('div', { style: { marginTop: '8px', textAlign: 'center', color: '#888', fontSize: '0.75em' } }, '👑 ' + (engineData.currentMayor || 'Mayor Satoshi McPump') + (engineData.electionActive ? ' ⚠️ ELECTION IN PROGRESS' : ''))
-                ),
-                
-                // WEATHER + STATUS BAR
-                React.createElement('div', { className: 'card', style: { padding: '10px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' } },
-                    React.createElement('span', { style: { color: '#aaa', fontSize: '0.8em' } }, (function() { var wEmojis = { clear:'☀️', rain:'🌧️', storm:'⛈️', fog:'🌫️', snow:'❄️', heatwave:'🔥', aurora:'🌌', blood_moon:'🌑', rainbow:'🌈' }; return (wEmojis[engineData.weather] || '☀️') + ' ' + (engineData.weather || 'clear').replace('_',' '); })()),
-                    engineData.cityDisaster && React.createElement('span', { style: { color: '#ff0000', fontSize: '0.8em', fontWeight: 'bold', animation: 'pulse 1s infinite' } }, '🌋 DISASTER: ' + (engineData.cityDisaster.title || '').substring(0, 30)),
-                    engineData.missingNpc && React.createElement('span', { style: { color: '#ff8800', fontSize: '0.8em' } }, '🔍 MISSING: ' + engineData.missingNpc.name),
-                    engineData.activeDuel && React.createElement('span', { style: { color: '#ffd700', fontSize: '0.8em' } }, '⚔️ DUEL: ' + engineData.activeDuel.challenger + ' vs ' + engineData.activeDuel.opponent),
-                    engineData.fightClub && React.createElement('span', { style: { color: '#ff4444', fontSize: '0.8em', fontWeight: 'bold' } }, '👊 FIGHT CLUB ACTIVE'),
-                    engineData.radioStation && React.createElement('span', { style: { color: '#4488ff', fontSize: '0.8em' } }, '📻 ' + engineData.radioStation.name),
-                    engineData.newspaper && React.createElement('span', { style: { color: '#4488ff', fontSize: '0.8em' } }, '📰 ' + engineData.newspaper.name)
-                ),
-                
-                // ACTIVE ALERTS BAR (feud, warzone, protest, cult, conspiracy, secret society)
-                (engineData.activeFeud || engineData.warzone || (engineData.protests && engineData.protests.length > 0) || engineData.activeCult || engineData.activeConspiracy || engineData.secretSociety) && React.createElement('div', { className: 'card', style: { padding: '12px', background: 'rgba(255,68,0,0.1)', border: '1px solid rgba(255,68,0,0.3)' } },
-                    React.createElement('div', { style: { fontSize: '0.8em', color: '#ff6600', fontWeight: 'bold', marginBottom: '8px' } }, '🚨 ACTIVE ALERTS'),
-                    React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px' } },
-                        engineData.activeFeud && React.createElement('span', { style: { background: 'rgba(255,100,0,0.2)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75em', color: '#ff8800' } }, '🍿 FEUD: ' + engineData.activeFeud.npc1 + ' vs ' + engineData.activeFeud.npc2),
-                        engineData.warzone && React.createElement('span', { style: { background: 'rgba(255,0,0,0.2)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75em', color: '#ff4444' } }, '⚔️ WAR: ' + engineData.warzone.gang1 + ' vs ' + engineData.warzone.gang2),
-                        engineData.protests && engineData.protests.map(function(p, i) { return React.createElement('span', { key: i, style: { background: p.status === 'riot' ? 'rgba(255,0,0,0.3)' : 'rgba(255,200,0,0.2)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75em', color: p.status === 'riot' ? '#ff0000' : '#ffaa00' } }, (p.status === 'riot' ? '🔥 RIOT' : '✊ PROTEST') + ': ' + p.cause); }),
-                        engineData.activeCult && React.createElement('span', { style: { background: 'rgba(138,43,226,0.2)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75em', color: '#8a2be2' } }, '🙏 CULT: ' + engineData.activeCult.name),
-                        engineData.activeConspiracy && React.createElement('span', { style: { background: 'rgba(255,0,255,0.15)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75em', color: '#ff88ff' } }, '🔺 CONSPIRACY: ' + (engineData.activeConspiracy.theory || '').substring(0, 35) + '...'),
-                        engineData.secretSociety && React.createElement('span', { style: { background: 'rgba(100,0,100,0.2)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75em', color: '#aa44aa' } }, '👁️ SECRET: ' + engineData.secretSociety.name),
-                        engineData.electionActive && React.createElement('span', { style: { background: 'rgba(0,255,136,0.2)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75em', color: '#00ff88' } }, '🗳️ ELECTION IN PROGRESS')
-                    )
-                ),
-                
-                // LIVE ACTION LOG
-                topActions.length > 0 && React.createElement('div', { className: 'card', style: { padding: '12px' } },
-                    React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } },
-                        React.createElement('h4', { style: { margin: 0, color: '#ffd700', fontSize: '0.85em' } }, '⚡ RECENT ACTIONS'),
-                        React.createElement('span', { style: { color: '#555', fontSize: '0.7em' } }, engineData.eventCount + ' total events')
-                    ),
-                    React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '4px' } },
-                        topActions.map(function(a) {
-                            var typeColors = { memecoin_launch: '#00ff88', memecoin_rugged: '#ff4444', memecoin_pump: '#ffd700', business_opened: '#4488ff', protest_started: '#ff8800', riot: '#ff0000', gang_formed: '#8a2be2', gang_war: '#ff4444', gang_war_ended: '#00ff88', cult_formed: '#ff88ff', structure_built: '#4488ff', npc_election: '#ffd700', hack: '#ff00ff', protest_resolved: '#00ff88', protest_dispersed: '#888', romance: '#ff69b4', breakup: '#ff4444', love_triangle: '#ff8800', gambling_loss: '#ff8800', bankruptcy: '#ff0000', got_rich: '#ffd700', got_drunk: '#ff8800', existential_crisis: '#8a2be2', mental_breakdown: '#ff0000', poetry: '#88aaff', missing_person: '#ff8800', person_found: '#00ff88', duel_challenge: '#ffd700', duel_result: '#00ff88', conspiracy: '#ff88ff', artifact_found: '#ffd700', time_traveler: '#4488ff', declared_independence: '#ff8800', rocket_launch: '#00ff88', newspaper_started: '#4488ff', disaster: '#ff0000', disaster_resolved: '#00ff88', weather_change: '#88bbff', secret_society: '#aa44aa', fight_club: '#ff4444', fight_result: '#ff8800', heist_planned: '#ffd700', heist_success: '#00ff88', heist_failed: '#ff4444', radio_started: '#4488ff', assassination_attempt: '#ff0000', suspect_identified: '#ff8800', fourth_wall_break: '#aa44aa', intervention: '#00ff88', npc_death: '#ff0000', fake_death_revealed: '#ff8800', ai_uprising: '#ff00ff', ai_rights: '#00ff88', ai_uprising_failed: '#888', portal_opened: '#8a2be2', portal_closed: '#888', propaganda: '#ff8800', trial_by_combat: '#ffd700', combat_verdict: '#00ff88', infrastructure: '#ff8800' };
-                            var ago = Math.round((Date.now() - a.timestamp) / 60000);
-                            var timeStr = ago < 1 ? 'just now' : ago + 'm ago';
-                            return React.createElement('div', { key: a.id, style: { display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', borderLeft: '2px solid ' + (typeColors[a.type] || '#555') } },
-                                React.createElement('span', { style: { fontSize: '1em' } }, a.icon || '⚡'),
-                                React.createElement('span', { style: { flex: 1, color: '#ccc', fontSize: '0.8em' } }, a.headline),
-                                React.createElement('span', { style: { color: '#555', fontSize: '0.7em', whiteSpace: 'nowrap' } }, timeStr)
-                            );
-                        })
-                    )
-                ),
-                
-                // MEMECOINS TICKER
-                engineData.memecoins && engineData.memecoins.length > 0 && React.createElement('div', { className: 'card', style: { padding: '12px' } },
-                    React.createElement('h4', { style: { margin: '0 0 8px 0', color: '#00ff88', fontSize: '0.85em' } }, '🚀 NPC Memecoins'),
-                    React.createElement('div', { style: { display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' } },
-                        engineData.memecoins.slice(0, 8).map(function(c, i) {
-                            return React.createElement('div', { key: i, style: { minWidth: '120px', background: c.rugged ? 'rgba(255,0,0,0.1)' : c.pumpPercent > 0 ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center', border: '1px solid ' + (c.rugged ? 'rgba(255,0,0,0.3)' : c.pumpPercent > 100 ? 'rgba(0,255,136,0.3)' : 'rgba(255,255,255,0.1)') } },
-                                React.createElement('div', { style: { color: c.rugged ? '#ff4444' : '#fff', fontWeight: 'bold', fontSize: '0.8em' } }, c.name),
-                                React.createElement('div', { style: { color: c.rugged ? '#ff4444' : c.pumpPercent > 0 ? '#00ff88' : '#888', fontSize: '0.75em', marginTop: '2px' } }, c.rugged ? '💀 RUGGED' : c.pumpPercent > 0 ? '📈 +' + c.pumpPercent + '%' : '⏳ Trading...'),
-                                React.createElement('div', { style: { color: '#555', fontSize: '0.6em', marginTop: '2px' } }, 'by ' + c.launcher)
-                            );
-                        })
-                    )
-                ),
-                
-                // BUSINESSES + BUILDINGS ROW
-                (engineData.businesses && engineData.businesses.length > 0 || engineData.buildings && engineData.buildings.length > 0) && React.createElement('div', { className: 'card', style: { padding: '12px' } },
-                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } },
-                        // Businesses
                         React.createElement('div', null,
-                            React.createElement('h4', { style: { margin: '0 0 6px 0', color: '#4488ff', fontSize: '0.8em' } }, '🏪 NPC Businesses (' + (engineData.businesses ? engineData.businesses.length : 0) + ')'),
-                            (engineData.businesses || []).slice(0, 4).map(function(b, i) {
-                                return React.createElement('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.75em' } },
-                                    React.createElement('span', null, b.icon),
-                                    React.createElement('span', { style: { color: '#ccc', flex: 1 } }, b.name),
-                                    React.createElement('span', { style: { color: '#666' } }, b.owner)
-                                );
-                            })
+                            React.createElement('div', { style: { fontSize: '1.2em', fontWeight: 'bold', color: '#fff' } }, '🌆 PUMP TOWN'),
+                            React.createElement('div', { style: { fontSize: '0.7em', color: chaosColor, fontWeight: 'bold' } }, chaosText + ' • ' + (wEmojis[weather] || '☀️') + ' ' + weather.replace('_', ' '))
                         ),
-                        // Buildings
-                        React.createElement('div', null,
-                            React.createElement('h4', { style: { margin: '0 0 6px 0', color: '#8a2be2', fontSize: '0.8em' } }, '🏗️ Structures (' + (engineData.buildings ? engineData.buildings.length : 0) + ')'),
-                            (engineData.buildings || []).slice(0, 4).map(function(b, i) {
-                                return React.createElement('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.75em' } },
-                                    React.createElement('span', null, b.icon),
-                                    React.createElement('span', { style: { color: '#ccc', flex: 1 } }, b.name),
-                                    React.createElement('span', { style: { color: '#666' } }, b.builder)
-                                );
-                            })
+                        React.createElement('div', { style: { textAlign: 'right' } },
+                            React.createElement('div', { style: { color: '#00ff88', fontSize: '0.7em', animation: 'pulse 2s infinite' } }, '● LIVE'),
+                            React.createElement('div', { style: { color: '#888', fontSize: '0.65em' } }, (engineData.eventCount || 0) + ' events today')
                         )
+                    ),
+                    
+                    // Key stats as colorful pills
+                    React.createElement('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap' } },
+                        React.createElement('span', { style: { background: (approval > 50 ? '#00ff88' : '#ff4444') + '22', color: approval > 50 ? '#00ff88' : '#ff4444', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75em', fontWeight: 'bold' } }, '👑 Mayor ' + Math.round(approval) + '%'),
+                        React.createElement('span', { style: { background: chaosColor + '22', color: chaosColor, padding: '4px 10px', borderRadius: '20px', fontSize: '0.75em', fontWeight: 'bold' } }, '🔥 Chaos ' + Math.round(chaos) + '%'),
+                        React.createElement('span', { style: { background: '#4488ff22', color: '#4488ff', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75em' } }, '💰 Econ ' + (cs.economy || 50)),
+                        React.createElement('span', { style: { background: '#8a2be222', color: '#8a2be2', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75em' } }, '🛡️ ' + (cs.security || 50)),
+                        (engineData.memecoins || []).length > 0 && React.createElement('span', { style: { background: '#00ff8822', color: '#00ff88', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75em' } }, '🚀 ' + engineData.memecoins.length + ' tokens'),
+                        (engineData.gangs || []).length > 0 && React.createElement('span', { style: { background: '#ff880022', color: '#ff8800', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75em' } }, '🏴 ' + engineData.gangs.length + ' factions'),
+                        (engineData.businesses || []).length > 0 && React.createElement('span', { style: { background: '#4488ff22', color: '#4488ff', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75em' } }, '🏪 ' + engineData.businesses.length + ' shops')
                     )
                 ),
                 
-                // GANGS
-                engineData.gangs && engineData.gangs.length > 0 && React.createElement('div', { className: 'card', style: { padding: '12px' } },
-                    React.createElement('h4', { style: { margin: '0 0 8px 0', color: '#ff6600', fontSize: '0.85em' } }, '🏴 Active Factions (' + engineData.gangs.length + ')'),
-                    React.createElement('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
-                        engineData.gangs.map(function(g, i) {
-                            return React.createElement('div', { key: i, style: { background: 'rgba(255,100,0,0.1)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,100,0,0.2)' } },
-                                React.createElement('div', { style: { color: '#ff8800', fontWeight: 'bold', fontSize: '0.8em' } }, '🏴 ' + g.name),
-                                React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'Leader: ' + g.leader + ' • ' + g.members.length + ' members'),
-                                React.createElement('div', { style: { color: '#666', fontSize: '0.65em' } }, '📍 ' + g.territory)
+                // ═══════ SITUATION TICKER — scrolling alerts ═══════
+                situations.length > 0 && React.createElement('div', { style: { background: 'rgba(255,0,0,0.06)', borderRadius: '10px', padding: '8px 12px', border: '1px solid rgba(255,68,0,0.2)', overflow: 'hidden' } },
+                    React.createElement('div', { style: { display: 'flex', gap: '20px', flexWrap: 'wrap' } },
+                        situations.map(function(s, i) {
+                            return React.createElement('span', { key: i, style: { color: s.color, fontSize: '0.78em', fontWeight: 'bold', whiteSpace: 'nowrap', animation: s.flash ? 'pulse 1s infinite' : 'none' } }, s.icon + ' ' + s.text);
+                        })
+                    )
+                ),
+                
+                // ═══════ LIVE ACTION FEED — the heartbeat ═══════
+                actions.length > 0 && React.createElement('div', { style: { borderRadius: '12px', overflow: 'hidden' } },
+                    React.createElement('div', { style: { padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                        React.createElement('span', { style: { color: '#ffd700', fontWeight: 'bold', fontSize: '0.85em' } }, '⚡ What\'s Happening'),
+                        React.createElement('span', { style: { color: '#555', fontSize: '0.7em' } }, 'updates every 8s')
+                    ),
+                    React.createElement('div', { style: { maxHeight: '280px', overflowY: 'auto' } },
+                        actions.slice(0, 10).map(function(a, idx) {
+                            var ago = Math.round((Date.now() - a.timestamp) / 60000);
+                            var timeStr = ago < 1 ? 'now' : ago < 60 ? ago + 'm' : Math.round(ago / 60) + 'h';
+                            var c = typeColors[a.type] || '#888';
+                            return React.createElement('div', { key: a.id || idx, style: { display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: idx === 0 ? 'rgba(255,215,0,0.04)' : 'transparent' } },
+                                React.createElement('span', { style: { fontSize: '1.2em', minWidth: '28px', textAlign: 'center' } }, typeIcons[a.type] || '⚡'),
+                                React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                                    a.npc && React.createElement('span', { style: { color: c, fontWeight: 'bold', fontSize: '0.78em' } }, a.npc + ' '),
+                                    React.createElement('span', { style: { color: '#bbb', fontSize: '0.82em' } }, a.headline || 'Something happened')
+                                ),
+                                React.createElement('span', { style: { color: '#555', fontSize: '0.68em', whiteSpace: 'nowrap' } }, timeStr)
+                            );
+                        })
+                    )
+                ),
+                
+                // ═══════ LIVE CHAT PREVIEW — citizens talking ═══════
+                chatMessages.length > 0 && React.createElement('div', { style: { borderRadius: '12px', overflow: 'hidden' } },
+                    React.createElement('div', { style: { padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' } },
+                        React.createElement('span', { style: { color: '#888', fontWeight: 'bold', fontSize: '0.85em' } }, '💬 Citizens Talking')
+                    ),
+                    React.createElement('div', { style: { maxHeight: '200px', overflowY: 'auto' } },
+                        chatMessages.slice(0, 8).map(function(m, i) {
+                            var isSystem = (m.name || '').includes('BREAKING') || (m.name || '').includes('ALERT') || (m.name || '').includes('EMERGENCY') || (m.name || '').includes('Reporter') || (m.name || '').includes('Mayor') || (m.name || '').includes('Weather') || (m.name || '').includes('Detective') || (m.name || '').includes('Judge');
+                            return React.createElement('div', { key: i, style: { padding: '6px 14px', borderBottom: '1px solid rgba(255,255,255,0.03)', background: isSystem ? 'rgba(255,215,0,0.03)' : 'transparent' } },
+                                React.createElement('span', { style: { color: isSystem ? '#ffd700' : '#888', fontWeight: 'bold', fontSize: '0.75em' } }, (m.name || 'anon') + ': '),
+                                React.createElement('span', { style: { color: '#bbb', fontSize: '0.78em' } }, (m.text || '').substring(0, 120))
+                            );
+                        })
+                    )
+                ),
+                
+                // ═══════ MEMECOINS ROW ═══════
+                (engineData.memecoins || []).length > 0 && React.createElement('div', { style: { display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px 0' } },
+                    engineData.memecoins.slice(0, 8).map(function(c, i) {
+                        var rugged = c.rugged;
+                        var pumped = c.pumpPercent > 0;
+                        return React.createElement('div', { key: i, style: { minWidth: '100px', background: rugged ? 'rgba(255,0,0,0.1)' : pumped ? 'rgba(0,255,136,0.08)' : 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px solid ' + (rugged ? '#ff444433' : pumped ? '#00ff8833' : '#ffffff11'), flex: '0 0 auto' } },
+                            React.createElement('div', { style: { fontWeight: 'bold', fontSize: '0.8em', color: rugged ? '#ff4444' : '#fff' } }, c.name),
+                            React.createElement('div', { style: { fontSize: '0.85em', marginTop: '3px', color: rugged ? '#ff4444' : pumped ? '#00ff88' : '#888', fontWeight: 'bold' } }, rugged ? '☠️ RUG' : pumped ? '+' + c.pumpPercent + '%' : '...'),
+                            React.createElement('div', { style: { fontSize: '0.6em', color: '#555', marginTop: '2px' } }, c.launcher)
+                        );
+                    })
+                ),
+                
+                // ═══════ NPC STATUS GRID — who's doing what ═══════
+                engineData.npcStatuses && React.createElement('div', { style: { borderRadius: '12px', overflow: 'hidden' } },
+                    React.createElement('div', { style: { padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' } },
+                        React.createElement('span', { style: { color: '#888', fontWeight: 'bold', fontSize: '0.85em' } }, '🏘️ Citizens of Pump Town')
+                    ),
+                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '6px', padding: '10px' } },
+                        Object.entries(engineData.npcStatuses || {}).slice(0, 12).map(function(entry) {
+                            var name = entry[0]; var s = entry[1];
+                            var statusEmoji = s.status === 'bankrupt' ? '💀' : s.status === 'unhinged' ? '🤯' : s.status === 'missing' ? '❓' : s.status === 'dead' ? '⚰️' : s.status === 'rich' ? '🤑' : s.status === 'recovering' ? '🩹' : s.drunk > 3 ? '🍺' : s.partner ? '💕' : '😐';
+                            var wealthColor = s.bankrupt ? '#ff4444' : s.wealth > 50000 ? '#ffd700' : s.wealth > 10000 ? '#00ff88' : '#888';
+                            return React.createElement('div', { key: name, style: { background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '2px', borderLeft: '2px solid ' + (s.bankrupt ? '#ff4444' : s.reputation > 60 ? '#00ff88' : s.reputation > 30 ? '#ffd700' : '#ff4444') } },
+                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                                    React.createElement('span', { style: { color: '#ccc', fontWeight: 'bold', fontSize: '0.7em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px' } }, name.replace(/_/g, ' ')),
+                                    React.createElement('span', { style: { fontSize: '0.9em' } }, statusEmoji)
+                                ),
+                                React.createElement('div', { style: { color: wealthColor, fontSize: '0.65em' } }, s.bankrupt ? 'BROKE' : (s.wealth || 0).toLocaleString() + ' TOWN'),
+                                React.createElement('div', { style: { color: '#555', fontSize: '0.6em' } }, '📍 ' + (s.location || '???').substring(0, 14)),
+                                s.partner && React.createElement('div', { style: { color: '#ff69b4', fontSize: '0.6em' } }, '❤️ ' + s.partner.replace(/_/g, ' '))
                             );
                         })
                     )
