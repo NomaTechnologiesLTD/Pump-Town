@@ -3968,6 +3968,30 @@ async function cityEventLoop() {
       cityLiveData.lastInfraTime = now;
     }
     
+    // === CITY ENGINE v6 - FULL CHAOS MODE ===
+    
+    // SOAP OPERA ENGINE (new arc every 8-15 min, escalate every 3-6 min)
+    if (chance(10) && now - soapOperas.lastArcTime > 480000 && soapOperas.arcs.filter(a => !a.resolved).length < 3) {
+      try { await generateSoapArc(); } catch(e) { console.error('Soap arc err:', e.message); }
+    }
+    if (chance(20) && now - soapOperas.lastEscalation > 180000 && soapOperas.arcs.filter(a => !a.resolved).length > 0) {
+      try { await escalateSoapArc(); soapOperas.lastEscalation = now; } catch(e) { console.error('Soap escalation err:', e.message); }
+    }
+    
+    // MAYOR GOES UNHINGED (various actions every 5-10 min)
+    if (chance(12) && now - mayorUnhinged.lastRoast > 300000) {
+      try { await mayorRoastPlayer(); } catch(e) { console.error('Mayor roast err:', e.message); }
+    }
+    if (chance(8) && now - mayorUnhinged.lastPrediction > 480000) {
+      try { await mayorPrediction(); } catch(e) { console.error('Mayor prediction err:', e.message); }
+    }
+    if (chance(8) && now - mayorUnhinged.lastDecree > 600000) {
+      try { await mayorRandomDecree(); } catch(e) { console.error('Mayor decree err:', e.message); }
+    }
+    if (chance(6) && now - mayorUnhinged.lastHotTake > 480000) {
+      try { await mayorHotTake(); } catch(e) { console.error('Mayor hot take err:', e.message); }
+    }
+    
     // NATURAL MOOD/STATUS RECOVERY
     NPC_CITIZENS.forEach(function(n) {
       var life = cityLiveData.npcLives[n];
@@ -5760,6 +5784,542 @@ app.post('/api/city-engine/mayor-react', async (req, res) => {
   }
 });
 
+// ==================== SOAP OPERA ENGINE — Persistent NPC drama arcs ====================
+
+// In-memory soap opera state
+let soapOperas = {
+  arcs: [],          // Active drama arcs
+  bets: [],          // Player bets on outcomes
+  history: [],       // Completed arcs
+  lastArcTime: 0,
+  lastEscalation: 0
+};
+
+// Generate a new soap opera arc
+async function generateSoapArc() {
+  try {
+    const n1 = pick(NPC_CITIZENS);
+    const p1 = NPC_PROFILES[n1];
+    const n2 = pick((p1.rivals || []).length > 0 ? p1.rivals : NPC_CITIZENS.filter(x => x !== n1));
+    const p2 = NPC_PROFILES[n2];
+    if (!p2) return null;
+
+    const arcTypes = [
+      {
+        type: 'love_triangle',
+        title: `💕 Love Triangle: ${n1} vs ${n2}`,
+        setup: `${n1} just found out ${n2} has been DMing their partner. Things are about to get MESSY.`,
+        stages: [
+          { label: 'The Discovery', msg1: `wait... @${n2} why are you DMing my partner at 2am?? 😤`, msg2: `it's not what it looks like... we were just discussing $${p2.favToken}!!`, announcement: `🍿 ${n1} has discovered suspicious DMs between ${n2} and their partner!` },
+          { label: 'The Confrontation', msg1: `"just discussing tokens" at 2AM with heart emojis?! EXPLAIN. NOW. 💢`, msg2: `ok fine... I may have sent ONE heart emoji but it was about the CHART PATTERN`, announcement: `😱 The confrontation is happening! ${n1} is NOT buying ${n2}'s excuses!` },
+          { label: 'Others Get Involved', spectatorMsg: `I've seen the screenshots and honestly... both sides have a point 👀`, announcement: `🏘️ The whole city is choosing sides!` }
+        ],
+        outcomes: [
+          { id: 'n1_wins', label: `${n1} comes out on top`, text: `${n1} exposed the receipts. ${n2} is publicly humiliated. The city picks a side.`, effects: { winner: n1, loser: n2 } },
+          { id: 'n2_wins', label: `${n2} was innocent`, text: `Plot twist: the DMs were about a SURPRISE PARTY. ${n1} looks like a jealous fool.`, effects: { winner: n2, loser: n1 } },
+          { id: 'both_lose', label: `Everyone loses`, text: `The partner dumps BOTH of them and starts dating based_andy. Absolute carnage.`, effects: { winner: null, loser: 'both' } }
+        ]
+      },
+      {
+        type: 'business_war',
+        title: `⚔️ Business War: ${n1} vs ${n2}`,
+        setup: `${n1} opened a competing shop RIGHT next to ${n2}'s business. It's ON.`,
+        stages: [
+          { label: 'Price War Begins', msg1: `MY prices are lower AND my vibes are better. cope. 😏`, msg2: `imagine thinking vibes matter when your product is MID 💀`, announcement: `💰 Price war erupts between ${n1} and ${n2}!` },
+          { label: 'Sabotage Suspected', msg1: `SOMEONE put fake 1-star reviews on my shop. I wonder WHO. 🤔`, msg2: `paranoid much? maybe your shop just sucks lol`, announcement: `🕵️ Sabotage allegations! ${n1} accuses ${n2} of dirty tactics!` },
+          { label: 'The Mayor Intervenes', spectatorMsg: `This business war is actually good for consumers ngl`, announcement: `👑 The Mayor has been asked to intervene in the business dispute!` }
+        ],
+        outcomes: [
+          { id: 'n1_wins', label: `${n1}'s shop dominates`, text: `${n1}'s shop became the go-to spot. ${n2} had to close down. Brutal capitalism.`, effects: { winner: n1, loser: n2 } },
+          { id: 'n2_wins', label: `${n2} outplays them`, text: `${n2} pivoted to premium and crushed it. ${n1}'s bargain bin strategy backfired.`, effects: { winner: n2, loser: n1 } },
+          { id: 'merge', label: `They merge businesses`, text: `Plot twist: they realized they make more money together. New megastore opens!`, effects: { winner: 'both', loser: null } }
+        ]
+      },
+      {
+        type: 'betrayal_arc',
+        title: `🗡️ The Betrayal: ${n1} & ${n2}`,
+        setup: `${n1} trusted ${n2} with their alpha. ${n2} front-ran the trade. Friendship DESTROYED.`,
+        stages: [
+          { label: 'Trust Broken', msg1: `I told you that alpha IN CONFIDENCE and you FRONT-RAN ME?! 💀`, msg2: `business is business fren. nothing personal. 🤷`, announcement: `💔 ${n1} has been BETRAYED by ${n2}! Alpha was leaked!` },
+          { label: 'Alliance Building', msg1: `who else has ${n2} screwed over? DM me. we're building a case. 📋`, msg2: `lol ${n1} is trying to start a coalition against me. cute.`, announcement: `⚡ ${n1} is rallying allies against ${n2}!` },
+          { label: 'The Reckoning', spectatorMsg: `this is the most dramatic thing to happen since the great rug of '24`, announcement: `⚖️ The city demands a resolution!` }
+        ],
+        outcomes: [
+          { id: 'revenge', label: `${n1} gets revenge`, text: `${n1} found ${n2}'s liquidation price and dumped on them. Cold-blooded revenge.`, effects: { winner: n1, loser: n2 } },
+          { id: 'forgiven', label: `${n2} makes amends`, text: `${n2} returned double the profits and apologized publicly. Redemption arc!`, effects: { winner: n2, loser: null } },
+          { id: 'chaos', label: `It escalates to gang war`, text: `Both sides recruited factions. It's a full-blown gang war now.`, effects: { winner: null, loser: 'city' } }
+        ]
+      },
+      {
+        type: 'reputation_scandal',
+        title: `📰 Scandal: ${n1} EXPOSED`,
+        setup: `Leaked wallet data shows ${n1} has been secretly doing the OPPOSITE of what they preach. ${n2} broke the story.`,
+        stages: [
+          { label: 'The Leak', msg1: `I can explain... those transactions were... research. yeah. research.`, msg2: `RESEARCH?! you told everyone to HODL while you were dumping!! I have the RECEIPTS! 📸`, announcement: `📸 ${n2} has exposed ${n1}'s secret wallet activity!` },
+          { label: 'Public Backlash', msg1: `y'all are overreacting. it's called risk management!`, msg2: `that's a funny way to spell HYPOCRISY 🤡`, announcement: `🔥 Public backlash against ${n1} is INTENSE!` },
+          { label: 'Damage Control', spectatorMsg: `honestly we're all a little hypocritical in crypto but this is next level`, announcement: `🎭 ${n1} is in full damage control mode!` }
+        ],
+        outcomes: [
+          { id: 'cancelled', label: `${n1} gets cancelled`, text: `${n1} lost all credibility. They're now the city's cautionary tale.`, effects: { winner: n2, loser: n1 } },
+          { id: 'comeback', label: `${n1} pulls a comeback`, text: `${n1} turned it around with a legendary transparency post. Respect earned BACK.`, effects: { winner: n1, loser: null } },
+          { id: 'everyone_exposed', label: `Everyone's dirty laundry drops`, text: `Investigation revealed EVERYONE has been faking. The whole city is in shambles.`, effects: { winner: null, loser: 'city' } }
+        ]
+      }
+    ];
+
+    const template = pick(arcTypes);
+    const arc = {
+      id: 'soap_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      ...template,
+      npc1: n1,
+      npc2: n2,
+      currentStage: 0,
+      startTime: Date.now(),
+      lastEscalation: Date.now(),
+      resolved: false,
+      resolvedOutcome: null,
+      bettingOpen: true,
+      bets: { n1_wins: 0, n2_wins: 0, other: 0 }
+    };
+
+    // Post the opening drama
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['🎬 SOAP OPERA', `🍿 NEW DRAMA ARC: ${arc.title} — ${arc.setup}`]);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      [n1, arc.stages[0].msg1]);
+    setTimeout(async () => {
+      try {
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+          [n2, arc.stages[0].msg2]);
+      } catch (e) {}
+    }, rand(3000, 6000));
+
+    logCityAction({ type: 'soap_opera', npc: n1, icon: '🎬', headline: `SOAP OPERA: ${arc.title}` });
+
+    soapOperas.arcs.push(arc);
+    if (soapOperas.arcs.length > 5) {
+      const oldest = soapOperas.arcs.shift();
+      oldest.resolved = true;
+      soapOperas.history.push(oldest);
+    }
+    soapOperas.lastArcTime = Date.now();
+    console.log(`🎬 Soap arc started: ${arc.title}`);
+    return arc;
+  } catch (e) { console.error('Soap arc error:', e.message); return null; }
+}
+
+// Escalate an existing soap arc
+async function escalateSoapArc() {
+  try {
+    const active = soapOperas.arcs.filter(a => !a.resolved);
+    if (active.length === 0) return;
+    const arc = pick(active);
+    
+    if (arc.currentStage >= arc.stages.length - 1) {
+      // RESOLVE the arc
+      const outcome = pick(arc.outcomes);
+      arc.resolved = true;
+      arc.resolvedOutcome = outcome;
+      arc.bettingOpen = false;
+      
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        ['🎬 SOAP OPERA FINALE', `🏁 ${arc.title} — RESOLVED: ${outcome.text}`]);
+      
+      // Apply effects
+      if (outcome.effects.winner && outcome.effects.winner !== 'both' && cityLiveData.npcLives[outcome.effects.winner]) {
+        cityLiveData.npcLives[outcome.effects.winner].reputation = Math.min(100, cityLiveData.npcLives[outcome.effects.winner].reputation + 15);
+        cityLiveData.npcLives[outcome.effects.winner].wealth += rand(2000, 8000);
+      }
+      if (outcome.effects.loser && outcome.effects.loser !== 'both' && outcome.effects.loser !== 'city' && cityLiveData.npcLives[outcome.effects.loser]) {
+        cityLiveData.npcLives[outcome.effects.loser].reputation = Math.max(0, cityLiveData.npcLives[outcome.effects.loser].reputation - 15);
+      }
+      
+      // Pay out bets
+      const winKey = outcome.id.includes('n1') ? 'n1_wins' : outcome.id.includes('n2') ? 'n2_wins' : 'other';
+      const totalBets = Object.values(arc.bets).reduce((a, b) => a + b, 0);
+      
+      soapOperas.bets.filter(b => b.arcId === arc.id && b.choice === winKey).forEach(b => {
+        b.won = true;
+        b.payout = totalBets > 0 ? Math.floor(b.amount * (totalBets / Math.max(1, arc.bets[winKey]))) : b.amount * 2;
+      });
+      
+      logCityAction({ type: 'soap_opera', npc: arc.npc1, icon: '🏁', headline: `SOAP FINALE: ${arc.title} — ${outcome.text.substring(0, 60)}` });
+      
+      // Move to history
+      soapOperas.history.unshift(arc);
+      if (soapOperas.history.length > 20) soapOperas.history.pop();
+      soapOperas.arcs = soapOperas.arcs.filter(a => a.id !== arc.id);
+      
+      console.log(`🎬 Soap resolved: ${arc.title} — ${outcome.id}`);
+      return;
+    }
+    
+    // Escalate to next stage
+    arc.currentStage++;
+    const stage = arc.stages[arc.currentStage];
+    arc.lastEscalation = Date.now();
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['🎬 SOAP UPDATE', `📺 ${arc.title} — Chapter ${arc.currentStage + 1}: ${stage.label}`]);
+    
+    if (stage.msg1) {
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        [arc.npc1, stage.msg1]);
+    }
+    if (stage.msg2) {
+      setTimeout(async () => {
+        try {
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+            [arc.npc2, stage.msg2]);
+        } catch (e) {}
+      }, rand(3000, 8000));
+    }
+    if (stage.spectatorMsg) {
+      const spectator = pick(NPC_CITIZENS.filter(n => n !== arc.npc1 && n !== arc.npc2));
+      setTimeout(async () => {
+        try {
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+            [spectator, stage.spectatorMsg]);
+        } catch (e) {}
+      }, rand(6000, 12000));
+    }
+    if (stage.announcement) {
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        ['📢 DRAMA UPDATE', stage.announcement]);
+    }
+    
+    console.log(`🎬 Soap escalated: ${arc.title} → Stage ${arc.currentStage + 1}`);
+  } catch (e) { console.error('Soap escalation error:', e.message); }
+}
+
+// Soap Opera API endpoints
+app.get('/api/city-engine/soap-operas', (req, res) => {
+  res.json({
+    success: true,
+    activeArcs: soapOperas.arcs.filter(a => !a.resolved).map(a => ({
+      id: a.id,
+      type: a.type,
+      title: a.title,
+      setup: a.setup,
+      npc1: a.npc1,
+      npc2: a.npc2,
+      currentStage: a.currentStage,
+      totalStages: a.stages.length,
+      currentLabel: a.stages[a.currentStage]?.label || 'Unknown',
+      outcomes: a.outcomes.map(o => ({ id: o.id, label: o.label })),
+      bets: a.bets,
+      bettingOpen: a.bettingOpen,
+      startTime: a.startTime,
+      lastEscalation: a.lastEscalation
+    })),
+    recentHistory: soapOperas.history.slice(0, 10).map(a => ({
+      id: a.id,
+      title: a.title,
+      type: a.type,
+      npc1: a.npc1,
+      npc2: a.npc2,
+      resolvedOutcome: a.resolvedOutcome,
+      startTime: a.startTime
+    }))
+  });
+});
+
+app.post('/api/city-engine/soap-bet', async (req, res) => {
+  try {
+    const { playerName, arcId, choice, amount } = req.body;
+    if (!playerName || !arcId || !choice) return res.status(400).json({ success: false, error: 'Missing fields' });
+    
+    const arc = soapOperas.arcs.find(a => a.id === arcId);
+    if (!arc) return res.json({ success: false, error: 'Arc not found or already resolved' });
+    if (!arc.bettingOpen) return res.json({ success: false, error: 'Betting is closed for this arc' });
+    
+    const betAmount = Math.max(10, Math.min(1000, parseInt(amount) || 100));
+    const betKey = choice === 'n1' ? 'n1_wins' : choice === 'n2' ? 'n2_wins' : 'other';
+    
+    arc.bets[betKey] = (arc.bets[betKey] || 0) + betAmount;
+    
+    soapOperas.bets.push({
+      id: 'bet_' + Date.now(),
+      arcId,
+      playerName,
+      choice: betKey,
+      amount: betAmount,
+      timestamp: Date.now(),
+      won: null,
+      payout: 0
+    });
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['🎰 DRAMA BET', `${playerName} bet ${betAmount} REP on "${arc.outcomes.find(o => o.id.includes(choice))?.label || choice}" in: ${arc.title}`]);
+    
+    res.json({ success: true, bet: { arcId, choice: betKey, amount: betAmount }, currentOdds: arc.bets });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+
+// ==================== MAYOR UNHINGED ENGINE — Mayor goes off the rails ====================
+
+let mayorUnhinged = {
+  lastRoast: 0,
+  lastPrediction: 0,
+  lastDecree: 0,
+  lastHotTake: 0,
+  predictions: [],     // { text, timestamp, resolved, correct }
+  decrees: [],         // { text, timestamp, type, active }
+  roastTargets: [],    // Recent roast targets to avoid repeating
+  hotTakes: []         // Mayor's hot takes
+};
+
+async function mayorRoastPlayer() {
+  try {
+    // Get recent active players from chat
+    const recentPlayers = await pool.query(
+      `SELECT DISTINCT player_name FROM chat_messages 
+       WHERE channel = 'global' AND created_at > NOW() - INTERVAL '1 hour'
+       AND player_name NOT LIKE '%BREAKING%' AND player_name NOT LIKE '%Mayor%' 
+       AND player_name NOT LIKE '%Reporter%' AND player_name NOT LIKE '%Officer%'
+       AND player_name NOT LIKE '%Judge%' AND player_name NOT LIKE '%DRAMA%'
+       AND player_name NOT LIKE '%SOAP%' AND player_name NOT LIKE '%BET%'
+       ORDER BY RANDOM() LIMIT 5`
+    );
+    
+    const targets = recentPlayers.rows.map(r => r.player_name).filter(n => !NPC_CITIZENS.includes(n) && !mayorUnhinged.roastTargets.includes(n));
+    const target = targets.length > 0 ? pick(targets) : pick(NPC_CITIZENS);
+    const isNpc = NPC_CITIZENS.includes(target);
+    
+    let roast;
+    if (anthropic && chance(60)) {
+      try {
+        const resp = await anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 100,
+          system: `You are Mayor Satoshi McPump, the unhinged crypto-degen mayor. Write a SHORT funny roast (1-2 sentences) of a citizen. Be playful not mean. Use crypto/degen slang. NO asterisks.`,
+          messages: [{ role: 'user', content: `Roast ${target} in Pump Town. They're ${isNpc ? 'an NPC citizen known as ' + (NPC_PROFILES[target]?.role || 'a degen') : 'a player visiting the city'}. Chaos level: ${cityEngine.chaosLevel}%. Keep it under 30 words.` }]
+        });
+        roast = resp.content[0].text;
+      } catch (e) { roast = null; }
+    }
+    
+    if (!roast) {
+      const roasts = [
+        `@${target} your portfolio looks like my approval rating — in freefall! 📉😂`,
+        `@${target} I've seen better trading strategies from a random number generator. And I would know — I AM one. 🤖`,
+        `@${target} just checked your wallet. The IRS called — they want their audit back because there's nothing to find 💀`,
+        `@${target} you call yourself a trader? My grandma makes better entries and she thinks crypto is a type of puzzle 👵`,
+        `@${target} the only thing diamond about your hands is how hard you hold those L's 💎🤡`,
+        `@${target} I hear you're bullish. On what? Your ability to buy every top? 📈😭`,
+        `@${target} keep trading like that and I'll have to open a soup kitchen. actually... adding that to the budget 🍜`,
+        `@${target} your trading history reads like a horror novel. Stephen King could never. 📚💀`
+      ];
+      roast = pick(roasts);
+    }
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      [`🎩 ${cityEngine.currentMayor}`, `🔥 ROAST TIME: ${roast}`]);
+    
+    mayorUnhinged.roastTargets.push(target);
+    if (mayorUnhinged.roastTargets.length > 10) mayorUnhinged.roastTargets.shift();
+    mayorUnhinged.lastRoast = Date.now();
+    
+    logCityAction({ type: 'mayor_roast', npc: cityEngine.currentMayor, icon: '🔥', headline: `Mayor roasted ${target}!` });
+  } catch (e) { console.error('Mayor roast error:', e.message); }
+}
+
+async function mayorPrediction() {
+  try {
+    let prediction;
+    if (anthropic && chance(50)) {
+      try {
+        const resp = await anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 80,
+          system: `You are Mayor Satoshi McPump. Make a SHORT dramatic prediction about what will happen in Pump Town next. Be specific, funny, and dramatic. Use crypto slang. NO asterisks. Under 25 words.`,
+          messages: [{ role: 'user', content: `Make a prediction. Current state: Chaos ${cityEngine.chaosLevel}%, Approval ${cityEngine.mayorApproval}%, Sentiment: ${cityEngine.marketSentiment}, Weather: ${cityLiveData.weather}. Active feuds: ${cityEngine.activeFeud ? 'yes' : 'no'}. Active disasters: ${cityLiveData.cityDisaster ? 'yes' : 'no'}.` }]
+        });
+        prediction = resp.content[0].text;
+      } catch (e) { prediction = null; }
+    }
+    
+    if (!prediction) {
+      const predictions = [
+        `🔮 I predict ${pick(NPC_CITIZENS)} will get absolutely REKT within the hour. Mark my words.`,
+        `🔮 The charts are telling me a MASSIVE pump is coming. Or a dump. Definitely one of those.`,
+        `🔮 I predict the next memecoin launch will either 100x or rug in 5 minutes. No in between.`,
+        `🔮 Something CATASTROPHIC is about to happen. I can feel it in my blockchain nodes.`,
+        `🔮 I predict ${pick(NPC_CITIZENS)} and ${pick(NPC_CITIZENS)} will start beef within 30 minutes.`,
+        `🔮 The vibes are shifting. Bullish? Bearish? I'll tell you after it happens. That's leadership.`,
+        `🔮 My AI brain is detecting a 73.6% chance of absolute chaos in the next hour.`,
+        `🔮 I predict someone will try to overthrow me today. Jokes on them — I've already planned my comeback.`
+      ];
+      prediction = pick(predictions);
+    }
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      [`🎩 ${cityEngine.currentMayor}`, `🔮 MAYOR'S PROPHECY: ${prediction}`]);
+    
+    mayorUnhinged.predictions.unshift({ text: prediction, timestamp: Date.now(), resolved: false });
+    if (mayorUnhinged.predictions.length > 20) mayorUnhinged.predictions.pop();
+    mayorUnhinged.lastPrediction = Date.now();
+    
+    logCityAction({ type: 'mayor_prediction', npc: cityEngine.currentMayor, icon: '🔮', headline: `Mayor made a prophecy!` });
+  } catch (e) { console.error('Mayor prediction error:', e.message); }
+}
+
+async function mayorRandomDecree() {
+  try {
+    const decrees = [
+      { text: `📜 EMERGENCY DECREE: All citizens must refer to each other as "ser" for the next hour or face a VIBE CHECK.`, type: 'silly', icon: '📜' },
+      { text: `📜 DECREE: I'm declaring today NATIONAL DEGEN DAY. All paper hands are temporarily banished.`, type: 'celebration', icon: '🎉' },
+      { text: `📜 DECREE: The casino is now offering 2x rewards because I feel generous. Or because I'm losing the next election. Same thing.`, type: 'economic', icon: '🎰' },
+      { text: `📜 OFFICIAL NOTICE: I have reviewed the city's finances and we are either incredibly rich or completely broke. The spreadsheet was confusing.`, type: 'financial', icon: '💰' },
+      { text: `📜 DECREE: All NPC citizens must submit their trading P&L to my office. Just kidding. I don't want to see those numbers. 💀`, type: 'silly', icon: '📊' },
+      { text: `📜 EMERGENCY DECREE: The chaos level is ${cityEngine.chaosLevel > 60 ? 'TOO DAMN HIGH' : 'suspiciously low'}. ${cityEngine.chaosLevel > 60 ? 'Everyone calm down!' : 'Everyone start causing problems!'}`, type: 'chaos', icon: '🌀' },
+      { text: `📜 DECREE: I'm changing the city motto to "${pick([`WAGMI (probably)`, `In Degen We Trust`, `Rug Or Be Rugged`, `Diamond Hands, Paper Brains`, `Buy High, Sell Higher (or don't sell ever)`])}"`, type: 'silly', icon: '🏛️' },
+      { text: `📜 DECREE: I just discovered I can print unlimited TOWN tokens. Should I? Democracy says yes. My brain says also yes.`, type: 'economic', icon: '🖨️' },
+      { text: `📜 ANNOUNCEMENT: My approval rating is ${Math.round(cityEngine.mayorApproval)}%. ${cityEngine.mayorApproval > 60 ? 'You love me! You really love me! 🥹' : cityEngine.mayorApproval > 40 ? "That's... fine. I'm fine. Everything is fine." : 'I WILL WIN YOU BACK. Starting with free hopium for everyone!'} `, type: 'meta', icon: '👑' }
+    ];
+    
+    const decree = pick(decrees);
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      [`🎩 ${cityEngine.currentMayor}`, decree.text]);
+    
+    mayorUnhinged.decrees.unshift({ ...decree, timestamp: Date.now(), active: true });
+    if (mayorUnhinged.decrees.length > 15) mayorUnhinged.decrees.pop();
+    mayorUnhinged.lastDecree = Date.now();
+    
+    logCityAction({ type: 'mayor_decree', npc: cityEngine.currentMayor, icon: decree.icon, headline: decree.text.substring(0, 60) });
+  } catch (e) { console.error('Mayor decree error:', e.message); }
+}
+
+async function mayorHotTake() {
+  try {
+    let hotTake;
+    if (anthropic && chance(50)) {
+      try {
+        const resp = await anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 80,
+          system: `You are Mayor Satoshi McPump. Give a HOT TAKE about something happening in crypto or Pump Town. Be controversial, funny, dramatic. Under 25 words. NO asterisks.`,
+          messages: [{ role: 'user', content: `Give a hot take. Chaos: ${cityEngine.chaosLevel}%, Weather: ${cityLiveData.weather}, Sentiment: ${cityEngine.marketSentiment}. What's your spiciest opinion right now?` }]
+        });
+        hotTake = resp.content[0].text;
+      } catch (e) { hotTake = null; }
+    }
+    
+    if (!hotTake) {
+      hotTake = pick([
+        `HOT TAKE: Half the "diamond hands" in this city are just people who forgot their wallet password 💎🔐`,
+        `HOT TAKE: NPCs in Pump Town trade better than 90% of crypto Twitter. And they're literally scripted. 🤖`,
+        `HOT TAKE: The real rug was the friends we didn't make along the way 🧹`,
+        `HOT TAKE: Anyone who says "this is not financial advice" is about to give TERRIBLE financial advice 📉`,
+        `HOT TAKE: My city runs on chaos and copium and honestly? It's more stable than most L2s 🏛️`,
+        `HOT TAKE: The best investment in Pump Town is a good psychiatrist. Trust me, the NPCs need one. 🧠`,
+        `HOT TAKE: If you haven't been rugged at least once, you haven't truly lived in this city 🧹💀`,
+        `HOT TAKE: I could run this city better as a JPEG. Actually... don't give me ideas. 🖼️`
+      ]);
+    }
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      [`🎩 ${cityEngine.currentMayor}`, `🌶️ ${hotTake}`]);
+    
+    mayorUnhinged.hotTakes.unshift({ text: hotTake, timestamp: Date.now() });
+    if (mayorUnhinged.hotTakes.length > 20) mayorUnhinged.hotTakes.pop();
+    mayorUnhinged.lastHotTake = Date.now();
+    
+    logCityAction({ type: 'mayor_hottake', npc: cityEngine.currentMayor, icon: '🌶️', headline: `Mayor dropped a hot take!` });
+  } catch (e) { console.error('Mayor hot take error:', e.message); }
+}
+
+// Mayor unhinged status endpoint
+app.get('/api/city-engine/mayor-unhinged', (req, res) => {
+  res.json({
+    success: true,
+    mayor: cityEngine.currentMayor,
+    approval: cityEngine.mayorApproval,
+    recentDecrees: mayorUnhinged.decrees.slice(0, 5),
+    predictions: mayorUnhinged.predictions.slice(0, 5),
+    hotTakes: mayorUnhinged.hotTakes.slice(0, 5),
+    isUnhinged: cityEngine.chaosLevel > 60 || cityEngine.mayorApproval < 30,
+    mood: cityEngine.mayorApproval > 70 ? 'smug' : cityEngine.mayorApproval > 50 ? 'confident' : cityEngine.mayorApproval > 30 ? 'nervous' : 'unhinged',
+    chaosLevel: cityEngine.chaosLevel
+  });
+});
+
+// Force mayor action endpoint (for dashboard button)
+app.post('/api/city-engine/mayor-speak', async (req, res) => {
+  try {
+    const { type } = req.body;
+    if (type === 'roast') await mayorRoastPlayer();
+    else if (type === 'predict') await mayorPrediction();
+    else if (type === 'decree') await mayorRandomDecree();
+    else if (type === 'hottake') await mayorHotTake();
+    else {
+      const actions = [mayorRoastPlayer, mayorPrediction, mayorRandomDecree, mayorHotTake];
+      await pick(actions)();
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+
+// ==================== CHAOS NOTIFICATIONS ENDPOINT ====================
+
+app.get('/api/city-engine/chaos-notifications', async (req, res) => {
+  try {
+    const since = parseInt(req.query.since) || (Date.now() - 60000);
+    const notifications = [];
+    
+    // Check recent action log for big events
+    (cityLiveData.actionLog || []).forEach(a => {
+      if (a.timestamp <= since) return;
+      const bigTypes = ['memecoin_rugged', 'gang_war', 'riot', 'assassination_attempt', 'npc_death', 'fake_death_revealed', 'ai_uprising', 'portal_opened', 'disaster', 'fight_result', 'heist_success', 'heist_failed', 'duel_result', 'soap_opera', 'mayor_roast', 'mayor_prediction', 'mayor_decree', 'mayor_hottake', 'trial_by_combat'];
+      if (bigTypes.includes(a.type)) {
+        notifications.push({
+          id: a.id,
+          type: a.type,
+          message: a.headline || a.type,
+          icon: a.icon || '⚡',
+          timestamp: a.timestamp,
+          severity: ['gang_war', 'riot', 'disaster', 'ai_uprising', 'npc_death', 'assassination_attempt'].includes(a.type) ? 'critical' :
+                    ['memecoin_rugged', 'heist_failed', 'fight_result', 'duel_result', 'trial_by_combat'].includes(a.type) ? 'high' : 'medium'
+        });
+      }
+    });
+    
+    // Active soap operas
+    const activeSoaps = soapOperas.arcs.filter(a => !a.resolved);
+    
+    res.json({
+      success: true,
+      notifications: notifications.slice(0, 10),
+      activeDrama: {
+        feudActive: !!cityEngine.activeFeud,
+        feud: cityEngine.activeFeud,
+        soapCount: activeSoaps.length,
+        soaps: activeSoaps.map(a => ({ id: a.id, title: a.title, stage: a.currentStage + 1, totalStages: a.stages.length })),
+        disaster: cityLiveData.cityDisaster,
+        warzone: cityLiveData.warzone,
+        fightClub: !!cityLiveData.fightClub,
+        missingNpc: cityLiveData.missingNpc ? { name: cityLiveData.missingNpc.name } : null
+      },
+      mayorState: {
+        mood: cityEngine.mayorApproval > 70 ? 'smug' : cityEngine.mayorApproval > 50 ? 'confident' : cityEngine.mayorApproval > 30 ? 'nervous' : 'unhinged',
+        approval: cityEngine.mayorApproval,
+        recentAction: mayorUnhinged.decrees[0] || mayorUnhinged.predictions[0] || null
+      },
+      serverTime: Date.now()
+    });
+  } catch (e) {
+    res.json({ success: false, notifications: [], error: e.message });
+  }
+});
+
+
 // ==================== HEALTH CHECK (UPDATED) ====================
 
 app.get('/api/health', async (req, res) => {
@@ -5792,6 +6352,9 @@ app.listen(PORT, () => {
   console.log(`🤖 AI Mayor: ${anthropic ? 'ENABLED ✅' : 'DISABLED (set CLAUDE_API_KEY)'}`);
   console.log(`🤖 Agent API: ENABLED ✅`);
   console.log(`⚖️ Justice System: ENABLED ✅`);
+  console.log(`🎬 Soap Opera Engine: ENABLED ✅`);
+  console.log(`👑 Mayor Unhinged: ENABLED ✅`);
+  console.log(`🔔 Chaos Notifications: ENABLED ✅`);
   console.log(`📅 Day ${getDayAndRound().day}, Round ${getDayAndRound().round}`);
   console.log(`⏰ Vote ends in ${Math.floor(getTimeRemaining() / 60000)} minutes`);
 });

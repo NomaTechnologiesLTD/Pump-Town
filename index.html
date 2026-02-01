@@ -8813,6 +8813,150 @@
             color: #ffd700;
         }
 
+        /* ==================== CHAOS TOAST NOTIFICATIONS ==================== */
+        .chaos-toast-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 380px;
+            pointer-events: none;
+        }
+        .chaos-toast {
+            background: rgba(15, 15, 25, 0.95);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: chaosToastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(20px);
+            pointer-events: auto;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .chaos-toast.critical { border: 1px solid #ff4444; box-shadow: 0 0 20px rgba(255,68,68,0.3); }
+        .chaos-toast.high { border: 1px solid #ff8800; box-shadow: 0 0 15px rgba(255,136,0,0.25); }
+        .chaos-toast.medium { border: 1px solid #ffd700; box-shadow: 0 0 10px rgba(255,215,0,0.2); }
+        .chaos-toast .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            animation: toastProgress 5s linear forwards;
+        }
+        .chaos-toast.critical .toast-progress { background: #ff4444; }
+        .chaos-toast.high .toast-progress { background: #ff8800; }
+        .chaos-toast.medium .toast-progress { background: #ffd700; }
+        .chaos-toast-icon { font-size: 1.5em; min-width: 30px; text-align: center; }
+        .chaos-toast-content { flex: 1; }
+        .chaos-toast-label { font-size: 0.65em; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
+        .chaos-toast.critical .chaos-toast-label { color: #ff4444; }
+        .chaos-toast.high .chaos-toast-label { color: #ff8800; }
+        .chaos-toast.medium .chaos-toast-label { color: #ffd700; }
+        .chaos-toast-text { color: #eee; font-size: 0.85em; margin-top: 2px; }
+        .chaos-toast-exit { animation: chaosToastOut 0.3s ease forwards; }
+        @keyframes chaosToastIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes chaosToastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+        @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+
+        /* ==================== MAYOR FLASH DECREE ==================== */
+        .mayor-flash-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.7);
+            animation: flashIn 0.3s ease;
+            pointer-events: auto;
+        }
+        .mayor-flash-card {
+            background: linear-gradient(135deg, rgba(30,20,50,0.98), rgba(20,15,35,0.98));
+            border: 2px solid #ffd700;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            animation: flashCardBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 40px rgba(255,215,0,0.3), inset 0 0 60px rgba(255,215,0,0.05);
+            position: relative;
+        }
+        .mayor-flash-card .flash-dismiss {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+        .mayor-flash-card .flash-dismiss:hover { color: #ffd700; }
+        .mayor-flash-card .flash-icon { font-size: 3em; margin-bottom: 10px; }
+        .mayor-flash-card .flash-type { color: #ffd700; font-size: 0.75em; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; margin-bottom: 8px; }
+        .mayor-flash-card .flash-text { color: #fff; font-size: 1.1em; line-height: 1.5; margin-bottom: 15px; }
+        .mayor-flash-card .flash-mayor { color: #888; font-size: 0.8em; font-style: italic; }
+        @keyframes flashIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes flashCardBounce { from { transform: scale(0.3) rotate(-5deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+
+        /* ==================== SOAP OPERA CARDS ==================== */
+        .soap-card {
+            background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(255,107,107,0.06));
+            border: 1px solid rgba(168,85,247,0.25);
+            border-radius: 14px;
+            padding: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .soap-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #a855f7, #ff6b6b, #ffd700);
+            animation: soapShimmer 3s linear infinite;
+            width: 100%;
+        }
+        @keyframes soapShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .soap-card .soap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .soap-card .soap-title { color: #e0b0ff; font-weight: bold; font-size: 0.9em; }
+        .soap-card .soap-stage { background: rgba(168,85,247,0.2); color: #a855f7; padding: 2px 8px; border-radius: 10px; font-size: 0.7em; font-weight: bold; }
+        .soap-card .soap-vs { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0; }
+        .soap-card .soap-npc { text-align: center; }
+        .soap-card .soap-npc-name { color: #ccc; font-size: 0.78em; font-weight: bold; }
+        .soap-card .soap-npc-role { color: #888; font-size: 0.65em; }
+        .soap-card .soap-bolt { color: #ffd700; font-size: 1.3em; }
+        .soap-card .soap-bet-row { display: flex; gap: 6px; margin-top: 8px; }
+        .soap-card .soap-bet-btn {
+            flex: 1;
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: #bbb;
+            font-size: 0.72em;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .soap-card .soap-bet-btn:hover { background: rgba(168,85,247,0.15); border-color: #a855f7; color: #e0b0ff; }
+
+        @media (max-width: 768px) {
+            .chaos-toast-container { right: 10px; left: 10px; max-width: none; top: 60px; }
+            .mayor-flash-card { padding: 20px; }
+            .mayor-flash-card .flash-icon { font-size: 2.5em; }
+        }
+
         /* ==================== SPECIAL EVENT BANNER ==================== */
         .special-event-banner {
             background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(255, 107, 107, 0.2));
@@ -15236,6 +15380,12 @@
                                 {/* LIVE City Pulse - Engine Status */}
                                 <CityPulse />
                                 
+                                {/* Mayor Unhinged Panel — roasts, predictions, decrees */}
+                                <MayorUnhingedPanel />
+                                
+                                {/* Soap Opera Panel — Active NPC drama arcs with betting */}
+                                <SoapOperaPanel showToast={showToast} playerName={character?.name} />
+                                
                                 {/* Seasonal Event Banner */}
                                 <SeasonalEventBanner playerStats={playerStats} />
                                 
@@ -15871,6 +16021,9 @@
                             </div>
                         ))}
                     </div>
+                    
+                    {/* Chaos Mode Toast Notifications — polls for big events */}
+                    <ChaosToastSystem />
                     
                     <SoundToggle />
                     
@@ -21430,13 +21583,16 @@
             const [chatMessages, setChatMessages] = useState([]);
             const [flashEvent, setFlashEvent] = useState(null);
             const [prevActionCount, setPrevActionCount] = useState(0);
+            const [dramaHighlights, setDramaHighlights] = useState([]);
+            const [chaosFeed, setChaosFeed] = useState([]);
             const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const fetchEngine = async () => {
                 try {
-                    const [engRes, chatRes] = await Promise.all([
+                    const [engRes, chatRes, chaosRes] = await Promise.all([
                         fetch(API_BASE + '/api/city-engine/status'),
-                        fetch(API_BASE + '/api/chat/global?limit=20')
+                        fetch(API_BASE + '/api/chat/global?limit=20'),
+                        fetch(API_BASE + '/api/city-engine/chaos-feed?limit=15').catch(() => null)
                     ]);
                     const engData = await engRes.json();
                     const chatData = await chatRes.json();
@@ -21452,6 +21608,16 @@
                         setEngineData(e);
                     }
                     if (chatData.success && chatData.messages) setChatMessages(chatData.messages.slice(0, 15));
+                    // Process chaos feed data
+                    if (chaosRes) {
+                        try {
+                            var chaosData = await chaosRes.json();
+                            if (chaosData.success) {
+                                setDramaHighlights(chaosData.dramaHighlights || []);
+                                setChaosFeed((chaosData.feed || []).slice(0, 10));
+                            }
+                        } catch(ce) {}
+                    }
                 } catch(e) { console.error('CityPulse error:', e); }
                 setLoading(false);
             };
@@ -21538,6 +21704,19 @@
                     )
                 ),
                 
+                // ═══════ DRAMA HIGHLIGHTS — from chaos-feed ═══════
+                dramaHighlights.length > 0 && React.createElement('div', { style: { display: 'flex', gap: '8px', overflowX: 'auto', padding: '2px 0' } },
+                    dramaHighlights.map(function(d, i) {
+                        var severityColors = { critical: '#ff4444', hot: '#ff8800', medium: '#ffd700' };
+                        var severityIcons = { critical: '🚨', hot: '🔥', medium: '⚡', feud: '🍿', war: '⚔️', disaster: '🌋' };
+                        return React.createElement('div', { key: i, style: { background: (severityColors[d.severity] || '#ffd700') + '11', border: '1px solid ' + (severityColors[d.severity] || '#ffd700') + '33', borderRadius: '10px', padding: '8px 12px', minWidth: '150px', flex: '0 0 auto' } },
+                            React.createElement('div', { style: { color: severityColors[d.severity] || '#ffd700', fontWeight: 'bold', fontSize: '0.72em', textTransform: 'uppercase', marginBottom: '3px' } }, (severityIcons[d.type] || '⚡') + ' ' + (d.type || '').replace('_', ' ')),
+                            React.createElement('div', { style: { color: '#ccc', fontSize: '0.78em' } }, d.title || d.reason || 'Drama unfolding...'),
+                            d.severity === 'critical' && React.createElement('div', { style: { color: '#ff4444', fontSize: '0.65em', marginTop: '3px', animation: 'pulse 1s infinite' } }, '● ONGOING')
+                        );
+                    })
+                ),
+                
                 // ═══════ LIVE ACTION FEED — the heartbeat ═══════
                 actions.length > 0 && React.createElement('div', { style: { borderRadius: '12px', overflow: 'hidden' } },
                     React.createElement('div', { style: { padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
@@ -21611,6 +21790,332 @@
                             );
                         })
                     )
+                )
+            );
+        }
+        
+        // ==================== CHAOS TOAST NOTIFICATION SYSTEM ====================
+        function ChaosToastSystem() {
+            const [toasts, setToasts] = useState([]);
+            const [lastCheck, setLastCheck] = useState(Date.now());
+            const [mayorFlash, setMayorFlash] = useState(null);
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+            
+            useEffect(function() {
+                var fetchNotifs = async function() {
+                    try {
+                        var res = await fetch(API_BASE + '/api/city-engine/chaos-notifications?since=' + lastCheck);
+                        var data = await res.json();
+                        if (data.success && data.notifications && data.notifications.length > 0) {
+                            var newToasts = data.notifications.slice(0, 3).map(function(n) {
+                                return { id: n.id, icon: n.icon, message: n.message, severity: n.severity, type: n.type, exiting: false };
+                            });
+                            setToasts(function(prev) {
+                                var combined = newToasts.concat(prev).slice(0, 5);
+                                return combined;
+                            });
+                            
+                            // Flash mayor decrees/predictions as overlay
+                            var mayorTypes = ['mayor_decree', 'mayor_prediction', 'mayor_hottake'];
+                            var mayorNotif = data.notifications.find(function(n) { return mayorTypes.includes(n.type); });
+                            if (mayorNotif && !mayorFlash) {
+                                setMayorFlash({
+                                    type: mayorNotif.type === 'mayor_decree' ? 'DECREE' : mayorNotif.type === 'mayor_prediction' ? 'PROPHECY' : 'HOT TAKE',
+                                    icon: mayorNotif.type === 'mayor_decree' ? '📜' : mayorNotif.type === 'mayor_prediction' ? '🔮' : '🌶️',
+                                    text: mayorNotif.message,
+                                    severity: mayorNotif.severity
+                                });
+                            }
+                        }
+                        setLastCheck(data.serverTime || Date.now());
+                    } catch(e) { console.error('Chaos notif error:', e); }
+                };
+                fetchNotifs();
+                var iv = setInterval(fetchNotifs, 12000);
+                return function() { clearInterval(iv); };
+            }, [lastCheck]);
+            
+            // Auto-dismiss toasts after 5s
+            useEffect(function() {
+                if (toasts.length === 0) return;
+                var timer = setTimeout(function() {
+                    setToasts(function(prev) {
+                        if (prev.length === 0) return prev;
+                        var updated = prev.slice();
+                        updated[updated.length - 1] = Object.assign({}, updated[updated.length - 1], { exiting: true });
+                        return updated;
+                    });
+                    setTimeout(function() {
+                        setToasts(function(prev) { return prev.slice(0, -1); });
+                    }, 300);
+                }, 5000);
+                return function() { clearTimeout(timer); };
+            }, [toasts.length]);
+            
+            // Auto-dismiss mayor flash after 6s
+            useEffect(function() {
+                if (!mayorFlash) return;
+                var timer = setTimeout(function() { setMayorFlash(null); }, 6000);
+                return function() { clearTimeout(timer); };
+            }, [mayorFlash]);
+            
+            return React.createElement(React.Fragment, null,
+                // Toast notifications
+                toasts.length > 0 && React.createElement('div', { className: 'chaos-toast-container' },
+                    toasts.map(function(t) {
+                        return React.createElement('div', { key: t.id, className: 'chaos-toast ' + t.severity + (t.exiting ? ' chaos-toast-exit' : ''), onClick: function() { setToasts(function(prev) { return prev.filter(function(x) { return x.id !== t.id; }); }); } },
+                            React.createElement('div', { className: 'chaos-toast-icon' }, t.icon || '⚡'),
+                            React.createElement('div', { className: 'chaos-toast-content' },
+                                React.createElement('div', { className: 'chaos-toast-label' }, t.severity === 'critical' ? '🚨 CRITICAL' : t.severity === 'high' ? '⚠️ ALERT' : '📢 UPDATE'),
+                                React.createElement('div', { className: 'chaos-toast-text' }, (t.message || '').substring(0, 80))
+                            ),
+                            React.createElement('div', { className: 'toast-progress' })
+                        );
+                    })
+                ),
+                
+                // Mayor flash decree overlay
+                mayorFlash && React.createElement('div', { className: 'mayor-flash-overlay', onClick: function() { setMayorFlash(null); } },
+                    React.createElement('div', { className: 'mayor-flash-card', onClick: function(e) { e.stopPropagation(); } },
+                        React.createElement('button', { className: 'flash-dismiss', onClick: function() { setMayorFlash(null); } }, '✕'),
+                        React.createElement('div', { className: 'flash-icon' }, mayorFlash.icon),
+                        React.createElement('div', { className: 'flash-type' }, '👑 MAYOR\'S ' + mayorFlash.type),
+                        React.createElement('div', { className: 'flash-text' }, mayorFlash.text),
+                        React.createElement('div', { className: 'flash-mayor' }, '— Mayor Satoshi McPump')
+                    )
+                )
+            );
+        }
+        
+        // ==================== SOAP OPERA PANEL (Active drama arcs with betting) ====================
+        function SoapOperaPanel({ showToast, playerName }) {
+            const [arcs, setArcs] = useState([]);
+            const [history, setHistory] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [expanded, setExpanded] = useState(null);
+            const [betting, setBetting] = useState(null);
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+            
+            useEffect(function() {
+                var fetchSoaps = async function() {
+                    try {
+                        var res = await fetch(API_BASE + '/api/city-engine/soap-operas');
+                        var data = await res.json();
+                        if (data.success) {
+                            setArcs(data.activeArcs || []);
+                            setHistory(data.recentHistory || []);
+                        }
+                    } catch(e) { console.error('Soap fetch error:', e); }
+                    setLoading(false);
+                };
+                fetchSoaps();
+                var iv = setInterval(fetchSoaps, 15000);
+                return function() { clearInterval(iv); };
+            }, []);
+            
+            var placeBet = async function(arcId, choice) {
+                try {
+                    setBetting(arcId + choice);
+                    var res = await fetch(API_BASE + '/api/city-engine/soap-bet', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ playerName: playerName || 'Anon', arcId: arcId, choice: choice, amount: 100 })
+                    });
+                    var data = await res.json();
+                    if (data.success) {
+                        if (showToast) showToast('🎰 Bet placed! ' + data.bet.amount + ' REP on the line!', 'success');
+                    } else {
+                        if (showToast) showToast(data.error || 'Bet failed', 'error');
+                    }
+                } catch(e) { if (showToast) showToast('Bet failed', 'error'); }
+                setBetting(null);
+            };
+            
+            if (loading) return React.createElement('div', { style: { textAlign: 'center', padding: '20px', color: '#888' } }, '🎬 Loading drama...');
+            if (arcs.length === 0 && history.length === 0) return null;
+            
+            return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
+                // Active arcs
+                arcs.length > 0 && React.createElement('div', { style: { borderRadius: '14px', overflow: 'hidden' } },
+                    React.createElement('div', { style: { padding: '10px 14px', background: 'rgba(168,85,247,0.08)', borderBottom: '1px solid rgba(168,85,247,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                        React.createElement('span', { style: { color: '#e0b0ff', fontWeight: 'bold', fontSize: '0.9em' } }, '🎬 Active Soap Operas'),
+                        React.createElement('span', { style: { color: '#a855f7', fontSize: '0.7em', animation: 'pulse 2s infinite' } }, '● ' + arcs.length + ' LIVE')
+                    ),
+                    arcs.map(function(arc) {
+                        var isExpanded = expanded === arc.id;
+                        var stageProgress = ((arc.currentStage + 1) / arc.totalStages * 100);
+                        return React.createElement('div', { key: arc.id, className: 'soap-card', style: { margin: '8px', cursor: 'pointer' }, onClick: function() { setExpanded(isExpanded ? null : arc.id); } },
+                            React.createElement('div', { className: 'soap-header' },
+                                React.createElement('span', { className: 'soap-title' }, arc.title),
+                                React.createElement('span', { className: 'soap-stage' }, 'Ch. ' + (arc.currentStage + 1) + '/' + arc.totalStages)
+                            ),
+                            // Progress bar
+                            React.createElement('div', { style: { height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', marginBottom: '8px' } },
+                                React.createElement('div', { style: { height: '100%', width: stageProgress + '%', background: 'linear-gradient(90deg, #a855f7, #ff6b6b)', borderRadius: '2px', transition: 'width 0.5s ease' } })
+                            ),
+                            // VS display
+                            React.createElement('div', { className: 'soap-vs' },
+                                React.createElement('div', { className: 'soap-npc' },
+                                    React.createElement('div', { className: 'soap-npc-name' }, (arc.npc1 || '').replace(/_/g, ' ')),
+                                    React.createElement('div', { className: 'soap-npc-role' }, 'Challenger')
+                                ),
+                                React.createElement('span', { className: 'soap-bolt' }, '⚡'),
+                                React.createElement('div', { className: 'soap-npc' },
+                                    React.createElement('div', { className: 'soap-npc-name' }, (arc.npc2 || '').replace(/_/g, ' ')),
+                                    React.createElement('div', { className: 'soap-npc-role' }, 'Rival')
+                                )
+                            ),
+                            React.createElement('div', { style: { color: '#999', fontSize: '0.75em', textAlign: 'center', marginBottom: '6px' } }, '📺 ' + (arc.currentLabel || 'In Progress')),
+                            // Betting (expanded)
+                            isExpanded && arc.bettingOpen && React.createElement('div', null,
+                                React.createElement('div', { style: { color: '#888', fontSize: '0.7em', textAlign: 'center', marginBottom: '6px' } }, '🎰 Place your bet — 100 REP per bet'),
+                                React.createElement('div', { className: 'soap-bet-row' },
+                                    (arc.outcomes || []).map(function(o) {
+                                        var betKey = o.id.includes('n1') ? 'n1' : o.id.includes('n2') ? 'n2' : 'other';
+                                        var totalBets = (arc.bets.n1_wins || 0) + (arc.bets.n2_wins || 0) + (arc.bets.other || 0);
+                                        var thisBets = arc.bets[betKey + '_wins'] || arc.bets[betKey] || 0;
+                                        var odds = totalBets > 0 ? Math.round(thisBets / totalBets * 100) : 33;
+                                        return React.createElement('button', {
+                                            key: o.id,
+                                            className: 'soap-bet-btn',
+                                            disabled: betting === arc.id + betKey,
+                                            onClick: function(e) { e.stopPropagation(); placeBet(arc.id, betKey); },
+                                            style: betting === arc.id + betKey ? { opacity: 0.5 } : {}
+                                        }, o.label.substring(0, 20), React.createElement('div', { style: { fontSize: '0.85em', color: '#a855f7' } }, odds + '% odds'));
+                                    })
+                                )
+                            )
+                        );
+                    })
+                ),
+                
+                // Recent completed arcs
+                history.length > 0 && React.createElement('div', { style: { borderRadius: '12px', overflow: 'hidden' } },
+                    React.createElement('div', { style: { padding: '8px 14px', background: 'rgba(255,255,255,0.02)' } },
+                        React.createElement('span', { style: { color: '#666', fontWeight: 'bold', fontSize: '0.78em' } }, '📼 Recent Drama History')
+                    ),
+                    history.slice(0, 3).map(function(h) {
+                        var ago = Math.round((Date.now() - h.startTime) / 60000);
+                        var timeStr = ago < 60 ? ago + 'm ago' : Math.round(ago / 60) + 'h ago';
+                        return React.createElement('div', { key: h.id, style: { padding: '6px 14px', borderBottom: '1px solid rgba(255,255,255,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                            React.createElement('div', null,
+                                React.createElement('span', { style: { color: '#999', fontSize: '0.78em' } }, h.title),
+                                h.resolvedOutcome && React.createElement('div', { style: { color: '#00ff88', fontSize: '0.7em' } }, '✅ ' + (h.resolvedOutcome.text || '').substring(0, 50))
+                            ),
+                            React.createElement('span', { style: { color: '#555', fontSize: '0.68em' } }, timeStr)
+                        );
+                    })
+                )
+            );
+        }
+        
+        // ==================== MAYOR UNHINGED PANEL (Dashboard widget) ====================
+        function MayorUnhingedPanel() {
+            const [mayorData, setMayorData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [triggerLoading, setTriggerLoading] = useState(null);
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+            
+            useEffect(function() {
+                var fetchMayor = async function() {
+                    try {
+                        var res = await fetch(API_BASE + '/api/city-engine/mayor-unhinged');
+                        var data = await res.json();
+                        if (data.success) setMayorData(data);
+                    } catch(e) {}
+                    setLoading(false);
+                };
+                fetchMayor();
+                var iv = setInterval(fetchMayor, 20000);
+                return function() { clearInterval(iv); };
+            }, []);
+            
+            var triggerMayor = async function(type) {
+                setTriggerLoading(type);
+                try {
+                    await fetch(API_BASE + '/api/city-engine/mayor-speak', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: type })
+                    });
+                    // Re-fetch
+                    var res = await fetch(API_BASE + '/api/city-engine/mayor-unhinged');
+                    var data = await res.json();
+                    if (data.success) setMayorData(data);
+                } catch(e) {}
+                setTriggerLoading(null);
+            };
+            
+            if (loading || !mayorData) return null;
+            
+            var moodEmoji = mayorData.mood === 'smug' ? '😏' : mayorData.mood === 'confident' ? '😎' : mayorData.mood === 'nervous' ? '😰' : '🤪';
+            var moodColor = mayorData.mood === 'smug' ? '#00ff88' : mayorData.mood === 'confident' ? '#4488ff' : mayorData.mood === 'nervous' ? '#ffd700' : '#ff4444';
+            var isUnhinged = mayorData.isUnhinged;
+            
+            // Get most recent mayor content
+            var recentItems = [];
+            (mayorData.recentDecrees || []).forEach(function(d) { recentItems.push({ type: '📜', text: d.text, time: d.timestamp }); });
+            (mayorData.predictions || []).forEach(function(p) { recentItems.push({ type: '🔮', text: p.text, time: p.timestamp }); });
+            (mayorData.hotTakes || []).forEach(function(h) { recentItems.push({ type: '🌶️', text: h.text, time: h.timestamp }); });
+            recentItems.sort(function(a, b) { return (b.time || 0) - (a.time || 0); });
+            
+            return React.createElement('div', { style: { background: isUnhinged ? 'linear-gradient(135deg, rgba(255,68,68,0.08), rgba(168,85,247,0.08))' : 'rgba(255,215,0,0.04)', borderRadius: '14px', padding: '14px', border: '1px solid ' + moodColor + '33', position: 'relative', overflow: 'hidden' } },
+                // Chaos bar
+                isUnhinged && React.createElement('div', { style: { position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #ff4444, #a855f7, #ff4444)', backgroundSize: '200%', animation: 'soapShimmer 2s linear infinite' } }),
+                
+                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' } },
+                    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+                        React.createElement('span', { style: { fontSize: '1.5em' } }, '👑'),
+                        React.createElement('div', null,
+                            React.createElement('div', { style: { color: '#ffd700', fontWeight: 'bold', fontSize: '0.9em' } }, mayorData.mayor || 'Mayor'),
+                            React.createElement('div', { style: { color: moodColor, fontSize: '0.7em', fontWeight: 'bold' } }, moodEmoji + ' ' + (mayorData.mood || 'unknown').toUpperCase() + (isUnhinged ? ' ⚠️' : ''))
+                        )
+                    ),
+                    React.createElement('div', { style: { textAlign: 'right' } },
+                        React.createElement('div', { style: { color: mayorData.approval > 50 ? '#00ff88' : '#ff4444', fontSize: '1em', fontWeight: 'bold' } }, Math.round(mayorData.approval || 0) + '%'),
+                        React.createElement('div', { style: { color: '#666', fontSize: '0.65em' } }, 'Approval')
+                    )
+                ),
+                
+                // Recent mayor content
+                recentItems.length > 0 && React.createElement('div', { style: { marginBottom: '10px', maxHeight: '120px', overflowY: 'auto' } },
+                    recentItems.slice(0, 3).map(function(item, i) {
+                        var ago = Math.round((Date.now() - (item.time || 0)) / 60000);
+                        var timeStr = ago < 1 ? 'now' : ago < 60 ? ago + 'm' : Math.round(ago / 60) + 'h';
+                        return React.createElement('div', { key: i, style: { padding: '6px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : 'none', display: 'flex', gap: '8px', alignItems: 'flex-start' } },
+                            React.createElement('span', { style: { fontSize: '0.9em' } }, item.type),
+                            React.createElement('span', { style: { color: '#bbb', fontSize: '0.78em', flex: 1 } }, (item.text || '').substring(0, 100)),
+                            React.createElement('span', { style: { color: '#555', fontSize: '0.65em', whiteSpace: 'nowrap' } }, timeStr)
+                        );
+                    })
+                ),
+                
+                // Action buttons
+                React.createElement('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap' } },
+                    [
+                        { type: 'roast', icon: '🔥', label: 'Roast' },
+                        { type: 'predict', icon: '🔮', label: 'Prophecy' },
+                        { type: 'decree', icon: '📜', label: 'Decree' },
+                        { type: 'hottake', icon: '🌶️', label: 'Hot Take' }
+                    ].map(function(btn) {
+                        return React.createElement('button', {
+                            key: btn.type,
+                            onClick: function() { triggerMayor(btn.type); },
+                            disabled: triggerLoading === btn.type,
+                            style: {
+                                flex: 1,
+                                padding: '6px 8px',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(255,215,0,0.2)',
+                                background: triggerLoading === btn.type ? 'rgba(255,215,0,0.15)' : 'rgba(255,215,0,0.05)',
+                                color: '#ffd700',
+                                fontSize: '0.72em',
+                                cursor: triggerLoading === btn.type ? 'wait' : 'pointer',
+                                fontFamily: 'inherit',
+                                opacity: triggerLoading === btn.type ? 0.6 : 1
+                            }
+                        }, btn.icon + ' ' + (triggerLoading === btn.type ? '...' : btn.label));
+                    })
                 )
             );
         }
