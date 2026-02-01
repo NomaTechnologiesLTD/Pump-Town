@@ -16426,6 +16426,16 @@
                 const saved = localStorage.getItem('pumptown_prediction_streak');
                 return saved ? parseInt(saved) : 0;
             });
+            
+            // DRAMA ARC state — instant action system
+            const [dramaArc, setDramaArc] = useState(null); // { phase, action, reactions, mayorReaction, outcome }
+            const [dramaReactions, setDramaReactions] = useState([]); // reactions that have appeared so far
+            const [dramaPhase, setDramaPhase] = useState(null); // 'action_sent', 'npcs_reacting', 'mayor_speaks', 'outcome_reveal', null
+            const [actionCooldown, setActionCooldown] = useState(() => {
+                const saved = localStorage.getItem('pumptown_action_cooldown');
+                return saved && parseInt(saved) > Date.now() ? parseInt(saved) : 0;
+            });
+            const [cooldownLeft, setCooldownLeft] = useState('');
 
             // NPC names for the live feed
             const npcNames = [
@@ -16633,16 +16643,122 @@
                 };
             }, []);
 
-            const confirmAction = () => {
+            const confirmAction = async () => {
                 if (!selectedAction) return;
-                setPendingAction({
-                    action: selectedAction,
-                    timestamp: Date.now(),
-                    player: character?.name || 'Anonymous'
-                });
+                if (actionCooldown > Date.now()) {
+                    showToast('⏳ Action on cooldown! Wait for it...', 'error');
+                    return;
+                }
+                
+                const actionData = actions.find(a => a.id === selectedAction);
+                const playerName = character?.name || 'Anonymous';
+                
+                // Phase 1: Action sent - show immediately
+                setDramaPhase('action_sent');
+                setDramaArc({ action: selectedAction, actionData });
+                setDramaReactions([]);
                 setSelectedAction(null);
-                showToast(`Action locked: ${selectedAction.toUpperCase()}`, 'success');
+                showToast(`⚡ ${selectedAction.toUpperCase()} initiated! Watch the city react...`, 'info');
+                
+                try {
+                    // Call backend for instant action
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/city-engine/instant-action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ playerName, action: selectedAction, character })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Phase 2: NPC reactions drip in one by one
+                        setDramaPhase('npcs_reacting');
+                        const reactions = data.reactions || [];
+                        reactions.forEach((reaction, i) => {
+                            setTimeout(() => {
+                                setDramaReactions(prev => [...prev, reaction]);
+                            }, reaction.delay || (i + 1) * 2000);
+                        });
+                        
+                        // Phase 3: Mayor speaks
+                        const mayorDelay = (data.mayorReaction?.delay || 6000);
+                        setTimeout(() => {
+                            setDramaPhase('mayor_speaks');
+                            setDramaArc(prev => ({ ...prev, mayorReaction: data.mayorReaction }));
+                        }, mayorDelay);
+                        
+                        // Phase 4: Outcome reveal
+                        setTimeout(() => {
+                            setDramaPhase('outcome_reveal');
+                            const outcome = data.outcome;
+                            setDramaArc(prev => ({ ...prev, outcome }));
+                            
+                            // Add to history
+                            const entry = {
+                                id: Date.now(),
+                                player: playerName,
+                                action: selectedAction || prev?.action,
+                                actionIcon: actionData?.icon || '⚡',
+                                outcome: outcome.result,
+                                outcomeText: outcome.text,
+                                repChange: outcome.rep,
+                                multiplier: { value: 1, rarity: 'common', icon: '' },
+                                timestamp: Date.now()
+                            };
+                            setActionHistory(prev => [entry, ...prev].slice(0, 100));
+                            
+                            showToast(
+                                outcome.result === 'win' ? `🏆 ${outcome.text}` :
+                                outcome.result === 'neutral' ? `😐 ${outcome.text}` :
+                                `💀 ${outcome.text}`,
+                                outcome.result === 'win' ? 'success' : outcome.result === 'neutral' ? 'info' : 'error'
+                            );
+                            
+                            // Set cooldown (3 minutes)
+                            const cooldownEnd = Date.now() + 180000;
+                            setActionCooldown(cooldownEnd);
+                            localStorage.setItem('pumptown_action_cooldown', cooldownEnd.toString());
+                        }, mayorDelay + 3000);
+                        
+                        // Phase 5: Clear drama after showing everything
+                        setTimeout(() => {
+                            setDramaPhase(null);
+                        }, mayorDelay + 12000);
+                    }
+                } catch(e) {
+                    console.error('Instant action error:', e);
+                    // Fallback to local resolution
+                    const outcome = resolveAction(selectedAction);
+                    setDramaPhase('outcome_reveal');
+                    setDramaArc(prev => ({ ...prev, outcome: { result: outcome.result, text: outcome.text, rep: outcome.repChange } }));
+                    const entry = {
+                        id: Date.now(), player: playerName, action: selectedAction,
+                        actionIcon: actionData?.icon || '⚡', outcome: outcome.result,
+                        outcomeText: outcome.text, repChange: outcome.repChange,
+                        multiplier: outcome.multiplier, timestamp: Date.now()
+                    };
+                    setActionHistory(prev => [entry, ...prev].slice(0, 100));
+                    showToast(outcome.toast, outcome.result === 'win' ? 'success' : 'error');
+                    const cooldownEnd = Date.now() + 180000;
+                    setActionCooldown(cooldownEnd);
+                    localStorage.setItem('pumptown_action_cooldown', cooldownEnd.toString());
+                    setTimeout(() => setDramaPhase(null), 8000);
+                }
             };
+            
+            // Cooldown timer
+            useEffect(() => {
+                if (!actionCooldown || actionCooldown <= Date.now()) { setCooldownLeft(''); return; }
+                const updateCooldown = () => {
+                    const diff = actionCooldown - Date.now();
+                    if (diff <= 0) { setCooldownLeft(''); setActionCooldown(0); return; }
+                    const mins = Math.floor(diff / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    setCooldownLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
+                };
+                updateCooldown();
+                const iv = setInterval(updateCooldown, 1000);
+                return () => clearInterval(iv);
+            }, [actionCooldown]);
 
             const resolveCycle = () => {
                 if (!pendingAction) return;
@@ -16976,81 +17092,90 @@
                         </div>
                     </div>
 
+                    {/* ═══════ LIVE DRAMA ARC ═══════ */}
+                    {dramaPhase && (
+                        <div style={{ background: 'linear-gradient(145deg, rgba(255,215,0,0.08), rgba(0,0,0,0.6))', border: '2px solid rgba(255,215,0,0.4)', borderRadius: '20px', padding: '25px', marginBottom: '25px', animation: 'pulse 2s infinite' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                                <div style={{ width: '10px', height: '10px', background: '#ff4444', borderRadius: '50%', animation: 'livePulse 1s infinite' }} />
+                                <span style={{ color: '#ff4444', fontWeight: 'bold', fontSize: '0.85em', textTransform: 'uppercase' }}>LIVE DRAMA</span>
+                                <span style={{ color: '#ffd700', fontSize: '0.85em' }}>The city is reacting to your move...</span>
+                            </div>
+                            
+                            {/* Action announcement */}
+                            <div style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.3)', borderRadius: '12px', padding: '15px', marginBottom: '15px' }}>
+                                <span style={{ fontSize: '1.5em', marginRight: '10px' }}>{dramaArc?.actionData?.icon || '⚡'}</span>
+                                <span style={{ color: '#00ff88', fontWeight: 'bold' }}>YOU</span>
+                                <span style={{ color: '#ccc' }}> chose </span>
+                                <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '1.1em' }}>{(dramaArc?.action || '').toUpperCase()}</span>
+                            </div>
+                            
+                            {/* NPC Reactions dripping in */}
+                            {dramaReactions.map((reaction, i) => (
+                                <div key={i} style={{ background: 'rgba(255,255,255,0.03)', borderLeft: '3px solid #8a2be2', borderRadius: '0 10px 10px 0', padding: '10px 15px', marginBottom: '8px', animation: 'feedItemIn 0.4s ease-out' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ color: '#8a2be2', fontWeight: 'bold', fontSize: '0.9em' }}>{reaction.npc}</span>
+                                        <span style={{ color: '#555', fontSize: '0.7em' }}>{reaction.role}</span>
+                                    </div>
+                                    <div style={{ color: '#ccc', fontSize: '0.9em', marginTop: '4px' }}>{reaction.message}</div>
+                                </div>
+                            ))}
+                            
+                            {/* Mayor reaction */}
+                            {(dramaPhase === 'mayor_speaks' || dramaPhase === 'outcome_reveal') && dramaArc?.mayorReaction && (
+                                <div style={{ background: 'linear-gradient(135deg, rgba(138,43,226,0.15), rgba(75,0,130,0.2))', border: '1px solid rgba(138,43,226,0.4)', borderRadius: '12px', padding: '15px', marginBottom: '15px', animation: 'bannerSlideIn 0.5s ease-out' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '1.3em' }}>👑</span>
+                                        <span style={{ color: '#ffd700', fontWeight: 'bold' }}>Mayor Satoshi McPump</span>
+                                    </div>
+                                    <div style={{ color: '#ddd', marginTop: '8px', fontStyle: 'italic', lineHeight: '1.5' }}>{dramaArc.mayorReaction.message}</div>
+                                </div>
+                            )}
+                            
+                            {/* Outcome reveal */}
+                            {dramaPhase === 'outcome_reveal' && dramaArc?.outcome && (
+                                <div style={{ 
+                                    background: dramaArc.outcome.result === 'win' ? 'rgba(0,255,136,0.15)' : dramaArc.outcome.result === 'neutral' ? 'rgba(255,215,0,0.1)' : 'rgba(255,68,68,0.15)',
+                                    border: `2px solid ${dramaArc.outcome.result === 'win' ? '#00ff88' : dramaArc.outcome.result === 'neutral' ? '#ffd700' : '#ff4444'}`,
+                                    borderRadius: '15px', padding: '20px', textAlign: 'center', animation: 'bannerSlideIn 0.5s ease-out'
+                                }}>
+                                    <div style={{ fontSize: '2.5em', marginBottom: '10px' }}>
+                                        {dramaArc.outcome.result === 'win' ? '🏆' : dramaArc.outcome.result === 'neutral' ? '😐' : '💀'}
+                                    </div>
+                                    <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.2em', marginBottom: '5px' }}>
+                                        {dramaArc.outcome.result === 'win' ? 'MASSIVE W!' : dramaArc.outcome.result === 'neutral' ? 'Mid...' : 'REKT!'}
+                                    </div>
+                                    <div style={{ color: '#ccc', fontSize: '0.95em' }}>{dramaArc.outcome.text}</div>
+                                    <div style={{ 
+                                        color: dramaArc.outcome.rep >= 0 ? '#00ff88' : '#ff4444', 
+                                        fontWeight: 'bold', fontSize: '1.1em', marginTop: '10px' 
+                                    }}>
+                                        {dramaArc.outcome.rep >= 0 ? '+' : ''}{dramaArc.outcome.rep} REP
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Action Selection */}
                     <div className="actions-section">
                         <div className="actions-header">
                             <h2>🎮 Choose Your Action</h2>
-                            <p>One action per cycle. The city is watching.</p>
+                            <p>{cooldownLeft ? `⏳ Cooldown: ${cooldownLeft}` : 'Take action and watch the city react in real-time!'}</p>
                         </div>
 
-                        {pendingAction ? (
-                            <div className="pending-action-box">
-                                <h3>⏳ Action Locked In</h3>
-                                <p style={{ color: '#888', marginBottom: '10px' }}>
-                                    You chose <strong style={{ color: '#ffd700' }}>{pendingAction.action.toUpperCase()}</strong>
+                        {cooldownLeft && !dramaPhase ? (
+                            <div className="pending-action-box" style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '2em', marginBottom: '10px' }}>⏳</div>
+                                <h3 style={{ color: '#ffd700' }}>Cooldown Active</h3>
+                                <div style={{ color: '#00ff88', fontSize: '1.8em', fontWeight: 'bold', margin: '10px 0' }}>{cooldownLeft}</div>
+                                <p style={{ color: '#888', fontSize: '0.9em' }}>
+                                    Recharging... The city needs a moment to recover from your last move.
                                 </p>
-                                
-                                {/* Prediction System */}
-                                {!prediction && !predictionResult && (
-                                    <div className="prediction-section">
-                                        <div className="prediction-header">
-                                            <span className="prediction-icon">🔮</span>
-                                            <span>Predict Your Outcome</span>
-                                            {predictionStreak > 0 && (
-                                                <span className="prediction-streak">🔥 {predictionStreak}x streak</span>
-                                            )}
-                                        </div>
-                                        <p className="prediction-hint">Guess correctly to earn bonus REP!</p>
-                                        <div className="prediction-buttons">
-                                            <button 
-                                                className="prediction-btn win"
-                                                onClick={() => makePrediction('win')}
-                                            >
-                                                🏆 Win
-                                            </button>
-                                            <button 
-                                                className="prediction-btn neutral"
-                                                onClick={() => makePrediction('neutral')}
-                                            >
-                                                😐 Neutral
-                                            </button>
-                                            <button 
-                                                className="prediction-btn loss"
-                                                onClick={() => makePrediction('loss')}
-                                            >
-                                                💀 Loss
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {prediction && !predictionResult && (
-                                    <div className="prediction-locked">
-                                        <span className="prediction-icon">🔮</span>
-                                        <span>Prediction: <strong className={`prediction-${prediction}`}>{prediction.toUpperCase()}</strong></span>
-                                        {predictionStreak > 0 && (
-                                            <span className="prediction-streak">🔥 {predictionStreak}x streak</span>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                {predictionResult && (
-                                    <div className={`prediction-result ${predictionResult.correct ? 'correct' : 'wrong'}`}>
-                                        <div className="result-icon">{predictionResult.correct ? '✅' : '❌'}</div>
-                                        <div className="result-text">
-                                            {predictionResult.correct 
-                                                ? `Nailed it! You predicted ${predictionResult.predicted.toUpperCase()}!`
-                                                : `Wrong! You predicted ${predictionResult.predicted.toUpperCase()}, got ${predictionResult.actual.toUpperCase()}`
-                                            }
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                <p style={{ color: '#666', fontSize: '0.9em', marginTop: '15px' }}>
-                                    Waiting for cycle resolution by AI Mayor...
+                                <p style={{ color: '#555', fontSize: '0.8em', marginTop: '10px' }}>
+                                    Watch the chaos unfold in the feed while you wait!
                                 </p>
                             </div>
-                        ) : (
+                        ) : !dramaPhase ? (
                             <>
                                 <div className="action-grid">
                                     {actions.map(action => (
@@ -17069,10 +17194,10 @@
 
                                 <button 
                                     className="confirm-action-btn"
-                                    disabled={!selectedAction}
+                                    disabled={!selectedAction || !!dramaPhase}
                                     onClick={confirmAction}
                                 >
-                                    {selectedAction ? `🔒 Lock In: ${selectedAction.toUpperCase()}` : 'Select an Action'}
+                                    {selectedAction ? `⚡ SEND IT: ${selectedAction.toUpperCase()}` : 'Select an Action'}
                                 </button>
                                 
                                 {selectedAction === 'rug' && (
@@ -17081,7 +17206,7 @@
                                     </p>
                                 )}
                             </>
-                        )}
+                        ) : null}
                     </div>
 
                     {/* Recent History Preview */}

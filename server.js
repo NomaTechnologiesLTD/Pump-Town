@@ -5439,6 +5439,327 @@ app.get('/api/city-engine/actions', (req, res) => {
   res.json({ success: true, actions: actions.slice(0, limit), total: cityLiveData.actionLog.length });
 });
 
+// ==================== CHAOS FEED — Unified narrative stream ====================
+app.get('/api/city-engine/chaos-feed', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 40, 100);
+    const since = parseInt(req.query.since) || 0;
+    
+    // Get chat messages, action log, and build a unified timeline
+    const chatResult = await pool.query(
+      `SELECT id, channel, player_name, message, created_at FROM chat_messages 
+       WHERE channel = 'global' ORDER BY created_at DESC LIMIT $1`, [limit]
+    );
+    
+    const feed = [];
+    
+    // Add chat messages as narrative events
+    (chatResult.rows || []).forEach(msg => {
+      const ts = new Date(msg.created_at).getTime();
+      if (since && ts <= since) return;
+      const isNpc = NPC_CITIZENS.includes(msg.player_name) || 
+        (msg.player_name || '').includes('BREAKING') || 
+        (msg.player_name || '').includes('Mayor') ||
+        (msg.player_name || '').includes('Reporter') ||
+        (msg.player_name || '').includes('Officer') ||
+        (msg.player_name || '').includes('Judge');
+      const npcProfile = NPC_PROFILES[msg.player_name];
+      
+      feed.push({
+        id: 'chat-' + msg.id,
+        type: msg.player_name.includes('BREAKING') ? 'breaking_news' : 
+              msg.player_name.includes('Mayor') ? 'mayor_decree' :
+              isNpc ? 'npc_chat' : 'player_chat',
+        author: msg.player_name,
+        message: msg.message,
+        timestamp: ts,
+        role: npcProfile ? npcProfile.role : null,
+        mood: npcProfile ? npcProfile.mood : null,
+        archetype: npcProfile ? npcProfile.archetype : null
+      });
+    });
+    
+    // Add action log events with richer data
+    (cityLiveData.actionLog || []).slice(0, limit).forEach((action, i) => {
+      const ts = action.timestamp || (Date.now() - i * 60000);
+      if (since && ts <= since) return;
+      feed.push({
+        id: 'action-' + i + '-' + ts,
+        type: 'city_event',
+        eventType: action.type,
+        author: action.npc || 'System',
+        message: action.headline || action.type,
+        data: action.data || {},
+        timestamp: ts,
+        icon: action.icon
+      });
+    });
+    
+    // Sort by timestamp descending
+    feed.sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Add NPC drama highlights
+    const dramaHighlights = [];
+    if (cityEngine.activeFeud) {
+      dramaHighlights.push({
+        type: 'feud',
+        title: cityEngine.activeFeud.npc1 + ' vs ' + cityEngine.activeFeud.npc2,
+        reason: cityEngine.activeFeud.reason,
+        severity: 'hot'
+      });
+    }
+    if (cityLiveData.warzone) {
+      dramaHighlights.push({
+        type: 'war',
+        title: cityLiveData.warzone.gang1 + ' vs ' + cityLiveData.warzone.gang2,
+        severity: 'critical'
+      });
+    }
+    if (cityLiveData.cityDisaster) {
+      dramaHighlights.push({
+        type: 'disaster',
+        title: cityLiveData.cityDisaster.title,
+        severity: 'critical'
+      });
+    }
+    
+    // Build NPC status summary for sidebar
+    const npcDrama = {};
+    NPC_CITIZENS.slice(0, 10).forEach(name => {
+      const life = cityLiveData.npcLives ? cityLiveData.npcLives[name] : null;
+      const profile = NPC_PROFILES[name];
+      if (life && profile) {
+        const isDramatic = life.drunk > 2 || life.bankrupt || life.status === 'unhinged' || life.wanted;
+        if (isDramatic) {
+          npcDrama[name] = {
+            role: profile.role,
+            mood: life.mood || profile.mood,
+            status: life.status,
+            drunk: life.drunk > 2,
+            bankrupt: life.bankrupt,
+            wanted: life.wanted,
+            partner: life.partner
+          };
+        }
+      }
+    });
+    
+    res.json({
+      success: true,
+      feed: feed.slice(0, limit),
+      dramaHighlights,
+      npcDrama,
+      cityState: {
+        chaos: cityEngine.chaosLevel,
+        approval: cityEngine.mayorApproval,
+        mayor: cityEngine.currentMayor,
+        sentiment: cityEngine.marketSentiment,
+        weather: cityLiveData.weather,
+        eventCount: cityEngine.eventCount
+      },
+      serverTime: Date.now()
+    });
+  } catch(e) {
+    console.error('Chaos feed error:', e.message);
+    res.json({ success: false, error: e.message });
+  }
+});
+
+// ==================== INSTANT ACTION — Player action triggers drama arc ====================
+app.post('/api/city-engine/instant-action', async (req, res) => {
+  try {
+    const { playerName, action, character } = req.body;
+    if (!playerName || !action) return res.status(400).json({ success: false, error: 'Missing playerName or action' });
+    
+    const actionNames = { launch: '🚀 LAUNCHED a new coin', snipe: '🎯 SNIPED a fresh launch', hold: '💎 is DIAMOND HANDING', dump: '📉 DUMPED their bags', rug: '🧹 PULLED THE RUG' };
+    const actionMsg = actionNames[action] || 'did something';
+    
+    // Announce in global chat
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['📢 ACTION', `⚡ ${playerName} ${actionMsg}!`]
+    );
+    
+    // Generate NPC reactions
+    const reactions = [];
+    const reactors = [];
+    const numReactors = rand(2, 4);
+    const shuffledNpcs = [...NPC_CITIZENS].sort(() => Math.random() - 0.5);
+    
+    for (let i = 0; i < Math.min(numReactors, shuffledNpcs.length); i++) {
+      const npcName = shuffledNpcs[i];
+      const npc = NPC_PROFILES[npcName];
+      if (!npc) continue;
+      
+      let reaction;
+      if (action === 'launch') {
+        reaction = pick([
+          npc.tradeBias === 'aggressive' ? 'aping in IMMEDIATELY 🚀' : null,
+          npc.tradeBias === 'paranoid' ? 'looks like a rug to me... DYOR 🚩' : null,
+          npc.mood === 'greedy' ? 'SHUT UP AND TAKE MY MONEY 💰' : null,
+          npc.mood === 'anxious' ? 'idk this feels sketchy...' : null,
+          'another launch? lets see if this one survives...',
+          'ok I\'m watching this one closely 👀',
+          'LFG!!! ' + pick(npc.catchphrases)
+        ].filter(Boolean));
+      } else if (action === 'snipe') {
+        reaction = pick([
+          npc.tradeBias === 'fomo' ? 'WAIT WHAT DID THEY SNIPE?! AM I TOO LATE?!' : null,
+          npc.mood === 'smug' ? 'lol I was already in that one 😏' : null,
+          'nice snipe! ' + pick(['fast fingers', 'respect', 'speed demon']),
+          pick(npc.catchphrases)
+        ].filter(Boolean));
+      } else if (action === 'hold') {
+        reaction = pick([
+          npc.archetype === 'holder' ? 'THIS IS THE WAY 💎🙌' : null,
+          npc.archetype === 'paper' ? 'couldn\'t be me lol 📄' : null,
+          'diamond hands or bag holder? time will tell...',
+          pick(npc.catchphrases)
+        ].filter(Boolean));
+      } else if (action === 'dump') {
+        reaction = pick([
+          npc.mood === 'depressed' ? 'smart move tbh... I should have sold too 😭' : null,
+          npc.archetype === 'holder' ? 'PAPER HANDS! NGMI! 📄' : null,
+          npc.mood === 'greedy' ? 'thanks for the cheap bags! buying your dump 🤑' : null,
+          'someone knows something... 👀',
+          pick(npc.catchphrases)
+        ].filter(Boolean));
+      } else if (action === 'rug') {
+        reaction = pick([
+          'DID THEY JUST RUG?! 💀💀💀',
+          'OFFICER! OFFICER! WE GOT A RUGGER! 🚔',
+          'I KNEW IT! I told you all this was a scam!',
+          'RIP to anyone who held... another one bites the dust 🪦',
+          npc.mood === 'bitter' ? 'this is exactly why I have trust issues 🥴' : 'absolutely REKT 💀'
+        ]);
+      }
+      
+      if (reaction) {
+        reactions.push({ npc: npcName, role: npc.role, message: reaction, delay: (i + 1) * rand(1500, 3000) });
+        reactors.push(npcName);
+        
+        // Actually post to chat with a delay
+        setTimeout(async () => {
+          try {
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              [npcName, reaction]
+            );
+          } catch(e) {}
+        }, (i + 1) * rand(2000, 4000));
+      }
+    }
+    
+    // Mayor reaction (delayed)
+    const mayorReactions = {
+      launch: pick([
+        'Another coin in MY city?! It better not be a rug or I\'m sending Officer McBlock! 🚔',
+        'CITIZENS! We have a new launch! Remember: DYOR or cry later! 📢',
+        'The entrepreneurial spirit of Pump Town lives on! LFG! 🚀👑'
+      ]),
+      snipe: pick([
+        'Fast hands in Pump Town! The snipers are eating good today! 🎯',
+        'I love the speed of this city. Everyone\'s a degen and I wouldn\'t have it any other way! 👑'
+      ]),
+      hold: pick([
+        'DIAMOND HANDS! Now THAT\'S a citizen I can respect! 💎',
+        'Conviction in Pump Town? That\'s rarer than a fair launch! BASED! 👑'
+      ]),
+      dump: pick([
+        'Someone\'s taking profits? In THIS economy? Bold move, citizen. Bold move. 📉',
+        'The dump heard around the world! City treasury notes this for the record... 📝'
+      ]),
+      rug: pick([
+        'EMERGENCY ALERT! We have a RUGGER in Pump Town! All units respond! 🚨🚨🚨',
+        'THAT\'S IT! I\'m declaring martial law on this degenerate! OFFICER MCBLOCK, ARREST THEM! ⚖️💀'
+      ])
+    };
+    
+    const mayorMsg = mayorReactions[action] || 'Interesting move, citizen... the city is watching. 👁️';
+    
+    setTimeout(async () => {
+      try {
+        await pool.query(
+          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+          ['🎩 ' + cityEngine.currentMayor, mayorMsg]
+        );
+      } catch(e) {}
+    }, rand(4000, 8000));
+    
+    // Log the action
+    logCityAction({
+      type: action === 'launch' ? 'memecoin_launch' : action === 'rug' ? 'memecoin_rugged' : 'player_action',
+      npc: playerName,
+      icon: actionNames[action]?.charAt(0) || '⚡',
+      headline: playerName + ' ' + actionMsg
+    });
+    
+    // Resolve outcome
+    const roll = Math.random();
+    let outcome;
+    if (action === 'launch') {
+      outcome = roll > 0.6 ? { result: 'win', text: 'PUMPED 500%! Legendary play!', rep: rand(10, 25) } :
+                roll > 0.25 ? { result: 'neutral', text: 'Modest 2x. Not bad.', rep: rand(3, 8) } :
+                { result: 'loss', text: 'Dumped 90% in minutes. RIP.', rep: rand(-15, -5) };
+    } else if (action === 'snipe') {
+      outcome = roll > 0.5 ? { result: 'win', text: 'Sniped the bottom! Easy 3x!', rep: rand(8, 18) } :
+                roll > 0.2 ? { result: 'neutral', text: 'Got in, broke even.', rep: rand(1, 5) } :
+                { result: 'loss', text: 'Sniped a rug. Ouch.', rep: rand(-12, -3) };
+    } else if (action === 'hold') {
+      outcome = roll > 0.4 ? { result: 'win', text: 'Diamond hands paid off! 10x!', rep: rand(12, 30) } :
+                roll > 0.15 ? { result: 'neutral', text: 'Held steady. No movement.', rep: rand(2, 6) } :
+                { result: 'loss', text: 'Held too long. Dumped on.', rep: rand(-8, -2) };
+    } else if (action === 'dump') {
+      outcome = roll > 0.5 ? { result: 'win', text: 'Sold the top! Perfect timing!', rep: rand(8, 20) } :
+                roll > 0.2 ? { result: 'neutral', text: 'Sold too early. Could be worse.', rep: rand(1, 4) } :
+                { result: 'loss', text: 'Paper handed before the pump.', rep: rand(-10, -3) };
+    } else {
+      outcome = roll > 0.3 ? { result: 'win', text: 'Got away with it! Massive profit!', rep: rand(-30, -10) } :
+                { result: 'loss', text: 'BUSTED! Reputation destroyed!', rep: rand(-50, -20) };
+    }
+    
+    res.json({
+      success: true,
+      outcome,
+      reactions,
+      mayorReaction: { message: mayorMsg, delay: rand(4000, 8000) },
+      dramaLevel: action === 'rug' ? 'MAXIMUM' : action === 'launch' ? 'HIGH' : 'MEDIUM'
+    });
+  } catch(e) {
+    console.error('Instant action error:', e.message);
+    res.json({ success: false, error: e.message });
+  }
+});
+
+// ==================== MAYOR COMMENTARY — AI Mayor reacts to anything ====================
+app.post('/api/city-engine/mayor-react', async (req, res) => {
+  try {
+    const { event, context } = req.body;
+    
+    if (anthropic) {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        system: MAYOR_SYSTEM_PROMPT + '\n\nRespond with a SHORT, punchy 1-2 sentence reaction. Be dramatic, funny, and use crypto slang. NO asterisks for actions.',
+        messages: [{ role: 'user', content: `React to this event happening in Pump Town: ${event}. Context: Chaos level ${cityEngine.chaosLevel}%, your approval rating ${cityEngine.mayorApproval}%. ${context || ''}` }]
+      });
+      res.json({ success: true, reaction: response.content[0].text });
+    } else {
+      // Fallback without AI
+      const fallbacks = [
+        'Another day in Pump Town, another reason to question my life choices as mayor! 👑',
+        'CITIZENS! I have NO comment at this time. Actually wait — LFG! 🚀',
+        'The chaos level is... concerning. But also kind of exciting? Is that bad? 🔥',
+        'I didn\'t sign up for this. Actually I did. WAGMI! ...probably. 😅'
+      ];
+      res.json({ success: true, reaction: pick(fallbacks) });
+    }
+  } catch(e) {
+    console.error('Mayor react error:', e.message);
+    res.json({ success: false, reaction: 'The mayor is too stressed to comment right now! 😰' });
+  }
+});
+
 // ==================== HEALTH CHECK (UPDATED) ====================
 
 app.get('/api/health', async (req, res) => {
