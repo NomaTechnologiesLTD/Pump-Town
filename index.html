@@ -30215,7 +30215,7 @@
             };
             
             const shareOnX = () => {
-                const text = `🧢 Today's Roast on Degens City!\n\n${roast.target.handle}: "${roast.target.bio}"\n\n🎩 Mayor Satoshi says: "${roast.mayorComment.substring(0, 150)}..."\n\nPlay at pump-town.xyz 🏛️`;
+                const text = `🧢 Today's Roast on Degens City!\n\n${roast.target.handle}: "${roast.target.bio}"\n\n🎩 Mayor Satoshi says: "${roast.mayorComment.substring(0, 150)}..."\n\nPlay at degenscity.com 🏛️`;
                 window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
             
@@ -30876,7 +30876,7 @@
             };
             
             const shareOnX = () => {
-                const text = `🎩 Mayor Satoshi's Hot Take:\n\n"${currentTake.take}"\n\n${takeReactions.fire > takeReactions.cap ? '🔥 The people agree!' : '🧢 Controversial!'}\n\nMore alpha at pump-town.xyz`;
+                const text = `🎩 Mayor Satoshi's Hot Take:\n\n"${currentTake.take}"\n\n${takeReactions.fire > takeReactions.cap ? '🔥 The people agree!' : '🧢 Controversial!'}\n\nMore alpha at degenscity.com`;
                 window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
             
@@ -31088,7 +31088,7 @@
             
             const shareVerdict = (verdict) => {
                 const emoji = verdict.verdict === 'cap' ? '🧢' : '✅';
-                const text = `${emoji} Mayor Satoshi's verdict on ${verdict.handle}:\n\n"${verdict.bio}"\n\n🎩 "${verdict.mayorComment.substring(0, 100)}..."\n\nMore roasts at pump-town.xyz`;
+                const text = `${emoji} Mayor Satoshi's verdict on ${verdict.handle}:\n\n"${verdict.bio}"\n\n🎩 "${verdict.mayorComment.substring(0, 100)}..."\n\nMore roasts at degenscity.com`;
                 window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
             
@@ -31543,7 +31543,7 @@
             };
             
             const shareResult = () => {
-                const text = `${result.emoji} My Degens City personality type: ${result.title}!\n\n🎩 Mayor Satoshi says: "${result.mayorComment.substring(0, 100)}..."\n\nTake the quiz at pump-town.xyz 🧢`;
+                const text = `${result.emoji} My Degens City personality type: ${result.title}!\n\n🎩 Mayor Satoshi says: "${result.mayorComment.substring(0, 100)}..."\n\nTake the quiz at degenscity.com 🧢`;
                 window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
             
@@ -31743,7 +31743,7 @@ ${personality.emoji} ${getTitle()}
 ${personality.emoji} Type: ${personality.title}
 
 Think you can beat my stats? 👀
-Play at pump-town.xyz
+Play at degenscity.com
 
 #PumpTown #CryptoGaming`;
                 
@@ -31828,7 +31828,7 @@ Play at pump-town.xyz
                                     </div>
                                     
                                     <div className="flex-card-footer">
-                                        <span>pump-town.xyz</span>
+                                        <span>degenscity.com</span>
                                         <span style={{ color: currentStyle.accent }}>●</span>
                                         <span>{new Date().toLocaleDateString()}</span>
                                     </div>
@@ -31840,7 +31840,7 @@ Play at pump-town.xyz
                                         📤 Share on X
                                     </button>
                                     <button className="flex-action-btn copy" onClick={() => {
-                                        navigator.clipboard.writeText(`🏛️ Check out my Degens City stats!\n⭐ Level ${playerStats?.level || 1} | 💊 ${resources?.hopium || 0} HOPIUM | 🧢 Cap Score: ${getCapScore()}\nPlay at pump-town.xyz`);
+                                        navigator.clipboard.writeText(`🏛️ Check out my Degens City stats!\n⭐ Level ${playerStats?.level || 1} | 💊 ${resources?.hopium || 0} HOPIUM | 🧢 Cap Score: ${getCapScore()}\nPlay at degenscity.com`);
                                         alert('Stats copied to clipboard!');
                                     }}>
                                         📋 Copy Stats
@@ -32356,7 +32356,7 @@ Play at pump-town.xyz
             
             const shareRoast = () => {
                 if (!roast) return;
-                const text = `🎩 Mayor Satoshi roasted my portfolio!\n\n"${roast.mayorComment.substring(0, 150)}..."\n\nDegen Rating: ${roast.rating} ${roast.emoji}\n\nGet roasted at pump-town.xyz 🔥`;
+                const text = `🎩 Mayor Satoshi roasted my portfolio!\n\n"${roast.mayorComment.substring(0, 150)}..."\n\nDegen Rating: ${roast.rating} ${roast.emoji}\n\nGet roasted at degenscity.com 🔥`;
                 window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
             };
             
