@@ -3652,6 +3652,61 @@ async function cityEventLoop() {
       }
     }
     
+    // === CITY ENGINE v3 - AUTONOMOUS CHAOS ===
+    
+    // NPC LAUNCHES MEMECOIN (every 3-8 min)
+    if (chance(20) && now - cityLiveData.lastMemecoinTime > 180000) {
+      await npcLaunchMemecoin(cityStats);
+      cityLiveData.lastMemecoinTime = now;
+    }
+    
+    // NPC OPENS BUSINESS (every 5-12 min)
+    if (chance(15) && now - cityLiveData.lastBusinessTime > 300000) {
+      await npcOpenBusiness(cityStats);
+      cityLiveData.lastBusinessTime = now;
+    }
+    
+    // NPC STARTS PROTEST (every 5-15 min, more likely when approval low)
+    if (now - cityLiveData.lastProtestTime > 300000) {
+      const protestChance = cityEngine.mayorApproval < 40 ? 20 : (cityEngine.chaosLevel > 50 ? 15 : 8);
+      if (chance(protestChance)) {
+        await npcStartProtest(cityStats);
+        cityLiveData.lastProtestTime = now;
+      }
+    }
+    
+    // NPC FORMS GANG (every 8-20 min)
+    if (chance(8) && now - cityLiveData.lastGangTime > 480000) {
+      await npcFormGang(cityStats);
+      cityLiveData.lastGangTime = now;
+    }
+    
+    // NPC STARTS CULT (every 15-30 min, rare)
+    if (chance(5) && now - cityLiveData.lastCultTime > 900000 && !cityLiveData.activeCult) {
+      await npcStartCult(cityStats);
+      cityLiveData.lastCultTime = now;
+    }
+    
+    // NPC BUILDS STRUCTURE (every 5-15 min)
+    if (chance(12) && now - cityLiveData.lastBuildTime > 300000) {
+      await npcBuildStructure(cityStats);
+      cityLiveData.lastBuildTime = now;
+    }
+    
+    // NPC RUNS FOR MAYOR (every 10-20 min, more likely when approval low)
+    if (now - cityLiveData.lastNpcElectionTime > 600000 && !cityEngine.electionActive) {
+      const electionChance = cityEngine.mayorApproval < 30 ? 15 : 5;
+      if (chance(electionChance)) {
+        await npcRunsForMayor(cityStats);
+        cityLiveData.lastNpcElectionTime = now;
+      }
+    }
+    
+    // NPC HACKS CITY (rare, every 10-30 min)
+    if (chance(5) && cityEngine.chaosLevel > 30) {
+      await npcHackCity(cityStats);
+    }
+    
   } catch (err) { console.error('City engine error:', err.message); }
 }
 
@@ -4032,6 +4087,298 @@ async function generateNewsReport(stats) {
   } catch(e) { console.error('News error:', e.message); }
 }
 
+// ==================== CITY ENGINE v3 - PURE CHAOS ====================
+// NPCs don't just chat - they DO things. Build, launch, protest, riot, scheme.
+
+// ---- EXPANDED CITY STATE ----
+let cityLiveData = {
+  businesses: [], memecoins: [], gangs: [], protests: [], buildings: [],
+  activeCult: null, warzone: null,
+  lastBusinessTime: 0, lastMemecoinTime: 0, lastProtestTime: 0, lastGangTime: 0,
+  lastCultTime: 0, lastBuildTime: 0, lastRiotTime: 0, lastNpcElectionTime: 0,
+  actionLog: []
+};
+
+function logCityAction(action) {
+  action.timestamp = Date.now();
+  action.id = 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  cityLiveData.actionLog.unshift(action);
+  if (cityLiveData.actionLog.length > 100) cityLiveData.actionLog.pop();
+  return action;
+}
+
+// ---- NPC LAUNCHES A MEMECOIN ----
+async function npcLaunchMemecoin(stats) {
+  try {
+    const launcher = pick(NPC_CITIZENS); const npc = NPC_PROFILES[launcher];
+    const prefixes = ['PUMP','MOON','DEGEN','BASED','COPE','WAGMI','FOMO','HODL','APE','RUG','CHAD','WOJAK','PEPE','BONK','WIF','POPCAT','FLOKI','SHIB','BODEN','TREMP'];
+    const suffixes = ['INU','COIN','TOKEN','SWAP','FI','DAO','AI','X','69','420','MOON','LAND','VERSE','MAX','PRO'];
+    const tokenName = '$' + pick(prefixes) + pick(suffixes);
+    const supply = rand(1, 100) + (chance(50) ? 'B' : 'M');
+    const descriptions = ['the next 1000x gem trust me bro','revolutionary AI-powered meme technology','backed by absolutely nothing but vibes','community-driven pump machine','literally just a picture of a '+pick(['dog','cat','frog','hamster','penguin'])+' on the blockchain','deflationary hyper-meme with quantum yield'];
+    const coin = { name: tokenName, launcher, description: pick(descriptions), supply, holders: rand(1,50), launchedAt: Date.now(), rugged: false, pumpPercent: 0 };
+    cityLiveData.memecoins.unshift(coin);
+    if (cityLiveData.memecoins.length > 20) cityLiveData.memecoins.pop();
+    logCityAction({ type: 'memecoin_launch', npc: launcher, data: coin, icon: '🚀', headline: launcher+' launched '+tokenName+'!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [launcher, '🚀 JUST LAUNCHED '+tokenName+'!! '+coin.description+'. Supply: '+supply+'. THIS IS THE ONE! LFG!! 🔥🔥']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '📰 NEW TOKEN: '+launcher+' launches '+tokenName+' — "'+coin.description+'". Market cap: ???']);
+    await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1,$2,$3,$4)`, [launcher, 'memecoin_launch', 'launched '+tokenName, '🚀']);
+    setTimeout(async () => { try {
+      const fomo = pick(NPC_CITIZENS.filter(n => n !== launcher && NPC_PROFILES[n].archetype === 'fomo'));
+      const bearN = pick(NPC_CITIZENS.filter(n => n !== launcher && NPC_PROFILES[n].archetype === 'bear'));
+      if (fomo) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [fomo, tokenName+'?! I\'M IN! SHUT UP AND TAKE MY TOWN!! 💰🚀']);
+      if (bearN) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [bearN, 'another shitcoin from '+launcher+'... going to zero 📉']);
+    } catch(e){} }, rand(5000, 15000));
+    // Pump or rug after 2-8 min
+    setTimeout(async () => { try {
+      const idx = cityLiveData.memecoins.findIndex(c => c.name === tokenName && c.launcher === launcher);
+      if (idx === -1) return;
+      if (chance(40)) {
+        cityLiveData.memecoins[idx].rugged = true; cityLiveData.memecoins[idx].pumpPercent = -100;
+        logCityAction({ type: 'memecoin_rugged', npc: launcher, data: { token: tokenName }, icon: '💀', headline: tokenName+' RUGGED!' });
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '💀 '+tokenName+' RUGGED!! Liquidity pulled! '+launcher+' vanished!']);
+        if (chance(60)) setTimeout(() => generateCrime('rug_pull'), 5000);
+      } else {
+        const pct = rand(50, 2000);
+        cityLiveData.memecoins[idx].pumpPercent = pct; cityLiveData.memecoins[idx].holders = rand(50, 500);
+        logCityAction({ type: 'memecoin_pump', npc: launcher, data: { token: tokenName, percent: pct }, icon: '📈', headline: tokenName+' pumps '+pct+'%!' });
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📊 Market Pulse', '🚀 '+tokenName+' UP '+pct+'%!! '+cityLiveData.memecoins[idx].holders+' holders!']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [launcher, 'TOLD YOU '+tokenName+' WAS THE PLAY!! '+pct+'% AND COUNTING!! 🚀🚀']);
+      }
+    } catch(e){} }, rand(120000, 480000));
+    console.log('🚀 Memecoin: '+launcher+' launched '+tokenName);
+  } catch(e) { console.error('Memecoin error:', e.message); }
+}
+
+// ---- NPC OPENS A BUSINESS ----
+async function npcOpenBusiness(stats) {
+  try {
+    const owner = pick(NPC_CITIZENS); const npc = NPC_PROFILES[owner];
+    const types = [
+      { name: owner+'\'s Alpha Calls', type: 'Trading Signal Shop', icon: '📡' },
+      { name: 'The '+npc.favToken+' Lounge', type: 'Token Bar', icon: '🍸' },
+      { name: owner+'\'s Degen Den', type: 'Underground Casino', icon: '🎰' },
+      { name: 'Hopium Dispensary', type: 'Copium Shop', icon: '💊' },
+      { name: owner+'\'s NFT Gallery', type: 'Art Gallery', icon: '🖼️' },
+      { name: 'Whale Watching Tower', type: 'Analytics Lab', icon: '🔭' },
+      { name: 'Rekt Recovery Center', type: 'Support Group', icon: '🏥' },
+      { name: owner+'\'s Meme Factory', type: 'Content Studio', icon: '🏭' },
+      { name: 'Diamond Hands Gym', type: 'Fitness', icon: '💪' },
+      { name: 'The FUD Shelter', type: 'Bunker', icon: '🏚️' }
+    ];
+    const biz = pick(types);
+    const business = { ...biz, owner, revenue: rand(100,5000), openedAt: Date.now(), customers: rand(5,100), status: 'open' };
+    cityLiveData.businesses.unshift(business);
+    if (cityLiveData.businesses.length > 15) cityLiveData.businesses.pop();
+    logCityAction({ type: 'business_opened', npc: owner, data: business, icon: biz.icon, headline: owner+' opened "'+biz.name+'"!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [owner, biz.icon+' Just opened "'+biz.name+'" — a '+biz.type+'! Come through! 🎉']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🏙️ City Development', '🏗️ NEW BUSINESS: "'+biz.name+'" ('+biz.type+') by '+owner+' is now open!']);
+    await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1,$2,$3,$4)`, [owner, 'business_opened', 'opened "'+biz.name+'"', biz.icon]);
+    await updateCityStats({ economy: 3, culture: 2, morale: 2 });
+    setTimeout(async () => { try {
+      const visitor = pick(NPC_CITIZENS.filter(n => n !== owner));
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [visitor, 'just checked out "'+biz.name+'" — '+pick(['actually fire 🔥','mid tbh','5 stars ⭐','vibes are immaculate','would visit again'])]);
+    } catch(e){} }, rand(30000, 90000));
+    console.log('🏗️ Business: '+owner+' opened "'+biz.name+'"');
+  } catch(e) { console.error('Business error:', e.message); }
+}
+
+// ---- NPC STARTS A PROTEST ----
+async function npcStartProtest(stats) {
+  try {
+    const leader = pick(NPC_CITIZENS);
+    const causes = [
+      { cause: 'Mayor Resignation', demand: cityEngine.currentMayor+' must resign!', target: 'mayor' },
+      { cause: 'Lower Gas Fees', demand: 'Gas fees are killing the economy!', target: 'economy' },
+      { cause: 'Better Security', demand: 'Crime is out of control!', target: 'security' },
+      { cause: 'Free Hopium', demand: 'Hopium should be free for all citizens!', target: 'morale' },
+      { cause: 'Whale Regulation', demand: 'Whales are manipulating the market!', target: 'whales' },
+      { cause: 'Anti-Rug Pull Laws', demand: 'Rug pulls should carry mandatory jail time!', target: 'law' },
+      { cause: 'Term Limits', demand: cityEngine.currentMayor+' has been in power too long!', target: 'mayor' }
+    ];
+    const pData = pick(causes);
+    const supporters = NPC_CITIZENS.filter(n => n !== leader && chance(30)).slice(0, 8);
+    const protest = { leader, ...pData, supporters, size: supporters.length + 1, startedAt: Date.now(), status: 'active', intensity: rand(1, 5) };
+    cityLiveData.protests.unshift(protest);
+    if (cityLiveData.protests.length > 5) cityLiveData.protests.pop();
+    logCityAction({ type: 'protest_started', npc: leader, data: protest, icon: '✊', headline: leader+' leads protest: "'+pData.cause+'"!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '✊ PROTEST: '+leader+' leads '+protest.size+' citizens demanding "'+pData.cause+'"! '+pData.demand]);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [leader, 'CITIZENS! '+pData.demand+' JOIN US! WE WILL NOT BE SILENCED! ✊🔥']);
+    setTimeout(async () => { try {
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, pick(['I hear you! But protests won\'t fix this! 😅','This is ILLEGAL assembly! Security! 🚔','OK I\'ll consider your demands. Maybe. 😬','In MY day we didn\'t protest, we bought the dip! 👴'])]);
+    } catch(e){} }, rand(10000, 30000));
+    for (let i = 0; i < Math.min(3, supporters.length); i++) {
+      setTimeout(async () => { try {
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [supporters[i], pick(['✊ '+pData.cause+'!!','I stand with @'+leader+'!','THIS IS OUR CITY! ✊🔥','not leaving until demands are met!'])]);
+      } catch(e){} }, rand(15000, 60000));
+    }
+    // Escalate or resolve after 3-10 min
+    setTimeout(async () => { try {
+      const pIdx = cityLiveData.protests.findIndex(p => p.leader === leader && p.cause === pData.cause);
+      if (pIdx === -1) return;
+      if (chance(30) && cityEngine.chaosLevel > 40) {
+        cityLiveData.protests[pIdx].status = 'riot';
+        logCityAction({ type: 'riot', npc: leader, data: { cause: pData.cause }, icon: '🔥', headline: 'Protest turns into RIOT!' });
+        cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 20);
+        await updateCityStats({ security: -15, morale: -10, economy: -8 });
+        cityEngine.mayorApproval = Math.max(0, cityEngine.mayorApproval - 15);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🔥🔥 PROTEST TURNS INTO FULL RIOT!! Citizens STORMING City Hall! Chaos: '+cityEngine.chaosLevel+'%!']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, 'THEY\'RE STORMING THE BUILDING!! SECURITY!! 😱🏛️🔥']);
+        if (cityEngine.mayorApproval < 25 && chance(50)) setTimeout(() => { cityEngine.mayorApproval = 10; checkForCoup(); }, 30000);
+      } else if (chance(40)) {
+        cityLiveData.protests[pIdx].status = 'resolved';
+        logCityAction({ type: 'protest_resolved', npc: leader, data: { cause: pData.cause }, icon: '✅', headline: 'Protest resolved — demands partially met!' });
+        cityEngine.mayorApproval = Math.min(100, cityEngine.mayorApproval + 5);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, 'I\'m addressing the "'+pData.cause+'" demands. Changes incoming! ✅']);
+      } else {
+        cityLiveData.protests[pIdx].status = 'dispersed';
+        logCityAction({ type: 'protest_dispersed', npc: leader, icon: '💨', headline: 'Protest fizzles out.' });
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [leader, 'ok we\'re tired. protest over. but we\'ll be BACK! 😤💤']);
+      }
+    } catch(e){} }, rand(180000, 600000));
+    cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 8);
+    cityEngine.mayorApproval = Math.max(0, cityEngine.mayorApproval - 5);
+    console.log('✊ Protest: '+leader+' — "'+pData.cause+'"');
+  } catch(e) { console.error('Protest error:', e.message); }
+}
+
+// ---- NPC FORMS A GANG ----
+async function npcFormGang(stats) {
+  try {
+    const leader = pick(NPC_CITIZENS); const npc = NPC_PROFILES[leader];
+    const gangNames = ['The '+npc.favToken+' Maxis','Diamond Hand Cartel','Degen Squad','Whale Watchers Alliance','Moon Boys Inc','Bear Patrol','Pump Town Mafia',leader+'\'s Army','The Chad Coalition','Wojak Warriors','Ape Together Strong','Liquidation Squad','Hopium Dealers Anonymous'];
+    const members = (npc.allies || []).concat(NPC_CITIZENS.filter(n => n !== leader && !npc.rivals?.includes(n) && chance(20))).slice(0, 6);
+    const gangName = pick(gangNames);
+    const gang = { name: gangName, leader, members: [leader, ...members], territory: pick(['Downtown','DeFi District','Casino Strip','Moon Quarter','Whale Bay','Degen Alley']), formed: Date.now(), reputation: rand(10,50) };
+    cityLiveData.gangs.unshift(gang);
+    if (cityLiveData.gangs.length > 8) cityLiveData.gangs.pop();
+    logCityAction({ type: 'gang_formed', npc: leader, data: gang, icon: '🏴', headline: leader+' forms "'+gangName+'"!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🏴 NEW FACTION: "'+gangName+'" formed by '+leader+'! '+(members.length+1)+' members controlling '+gang.territory+'!']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [leader, '"'+gangName+'" is OFFICIAL. We run '+gang.territory+'. Don\'t test us. 🏴💪']);
+    if (members.length > 0) setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [pick(members), gangName+' REPRESENT! 🏴']); } catch(e){} }, rand(8000, 20000));
+    await updateCityStats({ security: -5 }); cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 5);
+    if (cityLiveData.gangs.length > 1 && chance(40)) setTimeout(() => triggerGangWar(), rand(60000, 180000));
+    console.log('🏴 Gang: "'+gangName+'" by '+leader);
+  } catch(e) { console.error('Gang error:', e.message); }
+}
+
+async function triggerGangWar() {
+  if (cityLiveData.gangs.length < 2 || cityLiveData.warzone) return;
+  try {
+    const g1 = cityLiveData.gangs[0], g2 = cityLiveData.gangs[1];
+    cityLiveData.warzone = { gang1: g1.name, gang2: g2.name, leader1: g1.leader, leader2: g2.leader, startedAt: Date.now() };
+    logCityAction({ type: 'gang_war', npc: g1.leader, data: cityLiveData.warzone, icon: '⚔️', headline: 'GANG WAR: "'+g1.name+'" vs "'+g2.name+'"!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '⚔️💥 GANG WAR! "'+g1.name+'" vs "'+g2.name+'"! Citizens stay INDOORS!']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [g1.leader, '@'+g2.leader+' wrong fight. "'+g1.name+'" doesn\'t lose. ⚔️']);
+    setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [g2.leader, '@'+g1.leader+' bring it. 💪🏴']); } catch(e){} }, 8000);
+    cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 20);
+    await updateCityStats({ security: -15, morale: -5, economy: -5 });
+    setTimeout(async () => { try {
+      const winner = chance(50) ? g1 : g2; const loser = winner === g1 ? g2 : g1;
+      cityLiveData.warzone = null;
+      logCityAction({ type: 'gang_war_ended', npc: winner.leader, data: { winner: winner.name, loser: loser.name }, icon: '🏆', headline: '"'+winner.name+'" wins!' });
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '⚔️ WAR OVER! "'+winner.name+'" DEFEATS "'+loser.name+'"!']);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [winner.leader, '"'+winner.name+'" WINS! GG EZ! 🏆']);
+    } catch(e){} }, rand(180000, 480000));
+    console.log('⚔️ Gang war: "'+g1.name+'" vs "'+g2.name+'"');
+  } catch(e) { console.error('Gang war error:', e.message); }
+}
+
+// ---- NPC STARTS A CULT ----
+async function npcStartCult(stats) {
+  try {
+    const leader = pick(NPC_CITIZENS); const npc = NPC_PROFILES[leader];
+    const cultNames = ['Church of '+npc.favToken,'Order of the Diamond Hands','The Moonist Temple','Sacred Congregation of Degen',leader+'\'s Enlightened Few','Brotherhood of the Green Candle','Hopium Liberation Front','Temple of the Whale'];
+    const cultName = pick(cultNames);
+    const recruits = NPC_CITIZENS.filter(n => n !== leader && chance(25)).slice(0, 5);
+    const belief = npc.favToken+' will reach $'+rand(100000, 10000000).toLocaleString()+' and bring salvation';
+    const cult = { name: cultName, leader, members: [leader, ...recruits], belief, founded: Date.now() };
+    cityLiveData.activeCult = cult;
+    logCityAction({ type: 'cult_formed', npc: leader, data: cult, icon: '🙏', headline: leader+' founds "'+cultName+'"!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🙏 CULT: '+leader+' founded "'+cultName+'" — claiming '+belief+'! '+recruits.length+' already joined!']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [leader, '🙏 I have seen the light! '+belief+'! JOIN US! 🌟']);
+    for (let i = 0; i < Math.min(2, recruits.length); i++) {
+      setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [recruits[i], '🙏 I believe! '+cultName+' forever!']); } catch(e){} }, rand(10000, 40000));
+    }
+    setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, 'A CULT?! In MY city?! This is... but also '+npc.favToken+' IS based so... 🤔']); } catch(e){} }, rand(20000, 60000));
+    await updateCityStats({ culture: 5, security: -3 });
+    console.log('🙏 Cult: "'+cultName+'" by '+leader);
+  } catch(e) { console.error('Cult error:', e.message); }
+}
+
+// ---- NPC BUILDS SOMETHING ----
+async function npcBuildStructure(stats) {
+  try {
+    const builder = pick(NPC_CITIZENS); const npc = NPC_PROFILES[builder];
+    const structs = [
+      { name: builder+'\'s Monument', type: 'Monument', desc: 'a 50ft golden statue of '+builder, icon: '🗿' },
+      { name: 'The Degen Tower', type: 'Skyscraper', desc: '100-floor tower for leveraged trading', icon: '🏗️' },
+      { name: 'Pump Town Arena', type: 'Arena', desc: 'where NPCs settle beefs', icon: '🏟️' },
+      { name: npc.favToken+' Memorial', type: 'Memorial', desc: 'honoring all who lost money on '+npc.favToken, icon: '🪦' },
+      { name: 'Hopium Pipeline', type: 'Infrastructure', desc: 'delivering hopium to every citizen', icon: '🔧' },
+      { name: builder+'\'s Mansion', type: 'Housing', desc: 'most expensive house in Pump Town', icon: '🏰' },
+      { name: 'Rug Pull Museum', type: 'Museum', desc: 'every rug pull documented', icon: '🏛️' },
+      { name: 'Chart Reading Academy', type: 'Education', desc: 'teaching NPCs to read candles', icon: '📚' },
+      { name: 'City Wall 2.0', type: 'Defense', desc: 'protecting against FUD attacks', icon: '🧱' },
+      { name: 'Moon Landing Pad', type: 'Science', desc: 'for when tokens actually moon', icon: '🔭' }
+    ];
+    const struct = pick(structs);
+    const building = { ...struct, builder, builtAt: Date.now(), cost: rand(5000,50000) };
+    cityLiveData.buildings.unshift(building);
+    if (cityLiveData.buildings.length > 15) cityLiveData.buildings.pop();
+    logCityAction({ type: 'structure_built', npc: builder, data: building, icon: struct.icon, headline: builder+' built "'+struct.name+'"!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🏙️ City Development', struct.icon+' NEW: "'+struct.name+'" — '+struct.desc+'. By '+builder+' for '+building.cost.toLocaleString()+' TOWN!']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [builder, 'Just finished "'+struct.name+'". '+pick(['You\'re welcome! 😎','Cost a fortune but worth it 💰','City needed this 🏗️','Legacy secured 🏆'])]);
+    await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1,$2,$3,$4)`, [builder, 'built', 'built "'+struct.name+'"', struct.icon]);
+    await updateCityStats({ culture: 5, economy: 2, morale: 3 });
+    console.log('🏗️ Built: "'+struct.name+'" by '+builder);
+  } catch(e) { console.error('Build error:', e.message); }
+}
+
+// ---- NPC RUNS FOR MAYOR ----
+async function npcRunsForMayor(stats) {
+  if (cityEngine.electionActive) return;
+  try {
+    const candidate = pick(NPC_CITIZENS); const npc = NPC_PROFILES[candidate];
+    const platforms = ['Free '+npc.favToken+' for everyone!','Lower taxes more casinos!','Mandatory diamond hands — selling is ILLEGAL!','Whale regulation and fair markets!','More memes less rules!','Security overhaul — zero tolerance on rugs!','Total anarchy — no rules at all!'];
+    const campaign = { candidate, platform: pick(platforms), supporters: NPC_CITIZENS.filter(n => n !== candidate && (npc.allies?.includes(n) || chance(30))).slice(0, 8) };
+    cityEngine.electionActive = true;
+    logCityAction({ type: 'npc_election', npc: candidate, data: campaign, icon: '🗳️', headline: candidate+' challenges '+cityEngine.currentMayor+'!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🗳️ ELECTION! '+candidate+' ('+npc.role+') challenges '+cityEngine.currentMayor+'! Platform: "'+campaign.platform+'"']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [candidate, 'I\'m running for MAYOR! My promise: '+campaign.platform+' VOTE FOR ME! 🗳️']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, candidate+' thinks they can run MY city?! BRING IT ON! 👑😤']);
+    for (let i = 0; i < Math.min(3, campaign.supporters.length); i++) {
+      setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [campaign.supporters[i], 'Voting for '+candidate+'! '+campaign.platform+' 🗳️✊']); } catch(e){} }, rand(15000, 60000));
+    }
+    setTimeout(() => resolveElection(candidate), rand(180000, 360000));
+    console.log('🗳️ Election: '+candidate+' vs '+cityEngine.currentMayor);
+  } catch(e) { console.error('Election error:', e.message); cityEngine.electionActive = false; }
+}
+
+// ---- NPC HACKS CITY ----
+async function npcHackCity(stats) {
+  try {
+    const hacker = pick(NPC_CITIZENS.filter(n => ['alpha','analyst','defi','degen'].includes(NPC_PROFILES[n].archetype)));
+    if (!hacker) return;
+    const hacks = [
+      { target: 'Treasury', effect: 'drained 10,000 TOWN from city treasury', statChange: { economy: -10 } },
+      { target: 'Voting System', effect: 'rigged the current vote', statChange: { culture: -5 } },
+      { target: 'Security Cameras', effect: 'disabled all surveillance', statChange: { security: -15 } },
+      { target: 'Mayor\'s Account', effect: 'posted "I resign" from Mayor\'s account', statChange: { morale: -5 } },
+      { target: 'Price Oracle', effect: 'made all prices show +9999%', statChange: { economy: -8, morale: 10 } },
+      { target: 'Jail Database', effect: 'released all prisoners', statChange: { security: -20 } }
+    ];
+    const hack = pick(hacks);
+    logCityAction({ type: 'hack', npc: hacker, data: hack, icon: '💻', headline: hacker+' HACKED the '+hack.target+'!' });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '💻🔓 HACK! The '+hack.target+' breached! They '+hack.effect+'!']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [hacker, 'oops did I do that? 😏💻 '+pick(['skill issue for security','firewall is a joke','you\'re welcome lmao'])]);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, 'WE\'VE BEEN HACKED?! WHO DID THIS?! 😱🔒']);
+    await updateCityStats(hack.statChange); cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 10);
+    if (chance(50)) setTimeout(() => generateCrime('scamming'), rand(30000, 90000));
+    console.log('💻 Hack: '+hacker+' hacked '+hack.target);
+  } catch(e) { console.error('Hack error:', e.message); }
+}
+
 // ---- API ENDPOINTS ----
 
 // City engine status (enhanced)
@@ -4044,7 +4391,16 @@ app.get('/api/city-engine/status', async (req, res) => {
     marketSentiment: cityEngine.marketSentiment,
     activeFeud: cityEngine.activeFeud ? { npc1: cityEngine.activeFeud.npc1, npc2: cityEngine.activeFeud.npc2, reason: cityEngine.activeFeud.reason } : null,
     recentHeadlines: cityEngine.recentHeadlines.slice(-5),
-    cityStats
+    cityStats,
+    // v3 live data
+    businesses: cityLiveData.businesses.slice(0, 10),
+    memecoins: cityLiveData.memecoins.slice(0, 10),
+    gangs: cityLiveData.gangs.slice(0, 5),
+    protests: cityLiveData.protests.filter(p => p.status === 'active' || p.status === 'riot').slice(0, 3),
+    buildings: cityLiveData.buildings.slice(0, 10),
+    activeCult: cityLiveData.activeCult,
+    warzone: cityLiveData.warzone,
+    actionLog: cityLiveData.actionLog.slice(0, 30)
   }});
 });
 
@@ -4066,16 +4422,34 @@ app.post('/api/city-engine/trigger', async (req, res) => {
   if (eventType === 'trade') { await generateNpcTrade(await getCityStats()); return res.json({ success: true, message: 'Trade triggered!' }); }
   if (eventType === 'convo') { await generateConversation(await getCityStats()); return res.json({ success: true, message: 'Conversation triggered!' }); }
   if (eventType === 'news') { await generateNewsReport(await getCityStats()); return res.json({ success: true, message: 'News triggered!' }); }
+  if (eventType === 'memecoin') { await npcLaunchMemecoin(await getCityStats()); return res.json({ success: true, message: 'Memecoin launched!' }); }
+  if (eventType === 'business') { await npcOpenBusiness(await getCityStats()); return res.json({ success: true, message: 'Business opened!' }); }
+  if (eventType === 'protest') { await npcStartProtest(await getCityStats()); return res.json({ success: true, message: 'Protest started!' }); }
+  if (eventType === 'gang') { await npcFormGang(await getCityStats()); return res.json({ success: true, message: 'Gang formed!' }); }
+  if (eventType === 'cult') { await npcStartCult(await getCityStats()); return res.json({ success: true, message: 'Cult started!' }); }
+  if (eventType === 'build') { await npcBuildStructure(await getCityStats()); return res.json({ success: true, message: 'Structure built!' }); }
+  if (eventType === 'election') { await npcRunsForMayor(await getCityStats()); return res.json({ success: true, message: 'Election started!' }); }
+  if (eventType === 'hack') { await npcHackCity(await getCityStats()); return res.json({ success: true, message: 'City hacked!' }); }
+  if (eventType === 'gangwar') { await triggerGangWar(); return res.json({ success: true, message: 'Gang war triggered!' }); }
   cityEngine.lastEventTime = 0; await cityEventLoop();
   res.json({ success: true, message: 'Event triggered!', chaosLevel: cityEngine.chaosLevel, approval: cityEngine.mayorApproval, sentiment: cityEngine.marketSentiment });
 });
 
 // START ENGINE
-const CITY_ENGINE_INTERVAL = 45000; // Check every 45 seconds (faster pace)
+const CITY_ENGINE_INTERVAL = 30000; // Check every 30 seconds — CHAOS MODE
 setInterval(cityEventLoop, CITY_ENGINE_INTERVAL);
-setTimeout(() => { console.log('🌆 City Events Engine v2 STARTED! Full autonomous mode.'); cityEventLoop(); }, 10000);
+setTimeout(() => { console.log('🌆 City Events Engine v3 STARTED! PURE CHAOS MODE.'); cityEventLoop(); }, 10000);
 setInterval(async () => { try { if (getTimeRemaining() < 60000) { await autoResolveVote(); setTimeout(autoGenerateVote, 65000); } } catch(e){} }, 60000);
-console.log('🌆 City Events Engine v2 loaded — full autonomous city');
+console.log('🌆 City Events Engine v3 loaded — PURE CHAOS MODE');
+
+// Also add a dedicated action log endpoint
+app.get('/api/city-engine/actions', (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 30, 100);
+  const type = req.query.type;
+  let actions = cityLiveData.actionLog;
+  if (type) actions = actions.filter(a => a.type === type);
+  res.json({ success: true, actions: actions.slice(0, limit), total: cityLiveData.actionLog.length });
+});
 
 // ==================== HEALTH CHECK (UPDATED) ====================
 
