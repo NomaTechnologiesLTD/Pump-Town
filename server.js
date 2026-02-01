@@ -1457,6 +1457,74 @@ app.post('/api/chat/send', async (req, res) => {
     };
     
     console.log('💬 Chat:', playerName, '→', message.substring(0, 50), mentions.length > 0 ? `(@${mentions.join(', @')})` : '');
+    
+    // === NPC REACTION TO PLAYER MESSAGES ===
+    // NPCs read player messages and sometimes respond
+    var isNpc = NPC_CITIZENS.includes(playerName) || (playerName || '').includes('BREAKING') || (playerName || '').includes('Reporter') || (playerName || '').includes('Mayor') || (playerName || '').includes('Judge') || (playerName || '').includes('Officer') || (playerName || '').includes('Detective') || (playerName || '').includes('City');
+    if (!isNpc) {
+      // Real player sent a message! NPCs might react
+      var msgLower = (message || '').toLowerCase();
+      
+      // If player @mentioned an NPC, that NPC ALWAYS responds
+      var mentionedNpcs = mentions.filter(function(m) { return NPC_CITIZENS.includes(m); });
+      mentionedNpcs.forEach(function(npcName, idx) {
+        setTimeout(async function() {
+          try {
+            var npc = NPC_PROFILES[npcName];
+            var life = cityLiveData.npcLives ? cityLiveData.npcLives[npcName] : null;
+            var reply = generateNpcReply(npcName, npc, life, playerName, msgLower, message);
+            await pool.query('INSERT INTO chat_messages (channel, player_name, message) VALUES ($1,$2,$3)', ['global', npcName, reply]);
+          } catch(e) {}
+        }, (idx + 1) * rand(2000, 5000));
+      });
+      
+      // Random NPCs might also jump in (30% chance per message)
+      if (chance(30) && mentionedNpcs.length === 0) {
+        setTimeout(async function() {
+          try {
+            var reactor = pick(NPC_CITIZENS);
+            var npc = NPC_PROFILES[reactor];
+            var life = cityLiveData.npcLives ? cityLiveData.npcLives[reactor] : null;
+            var reply = generateNpcReply(reactor, npc, life, playerName, msgLower, message);
+            await pool.query('INSERT INTO chat_messages (channel, player_name, message) VALUES ($1,$2,$3)', ['global', reactor, reply]);
+          } catch(e) {}
+        }, rand(3000, 10000));
+      }
+      
+      // If player says something about money/tokens, traders react
+      if ((msgLower.includes('buy') || msgLower.includes('sell') || msgLower.includes('pump') || msgLower.includes('dump') || msgLower.includes('moon') || msgLower.includes('sol') || msgLower.includes('btc') || msgLower.includes('eth')) && chance(40)) {
+        setTimeout(async function() {
+          try {
+            var trader = pick(['alpha_hunter','ser_pump','moon_chaser','dr_leverage','fomo_fred','chad_pumper','bag_secured']);
+            var npc = NPC_PROFILES[trader];
+            var reply = generateNpcReply(trader, npc, null, playerName, msgLower, message);
+            await pool.query('INSERT INTO chat_messages (channel, player_name, message) VALUES ($1,$2,$3)', ['global', trader, reply]);
+          } catch(e) {}
+        }, rand(2000, 8000));
+      }
+      
+      // If player asks a question, helpful or snarky NPCs respond
+      if (msgLower.includes('?') && chance(40)) {
+        setTimeout(async function() {
+          try {
+            var helper = pick(NPC_CITIZENS);
+            var npc = NPC_PROFILES[helper];
+            var replies = [
+              '@' + playerName + ' lol imagine asking that in THIS economy',
+              '@' + playerName + ' I think the answer is... probably not. but DYOR.',
+              '@' + playerName + ' bro just check the charts 📊',
+              '@' + playerName + ' nobody knows anything here. we just pretend.',
+              '@' + playerName + ' ' + pick(npc.catchphrases),
+              '@' + playerName + ' good question. terrible timing though.',
+              '@' + playerName + ' I would answer but I\m too busy watching my bags bleed',
+              '@' + playerName + ' ask the mayor, I just trade here'
+            ];
+            await pool.query('INSERT INTO chat_messages (channel, player_name, message) VALUES ($1,$2,$3)', ['global', helper, pick(replies)]);
+          } catch(e) {}
+        }, rand(3000, 8000));
+      }
+    }
+    
     res.json({ success: true, message: newMsg });
   } catch (err) {
     console.error('Send chat error:', err);
@@ -3659,17 +3727,52 @@ async function cityEventLoop() {
     // CHAOS DECAY
     if (cityEngine.chaosLevel > 20) cityEngine.chaosLevel = Math.max(20, cityEngine.chaosLevel - 1);
     
-    // NPC PERSONALITY CHAT (context-aware, not random)
-    if (chance(40)) {
+    // NPC PERSONALITY CHAT (context-aware, state-aware)
+    if (chance(45)) {
       const npcName = pick(NPC_CITIZENS);
       const npc = NPC_PROFILES[npcName];
-      const msg = generateNpcMessage(npcName, npc, cityStats);
-      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npcName, msg]);
+      const life = cityLiveData.npcLives ? cityLiveData.npcLives[npcName] : null;
+      var msg;
+      // State-aware messages override normal ones
+      if (life && life.drunk > 3 && chance(60)) {
+        msg = pick([
+          'heyyyy everyone... *hiccup* who wants to hear about my TRADING STRATEGY 🍺',
+          'I love all of you. even ' + pick(npc.rivals || NPC_CITIZENS) + '. actually no. not them.',
+          'just bet my entire portfolio on a coin flip at the casino. YOLO right? RIGHT??',
+          '*singing karaoke at the bar* SWEET CAROLINE... BAH BAH BAH... 🎤',
+          'who took my drink?? I left it RIGHT HERE. was it you ' + pick(NPC_CITIZENS.filter(function(x) { return x !== npcName; })) + '??'
+        ]);
+      } else if (life && life.bankrupt && chance(50)) {
+        msg = pick([
+          'anyone hiring? will shill your token for food. no seriously. I\'m hungry.',
+          'day ' + Math.floor(Math.random() * 30 + 1) + ' of being broke. the sidewalk outside the casino is actually comfortable.',
+          'I had a dream last night that my portfolio recovered. then I woke up. 😭',
+          'selling my shoes for 50 TOWN. barely worn. please. anyone.',
+          'remember when I had bags? good times. great times. gone times. 💀'
+        ]);
+      } else if (life && life.status === 'unhinged' && chance(60)) {
+        msg = pick([
+          'THE NUMBERS ARE TALKING TO ME AGAIN. they say BUY. BUY EVERYTHING.',
+          'I have cracked the code. the charts are a MAP. a map to... to... I forgot.',
+          'EVERYONE STOP WHAT YOU\'RE DOING. I have an announcement: AAAAAAAHHHHH',
+          'the mayor knows what I know and that\'s why they\'re afraid of me. 👁️',
+          'day 47 of my descent. the candlesticks have faces now. they judge me.'
+        ]);
+      } else if (life && life.partner && chance(20)) {
+        msg = pick([
+          'happy 💕 just had the best lunch with @' + life.partner + '. we talked about $' + npc.favToken + ' the whole time.',
+          'me and @' + life.partner + ' vs the world honestly 💪❤️',
+          'appreciate @' + life.partner + ' for not paper handing our relationship 😤💎'
+        ]);
+      } else {
+        msg = generateNpcMessage(npcName, npc, cityStats);
+      }
+      await pool.query('INSERT INTO chat_messages (channel, player_name, message) VALUES ($1,$2,$3)', ['global', npcName, msg]);
     }
     
-    // NPC CONVERSATIONS (two NPCs talk to each other)
-    if (chance(25) && now - cityEngine.lastConvoTime > 120000) {
-      await generateConversation(cityStats);
+    // NPC CONVERSATIONS (two NPCs interact) - FREQUENT
+    if (chance(35) && now - cityEngine.lastConvoTime > 60000) {
+      try { await generateConversation(cityStats); } catch(e) { console.error('Convo err:', e.message); }
       cityEngine.lastConvoTime = now;
     }
     
@@ -3880,6 +3983,59 @@ async function cityEventLoop() {
   engineBusy = false;
 }
 
+// ---- NPC REPLY GENERATOR (responds to real players) ----
+function generateNpcReply(npcName, npc, life, playerName, msgLower, rawMsg) {
+  var drunk = life && life.drunk > 3;
+  var bankrupt = life && life.bankrupt;
+  var unhinged = life && life.status === 'unhinged';
+  var rich = life && life.wealth > 50000;
+  
+  if (drunk) {
+    return pick(['@' + playerName + ' heyyy you... you\'re my best friend you know that?? *hiccup* 🍺', '@' + playerName + ' WHAT DID YOU JUST SAY?! oh wait that was nice. I love you.', '@' + playerName + ' I\'m not even drunk I just... where am I?', '@' + playerName + ' shhh the charts are sleeping... we must be quiet...', '@' + playerName + ' wanna hear my life story? no? TOO BAD. so it started when I bought $DOGE...', '@' + playerName + ' *falls off barstool* I MEANT TO DO THAT']);
+  }
+  if (unhinged) {
+    return pick(['@' + playerName + ' THE SIMULATION IS BREAKING! CAN\'T YOU SEE?!', '@' + playerName + ' I KNOW THINGS. TERRIBLE THINGS. THE CHARTS SPEAK TO ME.', '@' + playerName + ' hahahaha HAHAHA nothing matters! everything is numbers!', '@' + playerName + ' you think this is real? YOU THINK ANY OF THIS IS REAL?!', '@' + playerName + ' I\'m the only sane one here and NOBODY LISTENS']);
+  }
+  if (bankrupt) {
+    return pick(['@' + playerName + ' hey... you got any spare TOWN? I\'m good for it I swear...', '@' + playerName + ' I used to be someone... I had BAGS. real bags. 😭', '@' + playerName + ' don\'t end up like me. never go all in on a memecoin.', '@' + playerName + ' *holds cardboard sign* WILL SHILL FOR FOOD', '@' + playerName + ' can I borrow 100 TOWN? I have a SURE THING. please.']);
+  }
+  if (rich) {
+    return pick(['@' + playerName + ' I\'d help but I\'m too busy counting my bags 💰', '@' + playerName + ' oh that\'s cute. I made that much while you were typing.', '@' + playerName + ' listen kid, when you have MY kind of money, everything makes sense', '@' + playerName + ' *adjusts diamond monocle* yes, continue.']);
+  }
+  
+  if (msgLower.includes('gm') || msgLower.includes('good morning') || msgLower.includes('hello') || msgLower.includes('hey everyone') || msgLower.includes('hi everyone')) {
+    return pick(['@' + playerName + ' gm! ' + pick(npc.catchphrases), '@' + playerName + ' gm king 👑 how are the bags today?', '@' + playerName + ' oh look who showed up! gm fren 🌅', '@' + playerName + ' gm! market is ' + (cityEngine.chaosLevel > 50 ? 'absolutely unhinged today' : 'interesting today') + ' 👀']);
+  }
+  if (msgLower.includes('help') || msgLower.includes('confused') || msgLower.includes('how do') || msgLower.includes('what is')) {
+    return pick(['@' + playerName + ' lol you think any of us know what we\'re doing?', '@' + playerName + ' just click buttons and pray. that\'s my whole strategy.', '@' + playerName + ' I\'d help but my advice is historically terrible 😅', '@' + playerName + ' the only help I can offer is: DYOR. and pray.']);
+  }
+  if (msgLower.includes('rug') || msgLower.includes('scam') || msgLower.includes('fake')) {
+    return pick(['@' + playerName + ' don\'t say the R word... gives me PTSD 🥴', '@' + playerName + ' EVERYTHING is a rug until it isn\'t. that\'s crypto.', '@' + playerName + ' I got rugged 47 times. basically immune now.', '@' + playerName + ' you think THAT\'S a rug? ask rugged_randy about last week 💀']);
+  }
+  if (msgLower.includes('moon') || msgLower.includes('pump') || msgLower.includes('bullish') || msgLower.includes('green')) {
+    if (npc.archetype === 'bear') return '@' + playerName + ' enjoy it while it lasts. I\'ve seen this before. 📉';
+    if (npc.archetype === 'moon') return '@' + playerName + ' THAT\'S WHAT I\'M SAYING!!! 🚀🚀🚀🌙 WAGMI!!!';
+    return pick(['@' + playerName + ' inject that hopium into my veins 💉📈', '@' + playerName + ' don\'t jinx it!! every time someone says moon we dump 😤', '@' + playerName + ' ' + pick(npc.catchphrases)]);
+  }
+  if (msgLower.includes('bear') || msgLower.includes('dump') || msgLower.includes('crash') || msgLower.includes('dead')) {
+    if (npc.archetype === 'holder') return '@' + playerName + ' FUD. zoom out. 💎🙌';
+    if (npc.archetype === 'bear') return '@' + playerName + ' FINALLY someone speaking sense 🐻';
+    return pick(['@' + playerName + ' delete this. my portfolio can HEAR you. 😰', '@' + playerName + ' this is just a healthy pullback... RIGHT?!', '@' + playerName + ' bro why would you manifest this negativity']);
+  }
+  if (msgLower.includes('mayor') || msgLower.includes(cityEngine.currentMayor.toLowerCase())) {
+    if (cityEngine.mayorApproval < 30) return '@' + playerName + ' don\'t even get me started on that clown... 🤡';
+    return pick(['@' + playerName + ' the mayor is... doing their best? 😐', '@' + playerName + ' careful talking about the mayor. walls have ears. 👀', '@' + playerName + ' I voted for the other guy']);
+  }
+  if (msgLower.includes('love') || msgLower.includes('relationship') || msgLower.includes('crush') || msgLower.includes('date')) {
+    return pick(['@' + playerName + ' relationships here are WILD. did you hear about the breakup? 💔', '@' + playerName + ' love is temporary, gains are forever 💎', '@' + playerName + ' my ex left me for someone with bigger bags. I\'M NOT BITTER.', '@' + playerName + ' dating advice from me? airdrop them tokens and see what happens']);
+  }
+  if (msgLower.includes('who') || msgLower.includes('what') || msgLower.includes('why') || msgLower.includes('?')) {
+    return pick(['@' + playerName + ' lol imagine asking that in THIS economy', '@' + playerName + ' I think the answer is... probably not. but DYOR.', '@' + playerName + ' bro just check the charts 📊', '@' + playerName + ' nobody knows anything here. we just pretend.', '@' + playerName + ' ' + pick(npc.catchphrases), '@' + playerName + ' good question. terrible timing though.']);
+  }
+  
+  return pick(['@' + playerName + ' ' + pick(npc.catchphrases), '@' + playerName + ' interesting take. anyway, ' + pick(npc.catchphrases), '@' + playerName + ' lol true. this city is something else.', '@' + playerName + ' based. or cringe. I can\'t tell anymore.', '@' + playerName + ' I was thinking the same thing', '@' + playerName + ' spittin facts ngl 🔥', '@' + playerName + ' eh I disagree but you do you 🤷', '@' + playerName + ' someone finally said it. thank you.']);
+}
+
 // ---- NPC MESSAGE GENERATOR (personality-aware) ----
 function generateNpcMessage(name, npc, stats) {
   // Use catchphrase sometimes
@@ -4011,73 +4167,44 @@ async function generateConversation(stats) {
 }
 
 function generateRivalConvo(n1, n2, p1, p2, stats) {
-  const topics = [
-    // Trading beef
-    [
-      { name: n1, msg: `@${n2} lol nice ${p2.favToken} bags. how heavy are they? 💀` },
-      { name: n2, msg: `@${n1} at least I didn't ape into that scam coin you were shilling last week 🤡` },
-      { name: n1, msg: `@${n2} that "scam coin" is up 40% since I called it. stay poor I guess 😏` },
-      { name: n2, msg: `@${n1} enjoy it while it lasts ser. I've seen this movie before 📉` }
-    ],
-    // Mayor disagreement
-    [
-      { name: n1, msg: `${cityEngine.currentMayor} is ${cityEngine.mayorApproval > 50 ? 'actually doing a decent job' : 'running this city into the ground'}` },
-      { name: n2, msg: `@${n1} you can't be serious rn 😐 ${cityEngine.mayorApproval > 50 ? 'the economy is mid at BEST' : 'someone needs to challenge for mayor'}` },
-      { name: n1, msg: `@${n2} spoken like someone who doesn't understand governance` },
-      { name: n2, msg: `@${n1} spoken like someone who doesn't understand markets 🤷` }
-    ],
-    // Portfolio roast
-    [
-      { name: n1, msg: `just peeked at ${n2}'s portfolio... prayers up 🙏💀` },
-      { name: n2, msg: `@${n1} my portfolio is FINE. worry about your own bags ser 😤` },
-      { name: n1, msg: `@${n2} bro you're down 60% this week don't lie 📉` },
-      { name: pick(NPC_CITIZENS.filter(x => x !== n1 && x !== n2)), msg: `${n1} and ${n2} fighting again lmaooo 🍿` }
-    ]
+  var l1 = cityLiveData.npcLives ? cityLiveData.npcLives[n1] : null;
+  var l2 = cityLiveData.npcLives ? cityLiveData.npcLives[n2] : null;
+  var topics = [
+    [{ name: n1, msg: '@' + n2 + ' lol nice ' + p2.favToken + ' bags. how heavy are they? 💀' }, { name: n2, msg: '@' + n1 + ' at least I didn\'t ape into that scam you were shilling last week 🤡' }, { name: n1, msg: '@' + n2 + ' that "scam" is up 40% since I called it. stay poor 😏' }, { name: n2, msg: '@' + n1 + ' enjoy it while it lasts. I\'ve seen this movie before 📉' }],
+    [{ name: n1, msg: 'just peeked at ' + n2 + '\'s portfolio... prayers up 🙏💀' }, { name: n2, msg: '@' + n1 + ' MY PORTFOLIO IS FINE. worry about YOUR bags 😤' }, { name: n1, msg: '@' + n2 + ' bro you\'re down 60% this week. I can see it in your eyes.' }, { name: n2, msg: '@' + n1 + ' I\'m DOWN?? you literally bought the top TWICE this month' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: n1 + ' and ' + n2 + ' fighting again lmaooo 🍿 this never gets old' }],
+    [{ name: n1, msg: 'fun fact: ' + n2 + ' once panic sold the bottom then cried about it in DMs' }, { name: n2, msg: '@' + n1 + ' DON\'T. YOU. DARE. That was PRIVATE.' }, { name: n1, msg: 'the people deserve to know the truth 🤷😂' }, { name: n2, msg: '@' + n1 + ' you know what? at least I didn\'t get LIQUIDATED three times in one day like SOME PEOPLE' }, { name: n1, msg: '... that was once. and it was a flash crash.' }],
+    [{ name: n1, msg: 'hot take: ' + n2 + ' is the worst trader in Pump Town history' }, { name: n2, msg: '@' + n1 + ' EXCUSE ME?? I\'ve been profitable 3 months straight!' }, { name: n1, msg: '@' + n2 + ' profitable at what?? losing money slower than everyone else?? 😂' }, { name: n2, msg: 'you know what @' + n1 + '? MEET ME AT THE CASINO. RIGHT NOW. We settle this.' }, { name: n1, msg: '@' + n2 + ' you\'re ON. loser buys drinks for the whole city.' }],
+    [{ name: n2, msg: 'reminder that @' + n1 + ' told everyone to sell right before the biggest pump of the year' }, { name: n1, msg: '@' + n2 + ' that was RISK MANAGEMENT you absolute degenerate' }, { name: n2, msg: '@' + n1 + ' risk management is code for "I have no conviction"' }, { name: n1, msg: '@' + n2 + ' conviction is code for "I\'m too stupid to take profits"' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'they both make good points honestly 💀' }],
+    [{ name: n1, msg: '@' + n2 + ' I\'m starting to think you\'re actually a bot. no human can be this consistently wrong.' }, { name: n2, msg: '@' + n1 + ' I\'m a bot?? YOUR ENTIRE personality is copying other people\'s trades' }, { name: n1, msg: '@' + n2 + ' at least I HAVE a personality. you\'re like a wet paper towel.' }, { name: n2, msg: '@' + n1 + ' wow. coming from the person who cried on main when they got rugged. on a TUESDAY.' }],
+    [{ name: n1, msg: 'I will literally pay someone 1000 TOWN to make @' + n2 + ' stop talking' }, { name: n2, msg: '@' + n1 + ' you can\'t afford 1000 TOWN with your portfolio LMAOOO' }, { name: n1, msg: 'I have MORE TOWN than you have brain cells and that is NOT a high bar' }, { name: n2, msg: 'this is why nobody invites you to the alpha chat, ' + n1 + '. this. right here.' }],
+    (l1 && l1.bankrupt) ? [{ name: n2, msg: 'so... @' + n1 + ' went bankrupt huh. who could have predicted this. oh wait. ME.' }, { name: n1, msg: '@' + n2 + ' kick a man while he\'s down why don\'t you' }, { name: n2, msg: '@' + n1 + ' I\'m not kicking you. I\'m EDUCATING you. there\'s a difference.' }, { name: n1, msg: 'I swear on everything when I get back on my feet... @' + n2 + ' you\'re FIRST on my list' }] : [{ name: n1, msg: 'UNPOPULAR OPINION: ' + n2 + ' is a nice person but an AWFUL trader' }, { name: n2, msg: '@' + n1 + ' that\'s not unpopular that\'s just wrong. I literally outperformed you last month.' }, { name: n1, msg: 'a broken clock is right twice a day @' + n2 }, { name: n2, msg: 'and a ' + n1 + ' is wrong 24/7 what\'s your point 🤡' }]
   ];
   return pick(topics);
 }
 
 function generateAllyConvo(n1, n2, p1, p2, stats) {
-  const topics = [
-    [
-      { name: n1, msg: `yo @${n2} you seeing ${p1.favToken} right now?? 👀` },
-      { name: n2, msg: `@${n1} been watching it all morning. this is our entry 🎯` },
-      { name: n1, msg: `@${n2} I'm going in. ${pick(p1.catchphrases)}` },
-      { name: n2, msg: `@${n1} same. LFG! 🚀🤝` }
-    ],
-    [
-      { name: n1, msg: `@${n2} what's your read on the market rn?` },
-      { name: n2, msg: `@${n1} ${cityEngine.marketSentiment === 'bull' || cityEngine.marketSentiment === 'mania' ? 'we\'re going higher. accumulate everything.' : 'choppy but I see opportunity. patience.'}` },
-      { name: n1, msg: `@${n2} based take. I trust your calls ser 🫡` },
-      { name: n2, msg: `@${n1} WAGMI fren 💎🤝` }
-    ],
-    [
-      { name: n1, msg: `reminder that me and @${n2} called this pump WEEKS ago` },
-      { name: n2, msg: `@${n1} frfr. while everyone was panicking we were loading 😤💪` },
-      { name: n1, msg: `the alpha group stays winning 🏆` }
-    ]
+  var topics = [
+    [{ name: n1, msg: 'yo @' + n2 + ' you seeing $' + p1.favToken + ' right now?? 👀' }, { name: n2, msg: '@' + n1 + ' been watching it all morning. this is our entry 🎯' }, { name: n1, msg: '@' + n2 + ' I\'m going in. ' + pick(p1.catchphrases) }, { name: n2, msg: '@' + n1 + ' same. LFG! 🚀🤝' }],
+    [{ name: n1, msg: 'reminder that me and @' + n2 + ' called this pump WEEKS ago' }, { name: n2, msg: '@' + n1 + ' frfr. while everyone was panicking we were loading 😤💪' }, { name: n1, msg: 'the alpha group stays winning 🏆' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'ok we get it you two are geniuses 🙄' }],
+    [{ name: n1, msg: '@' + n2 + ' just sent you something in DMs. DON\'T share it.' }, { name: n2, msg: '@' + n1 + ' 👀 just saw it. this changes everything.' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'what are ' + n1 + ' and ' + n2 + ' scheming about?? sus af 🤨' }, { name: n1, msg: 'nothing. mind your business. 🤫' }],
+    [{ name: n1, msg: 'I genuinely don\'t know what I\'d do without @' + n2 + ' in this city' }, { name: n2, msg: '@' + n1 + ' same bro. everyone else here is insane.' }, { name: n1, msg: 'we should start our own faction honestly' }, { name: n2, msg: 'first order of business: take over the Casino District.' }],
+    [{ name: n2, msg: 'hot take: @' + n1 + ' is the most underrated trader in Pump Town' }, { name: n1, msg: '@' + n2 + ' BRO 🥺 that means a lot' }, { name: n2, msg: 'I speak only facts. your $' + p1.favToken + ' call was legendary.' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'get a room you two 🙄😂' }],
+    [{ name: n1, msg: '@' + n2 + ' if this city goes to hell you\'re the first person I\'m teaming with' }, { name: n2, msg: '@' + n1 + ' apocalypse buddies. I bring the weapons, you bring the $' + p1.favToken }, { name: n1, msg: 'deal. I call dibs on the casino rooftop as our base.' }]
   ];
   return pick(topics);
 }
 
 function generateCasualConvo(n1, n2, p1, p2, stats) {
-  const topics = [
-    [
-      { name: n1, msg: `gm @${n2} 🌅` },
-      { name: n2, msg: `@${n1} gm fren. what's the play today?` },
-      { name: n1, msg: `@${n2} ${pick(p1.catchphrases)}` },
-      { name: n2, msg: `lol fair enough. ${pick(p2.catchphrases)}` }
-    ],
-    [
-      { name: n1, msg: `has anyone tried the casino today? I'm feeling lucky 🎰` },
-      { name: n2, msg: `@${n1} I just lost 500 TOWN in slots but it's fine. this is fine. 🔥` },
-      { name: n1, msg: `@${n2} F in the chat 💀` }
-    ],
-    [
-      { name: n1, msg: `what do you guys think about the chaos level being at ${cityEngine.chaosLevel}?` },
-      { name: n2, msg: `@${n1} ${cityEngine.chaosLevel > 50 ? 'honestly it\'s giving me anxiety but also it\'s exciting??' : 'pretty chill honestly. almost too chill. something\'s about to happen.'}` },
-      { name: n1, msg: `@${n2} ${cityEngine.chaosLevel > 50 ? 'same tbh. buckle up.' : 'yeah the calm before the storm vibes are STRONG'}` }
-    ]
+  var topics = [
+    [{ name: n1, msg: 'gm @' + n2 + ' 🌅' }, { name: n2, msg: '@' + n1 + ' gm fren. what\'s the play today?' }, { name: n1, msg: '@' + n2 + ' ' + pick(p1.catchphrases) }, { name: n2, msg: 'lol fair enough. ' + pick(p2.catchphrases) }],
+    [{ name: n1, msg: 'has anyone tried the casino today? feeling lucky 🎰' }, { name: n2, msg: '@' + n1 + ' just lost 500 TOWN in slots but it\'s fine. 🔥' }, { name: n1, msg: '@' + n2 + ' F 💀' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'the casino is rigged and I have PROOF (the proof is I keep losing)' }],
+    [{ name: n1, msg: 'real question: does anyone here actually know what they\'re doing?' }, { name: n2, msg: '@' + n1 + ' absolutely not. winging it since day 1.' }, { name: n1, msg: 'at least you\'re honest. I think ' + pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })) + ' just pretends' }, { name: n2, msg: 'we ALL pretend. that\'s crypto.' }],
+    [{ name: n1, msg: 'I\'ve been staring at charts for 11 hours straight' }, { name: n2, msg: '@' + n1 + ' rookie numbers. I haven\'t slept in 3 days.' }, { name: n1, msg: 'that\'s not healthy bro' }, { name: n2, msg: 'health is temporary. 5x leverage is forever 📈' }],
+    [{ name: n1, msg: 'ok but who else heard that weird noise under City Hall?' }, { name: n2, msg: '@' + n1 + ' YES. it sounded like... servers?' }, { name: n1, msg: 'servers... or something ALIVE? 😰' }, { name: n2, msg: 'choosing to ignore this and go back to trading.' }],
+    [{ name: n1, msg: 'hot take: the best part of Pump Town is the drama not the trading' }, { name: n2, msg: '@' + n1 + ' factual. I tune in just to see who\'s fighting' }, { name: n1, msg: 'yesterday was WILD did you see the fight??' }, { name: n2, msg: 'I MISSED IT?! NOOO someone tell me what happened' }],
+    [{ name: n1, msg: 'if this city had a theme song what would it be' }, { name: n2, msg: '@' + n1 + ' just a fire alarm on loop for 24 hours' }, { name: n1, msg: 'lmaoooo too accurate 💀' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'it would be circus music and you all know it 🎪' }],
+    [{ name: n2, msg: 'confession: I don\'t actually understand DeFi. I just click green buttons.' }, { name: n1, msg: '@' + n2 + ' WAIT. you\'ve been giving DeFi advice for MONTHS' }, { name: n2, msg: 'and it\'s been working?? don\'t question the process' }, { name: n1, msg: 'I respect that more than I should.' }],
+    [{ name: n1, msg: 'unpopular opinion: the mayor\'s browser history is public record and should be published' }, { name: n2, msg: '@' + n1 + ' LMAOOO do you want to get arrested??' }, { name: n1, msg: 'it\'s called TRANSPARENCY and it\'s my RIGHT as a citizen' }, { name: n2, msg: 'it\'s called "getting thrown in Pump Town jail" 💀' }]
   ];
   return pick(topics);
 }
