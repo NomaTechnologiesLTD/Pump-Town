@@ -14745,7 +14745,7 @@
             const pages = {
                 dashboard: { icon: '🏠', title: 'Dashboard', subtitle: 'Overview of your Pump Town activity' },
                 actions: { icon: '⚡', title: 'Take Action', subtitle: 'Launch, Snipe, Hold, Dump, or Rug' },
-                ledger: { icon: '📜', title: 'City Ledger', subtitle: 'Public record of all actions' },
+                ledger: { icon: '📜', title: 'City Ledger', subtitle: 'Live record of everything happening in the city' },
                 governance: { icon: '🗳️', title: 'Governance', subtitle: 'Vote on city decisions' },
                 arcade: { icon: '🎮', title: 'Degen Arcade', subtitle: 'Play games to earn resources' },
                 trading: { icon: '📈', title: 'Trading', subtitle: 'Launch coins & leverage trade' },
@@ -15258,6 +15258,22 @@
                                     <span className="nav-item-badge live">VOTE</span>
                                 )}
                             </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'agents' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('agents'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">🤖</span>
+                                <span className="nav-item-text">Citizen Arena</span>
+                                <span className="nav-item-badge new" style={{ background: '#00ff88' }}>LIVE</span>
+                            </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'courthouse' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('courthouse'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">⚖️</span>
+                                <span className="nav-item-text">Courthouse</span>
+                                <span className="nav-item-badge new">LIVE</span>
+                            </div>
                         </div>
                         
                         <div className="nav-section">
@@ -15282,22 +15298,6 @@
                             >
                                 <span className="nav-item-icon">🔮</span>
                                 <span className="nav-item-text">Predictions</span>
-                                <span className="nav-item-badge new">NEW</span>
-                            </div>
-                            <div 
-                                className={`nav-item ${currentPage === 'agents' ? 'active' : ''}`}
-                                onClick={() => { setCurrentPage('agents'); setSidebarOpen(false); }}
-                            >
-                                <span className="nav-item-icon">🤖</span>
-                                <span className="nav-item-text">Citizen Arena</span>
-                                <span className="nav-item-badge new" style={{ background: '#00ff88' }}>LIVE</span>
-                            </div>
-                            <div 
-                                className={`nav-item ${currentPage === 'courthouse' ? 'active' : ''}`}
-                                onClick={() => { setCurrentPage('courthouse'); setSidebarOpen(false); }}
-                            >
-                                <span className="nav-item-icon">⚖️</span>
-                                <span className="nav-item-text">Courthouse</span>
                                 <span className="nav-item-badge new">NEW</span>
                             </div>
                         </div>
@@ -16578,193 +16578,117 @@
             );
         }
 
-        // ==================== CITY LEDGER (Public Memory) ====================
+        // ==================== CITY LEDGER (LIVE Engine Data) ====================
         function CityLedger({ character }) {
+            const [engineData, setEngineData] = useState(null);
             const [filter, setFilter] = useState('all');
-            const [actionHistory, setActionHistory] = useState(() => {
-                const saved = localStorage.getItem('pumptown_action_history');
-                const version = localStorage.getItem('pumptown_ledger_version');
-                
-                // Force regeneration if old version (to get new diverse names)
-                if (version !== 'v3') {
-                    localStorage.removeItem('pumptown_action_history');
-                    localStorage.setItem('pumptown_ledger_version', 'v3');
-                    return generateInitialHistory();
-                }
-                
-                return saved ? JSON.parse(saved) : generateInitialHistory();
-            });
-
-            const filteredHistory = filter === 'all' 
-                ? actionHistory 
-                : actionHistory.filter(h => h.outcome === filter || (filter === 'rug' && h.action === 'rug'));
-
-            // Hall of Fame - top wins
-            const fameEntries = actionHistory
-                .filter(h => h.outcome === 'win' && h.action !== 'rug')
-                .slice(0, 5);
-
-            // Wall of Shame - ruggers and big losses
-            const shameEntries = [
-                ...actionHistory.filter(h => h.action === 'rug'),
-                ...actionHistory.filter(h => h.outcome === 'loss' && h.repChange <= -8)
-            ].slice(0, 5);
-
-            return (
-                <>
-                    {/* Hall of Fame / Shame */}
-                    <div className="hall-grid">
-                        <div className="hall-card fame">
-                            <h3>🏆 Hall of Fame</h3>
-                            {fameEntries.length === 0 ? (
-                                <p style={{ color: '#888', textAlign: 'center' }}>No legendary wins yet...</p>
-                            ) : (
-                                fameEntries.map(entry => (
-                                    <div key={entry.id} className="hall-entry">
-                                        <div className="hall-entry-icon">{entry.actionIcon}</div>
-                                        <div>
-                                            <div className="hall-entry-name">{entry.player}</div>
-                                            <div className="hall-entry-deed">{entry.outcomeText}</div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                        <div className="hall-card shame">
-                            <h3>🧹 Wall of Shame</h3>
-                            {shameEntries.length === 0 ? (
-                                <p style={{ color: '#888', textAlign: 'center' }}>No ruggers... yet.</p>
-                            ) : (
-                                shameEntries.map(entry => (
-                                    <div key={entry.id} className="hall-entry">
-                                        <div className="hall-entry-icon">{entry.action === 'rug' ? '🧹' : '💀'}</div>
-                                        <div>
-                                            <div className="hall-entry-name" style={{ color: '#ff4444' }}>{entry.player}</div>
-                                            <div className="hall-entry-deed">{entry.action === 'rug' ? 'Rugged the community' : entry.outcomeText}</div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Full Ledger */}
-                    <div className="ledger-section" style={{ marginTop: '30px' }}>
-                        <div className="ledger-header">
-                            <h2>📜 Complete City Ledger</h2>
-                            <div className="ledger-filters">
-                                {['all', 'win', 'loss', 'neutral', 'rug'].map(f => (
-                                    <button 
-                                        key={f}
-                                        className={`ledger-filter-btn ${filter === f ? 'active' : ''}`}
-                                        onClick={() => setFilter(f)}
-                                    >
-                                        {f === 'all' ? 'All' : f === 'rug' ? '🧹 Rugs' : f.charAt(0).toUpperCase() + f.slice(1) + 's'}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {filteredHistory.length === 0 ? (
-                            <p style={{ color: '#888', textAlign: 'center', padding: '40px' }}>
-                                No history matching this filter.
-                            </p>
-                        ) : (
-                            filteredHistory.map(entry => (
-                                <div key={entry.id} className={`ledger-entry ${entry.outcome} ${entry.action === 'rug' ? 'rug' : ''}`}>
-                                    <div className="ledger-icon">{entry.actionIcon}</div>
-                                    <div className="ledger-content">
-                                        <div className="ledger-action">
-                                            <span className="ledger-player">{entry.player}</span> chose {entry.action.toUpperCase()}
-                                            {entry.multiplier && entry.multiplier.value > 1 && (
-                                                <span className={`multiplier-badge rarity-${entry.multiplier.rarity}`}>
-                                                    {entry.multiplier.icon} {entry.multiplier.value}x
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="ledger-result">{entry.outcomeText}</div>
-                                    </div>
-                                    <div className="ledger-time">{getTimeAgo(entry.timestamp)}</div>
-                                    <div className={`ledger-rep ${entry.repChange >= 0 ? 'positive' : 'negative'}`}>
-                                        {entry.repChange >= 0 ? '+' : ''}{entry.repChange} REP
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </>
-            );
-        }
-
-        // Helper: Generate initial history
-        function generateInitialHistory() {
-            const actions = ['launch', 'snipe', 'hold', 'dump'];
-            const outcomes = ['win', 'loss', 'neutral'];
-            const icons = { launch: '🚀', snipe: '🎯', hold: '💎', dump: '📉', rug: '🧹' };
+            const [loading, setLoading] = useState(true);
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
-            // Mix of realistic usernames - same names can win or lose
-            const names = [
-                // Normal-ish names
-                'alex_trades', 'mike_2024', 'sarah.crypto', 'jason_w', 'emma_h', 
-                'david_k', 'chris_m', 'jenny_l', 'matt_trades', 'lisa_q',
-                'kevin_btc', 'amy_sol', 'ryan_dev', 'nicole_x', 'brian_z',
-                'steve_88', 'maria_99', 'tom_trader', 'kate_defi', 'john_nft',
-                // Crypto-ish names
-                'ChadTrader', 'based_andy', 'ser_pump', 'anon_whale', 'degen_mike',
-                'alpha_hunter', 'bag_secured', '0xJake', 'sol_maxi', 'eth_bull',
-                'moon_chaser', 'early_ape', 'diamond_dan', 'paper_pete', 'fomo_fred',
-                // Numbers/random style
-                'trader_4521', 'user_8829', 'anon_3847', 'wallet_6612', 'x_9981',
-                '0xabc123', 'dex_user42', 'swap_king99', 'yield_farm3r', 'lp_provider'
-            ];
-            
-            const texts = {
-                win: ['Massive gains!', 'Perfect timing!', 'To the moon!', 'Legendary play!', 'Called it!', 'Easy money!', '10x baby!', 'Nailed it!'],
-                loss: ['Rekt.', 'Bought the top.', 'RIP bags.', 'Held to zero.', 'Liquidated.', 'Got dumped on.', 'Caught the knife.', 'Ouch.'],
-                neutral: ['Broke even.', 'Could be worse.', 'Survived.', 'Living to trade again.', 'Meh.']
+            const fetchData = async () => {
+                try {
+                    const res = await fetch(API_BASE + '/api/city-engine/status');
+                    const data = await res.json();
+                    if (data.success) setEngineData(data.engine);
+                } catch(e) { console.error('Ledger fetch error:', e); }
+                setLoading(false);
             };
+            useEffect(function() { fetchData(); var iv = setInterval(fetchData, 10000); return function() { clearInterval(iv); }; }, []);
             
-            const rugTexts = ['Rugged the community', 'Drained the pool', 'Exit scammed', 'Dumped it all', 'Pulled liquidity'];
-
-            const history = [];
-            const shuffledNames = [...names].sort(() => Math.random() - 0.5);
+            if (loading || !engineData) return React.createElement('div', { className: 'card', style: { textAlign: 'center', padding: '40px' } }, React.createElement('div', { style: { fontSize: '2em', animation: 'pulse 1.5s infinite' } }, '📜'), 'Loading city records...');
             
-            for (let i = 0; i < 30; i++) {
-                const action = actions[Math.floor(Math.random() * actions.length)];
-                const outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
-                const name = shuffledNames[i % shuffledNames.length];
+            var actions = engineData.actionLog || [];
+            var typeFilters = { all: null, tokens: ['memecoin_launch','memecoin_rugged','memecoin_pump'], business: ['business_opened'], unrest: ['protest_started','protest_resolved','protest_dispersed','riot'], factions: ['gang_formed','gang_war','gang_war_ended','cult_formed'], builds: ['structure_built'], power: ['npc_election','hack'] };
+            var filtered = filter === 'all' ? actions : actions.filter(function(a) { return (typeFilters[filter] || []).includes(a.type); });
+            
+            var typeStyles = { memecoin_launch: { color: '#00ff88', icon: '🚀', label: 'TOKEN LAUNCH' }, memecoin_rugged: { color: '#ff4444', icon: '💀', label: 'RUGGED' }, memecoin_pump: { color: '#ffd700', icon: '📈', label: 'PUMP' }, business_opened: { color: '#4488ff', icon: '🏪', label: 'BUSINESS' }, protest_started: { color: '#ff8800', icon: '✊', label: 'PROTEST' }, protest_resolved: { color: '#00ff88', icon: '✅', label: 'RESOLVED' }, protest_dispersed: { color: '#888', icon: '💨', label: 'DISPERSED' }, riot: { color: '#ff0000', icon: '🔥', label: 'RIOT' }, gang_formed: { color: '#8a2be2', icon: '🏴', label: 'NEW FACTION' }, gang_war: { color: '#ff4444', icon: '⚔️', label: 'GANG WAR' }, gang_war_ended: { color: '#00ff88', icon: '🏆', label: 'WAR ENDED' }, cult_formed: { color: '#ff88ff', icon: '🙏', label: 'CULT' }, structure_built: { color: '#4488ff', icon: '🏗️', label: 'BUILT' }, npc_election: { color: '#ffd700', icon: '🗳️', label: 'ELECTION' }, hack: { color: '#ff00ff', icon: '💻', label: 'HACKED' } };
+            
+            return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '15px' } },
+                // CITY STATS SUMMARY
+                React.createElement('div', { className: 'card', style: { padding: '15px' } },
+                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' } },
+                        [
+                            { label: '🚀 Tokens Launched', value: (engineData.memecoins || []).length, color: '#00ff88' },
+                            { label: '🏪 Businesses', value: (engineData.businesses || []).length, color: '#4488ff' },
+                            { label: '🏗️ Structures', value: (engineData.buildings || []).length, color: '#8a2be2' },
+                            { label: '🏴 Factions', value: (engineData.gangs || []).length, color: '#ff8800' }
+                        ].map(function(s) {
+                            return React.createElement('div', { key: s.label, style: { background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', textAlign: 'center' } },
+                                React.createElement('div', { style: { color: s.color, fontWeight: 'bold', fontSize: '1.5em' } }, s.value),
+                                React.createElement('div', { style: { color: '#888', fontSize: '0.7em', marginTop: '4px' } }, s.label)
+                            );
+                        })
+                    )
+                ),
                 
-                history.push({
-                    id: Date.now() - i * 100000,
-                    player: name,
-                    action,
-                    actionIcon: icons[action],
-                    outcome,
-                    outcomeText: texts[outcome][Math.floor(Math.random() * texts[outcome].length)],
-                    repChange: outcome === 'win' ? Math.floor(Math.random() * 15) + 5 : 
-                               outcome === 'loss' ? -Math.floor(Math.random() * 10) - 3 : 
-                               Math.floor(Math.random() * 5),
-                    timestamp: Date.now() - i * 3600000
-                });
-            }
-            
-            // Add a few rugs scattered throughout - using NORMAL names (anyone can rug)
-            const rugPositions = [4, 12, 19, 26];
-            rugPositions.forEach((pos, idx) => {
-                const ruggerName = shuffledNames[40 + idx] || shuffledNames[idx + 10];
-                history.splice(pos, 0, {
-                    id: Date.now() - 500000 - idx * 50000,
-                    player: ruggerName,
-                    action: 'rug',
-                    actionIcon: '🧹',
-                    outcome: 'loss',
-                    outcomeText: rugTexts[idx % rugTexts.length],
-                    repChange: -30,
-                    timestamp: Date.now() - 18000000 - idx * 7200000
-                });
-            });
-            
-            return history;
+                // HALL OF FAME/SHAME
+                React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } },
+                    // Hall of Fame - successful launches
+                    React.createElement('div', { className: 'card', style: { padding: '15px', borderLeft: '3px solid #00ff88' } },
+                        React.createElement('h3', { style: { color: '#00ff88', margin: '0 0 10px 0', fontSize: '0.9em' } }, '🏆 Hall of Fame'),
+                        actions.filter(function(a) { return a.type === 'memecoin_pump' || a.type === 'business_opened' || a.type === 'structure_built'; }).slice(0, 5).map(function(a, i) {
+                            var s = typeStyles[a.type] || {};
+                            return React.createElement('div', { key: i, style: { display: 'flex', gap: '8px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8em' } },
+                                React.createElement('span', null, s.icon || '⚡'),
+                                React.createElement('span', { style: { color: '#ccc', flex: 1 } }, (a.npc || '???') + ': ' + (a.headline || '').substring(0, 40)),
+                                React.createElement('span', { style: { color: '#00ff88', fontSize: '0.75em' } }, '✅')
+                            );
+                        }),
+                        actions.filter(function(a) { return a.type === 'memecoin_pump' || a.type === 'business_opened' || a.type === 'structure_built'; }).length === 0 && React.createElement('div', { style: { color: '#555', fontSize: '0.8em', textAlign: 'center', padding: '10px' } }, 'Waiting for legendary plays...')
+                    ),
+                    // Wall of Shame - rugs, hacks, riots
+                    React.createElement('div', { className: 'card', style: { padding: '15px', borderLeft: '3px solid #ff4444' } },
+                        React.createElement('h3', { style: { color: '#ff4444', margin: '0 0 10px 0', fontSize: '0.9em' } }, '💀 Wall of Shame'),
+                        actions.filter(function(a) { return a.type === 'memecoin_rugged' || a.type === 'hack' || a.type === 'riot'; }).slice(0, 5).map(function(a, i) {
+                            var s = typeStyles[a.type] || {};
+                            return React.createElement('div', { key: i, style: { display: 'flex', gap: '8px', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8em' } },
+                                React.createElement('span', null, s.icon || '💀'),
+                                React.createElement('span', { style: { color: '#ccc', flex: 1 } }, (a.npc || '???') + ': ' + (a.headline || '').substring(0, 40)),
+                                React.createElement('span', { style: { color: '#ff4444', fontSize: '0.75em' } }, '☠️')
+                            );
+                        }),
+                        actions.filter(function(a) { return a.type === 'memecoin_rugged' || a.type === 'hack' || a.type === 'riot'; }).length === 0 && React.createElement('div', { style: { color: '#555', fontSize: '0.8em', textAlign: 'center', padding: '10px' } }, 'No shame... yet.')
+                    )
+                ),
+                
+                // FILTER TABS
+                React.createElement('div', { className: 'card', style: { padding: '15px' } },
+                    React.createElement('div', { style: { display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' } },
+                        [
+                            { id: 'all', label: '📋 All', color: '#ffd700' },
+                            { id: 'tokens', label: '🚀 Tokens', color: '#00ff88' },
+                            { id: 'business', label: '🏪 Business', color: '#4488ff' },
+                            { id: 'unrest', label: '✊ Unrest', color: '#ff8800' },
+                            { id: 'factions', label: '🏴 Factions', color: '#8a2be2' },
+                            { id: 'builds', label: '🏗️ Builds', color: '#4488ff' },
+                            { id: 'power', label: '🗳️ Power', color: '#ffd700' }
+                        ].map(function(f) {
+                            return React.createElement('button', { key: f.id, onClick: function() { setFilter(f.id); }, style: { padding: '5px 12px', borderRadius: '15px', border: filter === f.id ? '1px solid ' + f.color : '1px solid rgba(255,255,255,0.1)', background: filter === f.id ? f.color + '22' : 'rgba(255,255,255,0.03)', color: filter === f.id ? f.color : '#888', fontSize: '0.75em', cursor: 'pointer', fontFamily: 'inherit' } }, f.label);
+                        })
+                    ),
+                    
+                    // ACTION LOG
+                    React.createElement('div', { style: { maxHeight: '500px', overflowY: 'auto' } },
+                        filtered.length === 0 ? React.createElement('div', { style: { textAlign: 'center', color: '#555', padding: '40px' } }, 'No actions recorded yet. The city engine is warming up — check back in a few minutes! 🌆') :
+                        filtered.map(function(a) {
+                            var s = typeStyles[a.type] || { color: '#888', icon: '⚡', label: 'EVENT' };
+                            var ago = Math.round((Date.now() - (a.timestamp || 0)) / 60000);
+                            var timeStr = ago < 1 ? 'just now' : ago < 60 ? ago + 'm ago' : Math.round(ago / 60) + 'h ago';
+                            return React.createElement('div', { key: a.id, style: { display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 8px', borderBottom: '1px solid rgba(255,255,255,0.05)', borderLeft: '3px solid ' + s.color } },
+                                React.createElement('div', { style: { fontSize: '1.3em', minWidth: '30px', textAlign: 'center' } }, s.icon),
+                                React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                                    React.createElement('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '2px' } },
+                                        React.createElement('span', { style: { background: s.color + '33', color: s.color, padding: '1px 8px', borderRadius: '8px', fontSize: '0.65em', fontWeight: 'bold' } }, s.label),
+                                        a.npc && React.createElement('span', { style: { color: '#aaa', fontSize: '0.75em' } }, a.npc)
+                                    ),
+                                    React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em' } }, a.headline || 'City action')
+                                ),
+                                React.createElement('div', { style: { color: '#555', fontSize: '0.7em', whiteSpace: 'nowrap' } }, timeStr)
+                            );
+                        })
+                    )
+                )
+            );
         }
 
         // Helper: Time ago
@@ -16774,9 +16698,9 @@
             const hours = Math.floor(diff / 3600000);
             const days = Math.floor(diff / 86400000);
             if (mins < 1) return 'now';
-            if (mins < 60) return `${mins}m ago`;
-            if (hours < 24) return `${hours}h ago`;
-            return `${days}d ago`;
+            if (mins < 60) return mins + 'm ago';
+            if (hours < 24) return hours + 'h ago';
+            return days + 'd ago';
         }
         
         // ==================== LEADERBOARD SECTION ====================
@@ -20986,80 +20910,69 @@
             const [feed, setFeed] = useState([]);
             const [filter, setFilter] = useState('all');
             const [loading, setLoading] = useState(true);
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
-            useEffect(() => {
-                const fetchFeed = async () => {
+            useEffect(function() {
+                var fetchFeed = async function() {
                     try {
-                        const [chatRes, activityRes] = await Promise.all([
-                            fetch('https://pump-town-backend-production.up.railway.app/api/chat/global?limit=50'),
-                            fetch('https://pump-town-backend-production.up.railway.app/api/activity')
-                        ]);
-                        const chatData = await chatRes.json();
-                        const activityData = await activityRes.json();
-                        
-                        const items = [];
-                        
-                        // Chat messages
+                        var chatRes = await fetch(API_BASE + '/api/chat/global?limit=60');
+                        var chatData = await chatRes.json();
+                        var items = [];
                         if (chatData.success && chatData.messages) {
-                            chatData.messages.forEach(m => {
-                                let type = 'chat';
-                                if (m.name.includes('BREAKING') || m.name.includes('DRAMA')) type = 'event';
-                                else if (m.name.includes('Mayor') || m.name.includes('🎩')) type = 'mayor';
-                                else if (m.name.includes('Reporter') || m.name.includes('📰')) type = 'news';
-                                else if (m.text.includes('bought') || m.text.includes('sold') || m.text.includes('APED') || m.text.includes('opened a')) type = 'trade';
-                                else if (m.text.includes('ARRESTED') || m.text.includes('GUILTY') || m.text.includes('CRIME')) type = 'crime';
-                                items.push({ id: 'c' + m.id, name: m.name, text: m.text, time: m.time, timestamp: m.timestamp, type });
+                            chatData.messages.forEach(function(m) {
+                                var type = 'chat';
+                                var name = m.name || '';
+                                var text = m.text || '';
+                                if (name.includes('BREAKING') || name.includes('DRAMA') || name.includes('City Development')) type = 'event';
+                                else if (name.includes('Mayor') || name.includes('🎩')) type = 'mayor';
+                                else if (name.includes('Reporter') || name.includes('📰')) type = 'news';
+                                else if (name.includes('Market Pulse')) type = 'trade';
+                                else if (name.includes('Officer') || name.includes('Judge') || name.includes('Court') || name.includes('Detective')) type = 'crime';
+                                else if (text.includes('bought') || text.includes('sold') || text.includes('APED') || text.includes('opened a') || text.includes('YOLO')) type = 'trade';
+                                else if (text.includes('ARRESTED') || text.includes('GUILTY') || text.includes('CRIME') || text.includes('CASE:')) type = 'crime';
+                                else if (text.includes('LAUNCHED') || text.includes('launched $') || text.includes('RUGGED')) type = 'event';
+                                else if (text.includes('PROTEST') || text.includes('RIOT') || text.includes('FACTION') || text.includes('CULT') || text.includes('HACK')) type = 'event';
+                                items.push({ id: 'c' + m.id, name: name, text: text, time: m.time, timestamp: m.timestamp, type: type });
                             });
                         }
-                        
-                        // Activity feed
-                        if (activityData.success && activityData.activities) {
-                            activityData.activities.forEach(a => {
-                                items.push({ id: 'a' + a.id, name: a.player_name || 'System', text: a.description, time: new Date(a.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), timestamp: new Date(a.created_at).getTime(), type: a.activity_type === 'trade' ? 'trade' : a.activity_type === 'city_event' ? 'event' : 'activity' });
-                            });
-                        }
-                        
-                        // Sort by timestamp, newest first
-                        items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                        items.sort(function(a, b) { return (b.timestamp || 0) - (a.timestamp || 0); });
                         setFeed(items.slice(0, 80));
                     } catch(e) { console.error('Feed error:', e); }
                     setLoading(false);
                 };
                 fetchFeed();
-                const interval = setInterval(fetchFeed, 10000);
-                return () => clearInterval(interval);
+                var interval = setInterval(fetchFeed, 8000);
+                return function() { clearInterval(interval); };
             }, []);
             
-            const filtered = filter === 'all' ? feed : feed.filter(f => f.type === filter);
-            const typeColors = { event: '#ff6600', mayor: '#ffd700', trade: '#00ff88', crime: '#ff4444', news: '#4488ff', chat: '#888', activity: '#aaa' };
-            const typeEmojis = { event: '⚡', mayor: '🎩', trade: '💱', crime: '🚨', news: '📰', chat: '💬', activity: '📝' };
+            var filtered = filter === 'all' ? feed : feed.filter(function(f) { return f.type === filter; });
+            var typeColors = { event: '#ff6600', mayor: '#ffd700', trade: '#00ff88', crime: '#ff4444', news: '#4488ff', chat: '#888' };
+            var typeEmojis = { event: '⚡', mayor: '🎩', trade: '💱', crime: '🚨', news: '📰', chat: '💬' };
             
             return React.createElement('div', { className: 'card', style: { padding: '20px' } },
-                React.createElement('h2', { style: { color: '#ffd700', marginBottom: '15px' } }, '📜 Live City Feed ', React.createElement('span', { style: { fontSize: '0.5em', color: '#00ff88' } }, '● LIVE')),
-                
-                // Filter tabs
+                React.createElement('h2', { style: { color: '#ffd700', marginBottom: '15px' } }, '📜 Live City Feed ', React.createElement('span', { style: { fontSize: '0.5em', color: '#00ff88', animation: 'pulse 2s infinite' } }, '● LIVE')),
                 React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '15px', flexWrap: 'wrap' } },
-                    ...['all', 'event', 'trade', 'crime', 'mayor', 'news', 'chat'].map(f => 
-                        React.createElement('button', { key: f, onClick: () => setFilter(f), style: { padding: '6px 12px', borderRadius: '20px', border: filter === f ? '1px solid ' + (typeColors[f] || '#ffd700') : '1px solid rgba(255,255,255,0.1)', background: filter === f ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.03)', color: filter === f ? (typeColors[f] || '#ffd700') : '#888', fontSize: '0.8em', cursor: 'pointer', fontFamily: 'inherit' } }, 
+                    ['all', 'event', 'trade', 'crime', 'mayor', 'news', 'chat'].map(function(f) {
+                        return React.createElement('button', { key: f, onClick: function() { setFilter(f); }, style: { padding: '6px 12px', borderRadius: '20px', border: filter === f ? '1px solid ' + (typeColors[f] || '#ffd700') : '1px solid rgba(255,255,255,0.1)', background: filter === f ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.03)', color: filter === f ? (typeColors[f] || '#ffd700') : '#888', fontSize: '0.8em', cursor: 'pointer', fontFamily: 'inherit' } },
                             (typeEmojis[f] || '📋') + ' ' + f.charAt(0).toUpperCase() + f.slice(1)
-                        )
-                    )
+                        );
+                    })
                 ),
-                
-                // Feed items
                 React.createElement('div', { style: { maxHeight: '500px', overflowY: 'auto' } },
                     loading ? React.createElement('div', { style: { textAlign: 'center', color: '#888', padding: '30px' } }, 'Loading feed...') :
-                    filtered.length === 0 ? React.createElement('div', { style: { textAlign: 'center', color: '#888', padding: '30px' } }, 'No activity yet...') :
-                    filtered.map(item => React.createElement('div', { key: item.id, style: { display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'flex-start' } },
-                        React.createElement('div', { style: { fontSize: '1.2em', minWidth: '28px', textAlign: 'center' } }, typeEmojis[item.type] || '📝'),
-                        React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-                            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' } },
-                                React.createElement('span', { style: { color: typeColors[item.type] || '#888', fontWeight: 'bold', fontSize: '0.85em' } }, item.name),
-                                React.createElement('span', { style: { color: '#555', fontSize: '0.75em' } }, item.time)
-                            ),
-                            React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em', wordBreak: 'break-word' } }, item.text)
-                        )
-                    ))
+                    filtered.length === 0 ? React.createElement('div', { style: { textAlign: 'center', color: '#555', padding: '30px' } }, 'Feed loading... city engine is generating events. Refresh in a moment! 🌆') :
+                    filtered.map(function(item) {
+                        return React.createElement('div', { key: item.id, style: { display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'flex-start' } },
+                            React.createElement('div', { style: { fontSize: '1.2em', minWidth: '28px', textAlign: 'center' } }, typeEmojis[item.type] || '📝'),
+                            React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' } },
+                                    React.createElement('span', { style: { color: typeColors[item.type] || '#888', fontWeight: 'bold', fontSize: '0.85em' } }, item.name),
+                                    React.createElement('span', { style: { color: '#555', fontSize: '0.75em' } }, item.time)
+                                ),
+                                React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em', wordBreak: 'break-word' } }, item.text)
+                            )
+                        );
+                    })
                 )
             );
         }
