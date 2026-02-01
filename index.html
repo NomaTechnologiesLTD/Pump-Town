@@ -14753,7 +14753,6 @@
                 agents: { icon: '🤖', title: 'Agent Arena', subtitle: 'Watch AI agents compete' },
                 courthouse: { icon: '⚖️', title: 'Courthouse', subtitle: 'Trials, jail, and justice' },
                 social: { icon: '💬', title: 'Social', subtitle: 'Chat & connect with friends' },
-                market: { icon: '🏪', title: 'Marketplace', subtitle: 'Trade resources with others' },
                 leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' },
                 docs: { icon: '📖', title: 'Whitepaper', subtitle: 'Learn about Pump Town' }
             };
@@ -14764,6 +14763,9 @@
                     case 'dashboard':
                         return (
                             <>
+                                {/* LIVE City Pulse - Engine Status */}
+                                <CityPulse />
+                                
                                 {/* Seasonal Event Banner */}
                                 <SeasonalEventBanner playerStats={playerStats} />
                                 
@@ -14874,9 +14876,12 @@
                     
                     case 'ledger':
                         return (
-                            <CityLedger 
-                                character={character}
-                            />
+                            <>
+                                <LiveCityFeed />
+                                <CityLedger 
+                                    character={character}
+                                />
+                            </>
                         );
                         
                     case 'governance':
@@ -14891,6 +14896,12 @@
                         }
                         return (
                             <>
+                                {/* LIVE City Engine Data */}
+                                <CityPulse />
+                                
+                                {/* City Events Log */}
+                                <CityEventsLog />
+                                
                                 {/* Cap Alert System - Global Notifications */}
                                 <CapAlertSystem />
                                 
@@ -15027,6 +15038,12 @@
                     case 'trading':
                         return (
                             <>
+                                {/* LIVE NPC Trades */}
+                                <NpcTradesFeed />
+                                
+                                {/* Market Sentiment from Engine */}
+                                <CityPulse />
+                                
                                 {/* Portfolio Roast */}
                                 <PortfolioRoast playerName={character?.name || 'Citizen'} />
                                 
@@ -15086,6 +15103,9 @@
                     case 'predictions':
                         return (
                             <>
+                                {/* City Pulse for context */}
+                                <CityPulse />
+                                
                                 <PredictionStreaks playerName={character?.name || 'Citizen'} />
                                 <PredictionMarket 
                                     resources={resources}
@@ -15111,15 +15131,6 @@
                                     onPlayerClick={openPlayerProfile}
                                 />
                             </>
-                        );
-                        
-                    case 'market':
-                        return (
-                            <TradingSection 
-                                playerName={character?.name}
-                                resources={resources}
-                                onResourceChange={handleResourceChange}
-                            />
                         );
                         
                     case 'leaderboard':
@@ -15235,6 +15246,7 @@
                             >
                                 <span className="nav-item-icon">📜</span>
                                 <span className="nav-item-text">City Ledger</span>
+                                <span className="nav-item-badge new" style={{ background: '#00ff88' }}>LIVE</span>
                             </div>
                             <div 
                                 className={`nav-item ${currentPage === 'governance' ? 'active' : ''}`}
@@ -15298,13 +15310,6 @@
                             >
                                 <span className="nav-item-icon">💬</span>
                                 <span className="nav-item-text">Social</span>
-                            </div>
-                            <div 
-                                className={`nav-item ${currentPage === 'market' ? 'active' : ''}`}
-                                onClick={() => { setCurrentPage('market'); setSidebarOpen(false); }}
-                            >
-                                <span className="nav-item-icon">🏪</span>
-                                <span className="nav-item-text">Marketplace</span>
                             </div>
                             <div 
                                 className={`nav-item ${currentPage === 'leaderboard' ? 'active' : ''}`}
@@ -18297,7 +18302,7 @@
                                     <li><strong>Taking Actions:</strong> Launch, Snipe, Dump cost resources</li>
                                     <li><strong>Casino Games:</strong> Gamble for big wins or losses</li>
                                     <li><strong>Predictions:</strong> Bet on market movements</li>
-                                    <li><strong>Marketplace:</strong> Trade resources with other players</li>
+                                    <li><strong>City Ledger:</strong> Live feed of all autonomous city events, trades, and drama</li>
                                 </ul>
                             </div>
                         )}
@@ -21021,6 +21026,273 @@
         }
 
         // ==================== FEAR & GREED INDEX ====================
+        // ==================== CITY PULSE (LIVE ENGINE DATA) ====================
+        function CityPulse() {
+            const [engineData, setEngineData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            
+            useEffect(() => {
+                const fetchEngine = async () => {
+                    try {
+                        const res = await fetch('https://pump-town-backend-production.up.railway.app/api/city-engine/status');
+                        const data = await res.json();
+                        if (data.success) setEngineData(data.engine);
+                    } catch(e) { console.error('Engine fetch error:', e); }
+                    setLoading(false);
+                };
+                fetchEngine();
+                const interval = setInterval(fetchEngine, 15000);
+                return () => clearInterval(interval);
+            }, []);
+            
+            if (loading || !engineData) return React.createElement('div', { className: 'card', style: { textAlign: 'center', padding: '40px' } }, '🌆 Loading City Pulse...');
+            
+            const stats = engineData.cityStats || {};
+            const sentimentColors = { bull: '#00ff88', bear: '#ff4444', mania: '#ffd700', panic: '#ff6600', neutral: '#888' };
+            const sentimentEmojis = { bull: '🐂', bear: '🐻', mania: '🤑', panic: '😱', neutral: '😐' };
+            
+            return React.createElement('div', { className: 'card', style: { padding: '20px' } },
+                React.createElement('h2', { style: { color: '#ffd700', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' } }, '🌆 City Pulse ', React.createElement('span', { style: { fontSize: '0.6em', color: '#00ff88', animation: 'pulse 2s infinite' } }, '● LIVE')),
+                
+                // Mayor & Sentiment Row
+                React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' } },
+                    // Mayor Box
+                    React.createElement('div', { style: { background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)', borderRadius: '12px', padding: '15px', textAlign: 'center' } },
+                        React.createElement('div', { style: { fontSize: '2em', marginBottom: '5px' } }, '🎩'),
+                        React.createElement('div', { style: { color: '#ffd700', fontWeight: 'bold', fontSize: '0.9em' } }, engineData.currentMayor),
+                        React.createElement('div', { style: { color: '#888', fontSize: '0.8em' } }, 'Term ' + engineData.mayorTerm),
+                        React.createElement('div', { style: { marginTop: '8px' } },
+                            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '0.8em', marginBottom: '4px' } },
+                                React.createElement('span', { style: { color: '#888' } }, 'Approval'),
+                                React.createElement('span', { style: { color: engineData.mayorApproval > 50 ? '#00ff88' : '#ff4444', fontWeight: 'bold' } }, engineData.mayorApproval + '%')
+                            ),
+                            React.createElement('div', { style: { background: 'rgba(255,255,255,0.1)', borderRadius: '10px', height: '8px', overflow: 'hidden' } },
+                                React.createElement('div', { style: { width: engineData.mayorApproval + '%', height: '100%', background: engineData.mayorApproval > 60 ? 'linear-gradient(90deg, #00ff88, #00cc66)' : engineData.mayorApproval > 30 ? 'linear-gradient(90deg, #ffd700, #ff8800)' : 'linear-gradient(90deg, #ff4444, #cc0000)', borderRadius: '10px', transition: 'width 1s ease' } })
+                            )
+                        )
+                    ),
+                    // Sentiment Box
+                    React.createElement('div', { style: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '15px', textAlign: 'center' } },
+                        React.createElement('div', { style: { fontSize: '2em', marginBottom: '5px' } }, sentimentEmojis[engineData.marketSentiment] || '📊'),
+                        React.createElement('div', { style: { color: sentimentColors[engineData.marketSentiment] || '#888', fontWeight: 'bold', fontSize: '1.1em', textTransform: 'uppercase' } }, (engineData.marketSentiment || 'neutral') + ' Market'),
+                        React.createElement('div', { style: { marginTop: '8px' } },
+                            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: '0.8em', marginBottom: '4px' } },
+                                React.createElement('span', { style: { color: '#888' } }, 'Chaos'),
+                                React.createElement('span', { style: { color: engineData.chaosLevel > 50 ? '#ff4444' : '#ffd700', fontWeight: 'bold' } }, engineData.chaosLevel + '%')
+                            ),
+                            React.createElement('div', { style: { background: 'rgba(255,255,255,0.1)', borderRadius: '10px', height: '8px', overflow: 'hidden' } },
+                                React.createElement('div', { style: { width: Math.min(engineData.chaosLevel, 100) + '%', height: '100%', background: engineData.chaosLevel > 60 ? 'linear-gradient(90deg, #ff4444, #ff0000)' : engineData.chaosLevel > 30 ? 'linear-gradient(90deg, #ffd700, #ff8800)' : 'linear-gradient(90deg, #00ff88, #00cc66)', borderRadius: '10px', transition: 'width 1s ease' } })
+                            )
+                        )
+                    )
+                ),
+                
+                // City Stats Row
+                React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '20px' } },
+                    ...[
+                        { label: 'Economy', val: stats.economy || 50, icon: '💰', color: '#00ff88' },
+                        { label: 'Security', val: stats.security || 50, icon: '🛡️', color: '#4488ff' },
+                        { label: 'Culture', val: stats.culture || 50, icon: '🎨', color: '#ff88ff' },
+                        { label: 'Morale', val: stats.morale || 50, icon: '😊', color: '#ffd700' }
+                    ].map(s => React.createElement('div', { key: s.label, style: { background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '12px 8px', textAlign: 'center' } },
+                        React.createElement('div', { style: { fontSize: '1.3em' } }, s.icon),
+                        React.createElement('div', { style: { color: '#888', fontSize: '0.7em', marginTop: '4px' } }, s.label),
+                        React.createElement('div', { style: { color: s.color, fontWeight: 'bold', fontSize: '1.2em' } }, s.val),
+                        React.createElement('div', { style: { background: 'rgba(255,255,255,0.1)', borderRadius: '10px', height: '4px', marginTop: '6px', overflow: 'hidden' } },
+                            React.createElement('div', { style: { width: s.val + '%', height: '100%', background: s.color, borderRadius: '10px' } })
+                        )
+                    ))
+                ),
+                
+                // Active Feud
+                engineData.activeFeud && React.createElement('div', { style: { background: 'rgba(255,100,0,0.15)', border: '1px solid rgba(255,100,0,0.4)', borderRadius: '12px', padding: '15px', marginBottom: '15px' } },
+                    React.createElement('div', { style: { color: '#ff6600', fontWeight: 'bold', marginBottom: '5px' } }, '🍿 ACTIVE FEUD'),
+                    React.createElement('div', { style: { color: '#ddd', fontSize: '0.9em' } }, engineData.activeFeud.npc1 + ' ⚔️ ' + engineData.activeFeud.npc2),
+                    React.createElement('div', { style: { color: '#888', fontSize: '0.8em', marginTop: '4px' } }, engineData.activeFeud.reason)
+                ),
+                
+                // Recent Headlines
+                engineData.recentHeadlines && engineData.recentHeadlines.length > 0 && React.createElement('div', { style: { background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '15px' } },
+                    React.createElement('div', { style: { color: '#ffd700', fontWeight: 'bold', marginBottom: '10px', fontSize: '0.9em' } }, '📰 Recent Headlines'),
+                    ...engineData.recentHeadlines.slice(-3).reverse().map((h, i) => React.createElement('div', { key: i, style: { color: '#aaa', fontSize: '0.85em', padding: '4px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.05)' : 'none' } }, '• ' + h))
+                ),
+                
+                // Events counter
+                React.createElement('div', { style: { textAlign: 'center', marginTop: '15px', color: '#555', fontSize: '0.75em' } }, '⚡ ' + engineData.eventCount + ' events triggered • Engine running autonomously')
+            );
+        }
+        
+        // ==================== LIVE CITY FEED (pulls from activity_feed + chat) ====================
+        function LiveCityFeed() {
+            const [feed, setFeed] = useState([]);
+            const [filter, setFilter] = useState('all');
+            const [loading, setLoading] = useState(true);
+            
+            useEffect(() => {
+                const fetchFeed = async () => {
+                    try {
+                        const [chatRes, activityRes] = await Promise.all([
+                            fetch('https://pump-town-backend-production.up.railway.app/api/chat/global?limit=50'),
+                            fetch('https://pump-town-backend-production.up.railway.app/api/activity')
+                        ]);
+                        const chatData = await chatRes.json();
+                        const activityData = await activityRes.json();
+                        
+                        const items = [];
+                        
+                        // Chat messages
+                        if (chatData.success && chatData.messages) {
+                            chatData.messages.forEach(m => {
+                                let type = 'chat';
+                                if (m.name.includes('BREAKING') || m.name.includes('DRAMA')) type = 'event';
+                                else if (m.name.includes('Mayor') || m.name.includes('🎩')) type = 'mayor';
+                                else if (m.name.includes('Reporter') || m.name.includes('📰')) type = 'news';
+                                else if (m.text.includes('bought') || m.text.includes('sold') || m.text.includes('APED') || m.text.includes('opened a')) type = 'trade';
+                                else if (m.text.includes('ARRESTED') || m.text.includes('GUILTY') || m.text.includes('CRIME')) type = 'crime';
+                                items.push({ id: 'c' + m.id, name: m.name, text: m.text, time: m.time, timestamp: m.timestamp, type });
+                            });
+                        }
+                        
+                        // Activity feed
+                        if (activityData.success && activityData.activities) {
+                            activityData.activities.forEach(a => {
+                                items.push({ id: 'a' + a.id, name: a.player_name || 'System', text: a.description, time: new Date(a.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), timestamp: new Date(a.created_at).getTime(), type: a.activity_type === 'trade' ? 'trade' : a.activity_type === 'city_event' ? 'event' : 'activity' });
+                            });
+                        }
+                        
+                        // Sort by timestamp, newest first
+                        items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                        setFeed(items.slice(0, 80));
+                    } catch(e) { console.error('Feed error:', e); }
+                    setLoading(false);
+                };
+                fetchFeed();
+                const interval = setInterval(fetchFeed, 10000);
+                return () => clearInterval(interval);
+            }, []);
+            
+            const filtered = filter === 'all' ? feed : feed.filter(f => f.type === filter);
+            const typeColors = { event: '#ff6600', mayor: '#ffd700', trade: '#00ff88', crime: '#ff4444', news: '#4488ff', chat: '#888', activity: '#aaa' };
+            const typeEmojis = { event: '⚡', mayor: '🎩', trade: '💱', crime: '🚨', news: '📰', chat: '💬', activity: '📝' };
+            
+            return React.createElement('div', { className: 'card', style: { padding: '20px' } },
+                React.createElement('h2', { style: { color: '#ffd700', marginBottom: '15px' } }, '📜 Live City Feed ', React.createElement('span', { style: { fontSize: '0.5em', color: '#00ff88' } }, '● LIVE')),
+                
+                // Filter tabs
+                React.createElement('div', { style: { display: 'flex', gap: '8px', marginBottom: '15px', flexWrap: 'wrap' } },
+                    ...['all', 'event', 'trade', 'crime', 'mayor', 'news', 'chat'].map(f => 
+                        React.createElement('button', { key: f, onClick: () => setFilter(f), style: { padding: '6px 12px', borderRadius: '20px', border: filter === f ? '1px solid ' + (typeColors[f] || '#ffd700') : '1px solid rgba(255,255,255,0.1)', background: filter === f ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.03)', color: filter === f ? (typeColors[f] || '#ffd700') : '#888', fontSize: '0.8em', cursor: 'pointer', fontFamily: 'inherit' } }, 
+                            (typeEmojis[f] || '📋') + ' ' + f.charAt(0).toUpperCase() + f.slice(1)
+                        )
+                    )
+                ),
+                
+                // Feed items
+                React.createElement('div', { style: { maxHeight: '500px', overflowY: 'auto' } },
+                    loading ? React.createElement('div', { style: { textAlign: 'center', color: '#888', padding: '30px' } }, 'Loading feed...') :
+                    filtered.length === 0 ? React.createElement('div', { style: { textAlign: 'center', color: '#888', padding: '30px' } }, 'No activity yet...') :
+                    filtered.map(item => React.createElement('div', { key: item.id, style: { display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'flex-start' } },
+                        React.createElement('div', { style: { fontSize: '1.2em', minWidth: '28px', textAlign: 'center' } }, typeEmojis[item.type] || '📝'),
+                        React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' } },
+                                React.createElement('span', { style: { color: typeColors[item.type] || '#888', fontWeight: 'bold', fontSize: '0.85em' } }, item.name),
+                                React.createElement('span', { style: { color: '#555', fontSize: '0.75em' } }, item.time)
+                            ),
+                            React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em', wordBreak: 'break-word' } }, item.text)
+                        )
+                    ))
+                )
+            );
+        }
+        
+        // ==================== NPC TRADES FEED ====================
+        function NpcTradesFeed() {
+            const [trades, setTrades] = useState([]);
+            const [loading, setLoading] = useState(true);
+            
+            useEffect(() => {
+                const fetchTrades = async () => {
+                    try {
+                        const res = await fetch('https://pump-town-backend-production.up.railway.app/api/chat/global?limit=50');
+                        const data = await res.json();
+                        if (data.success) {
+                            const tradeMessages = data.messages.filter(m => 
+                                m.text.includes('bought') || m.text.includes('sold') || m.text.includes('APED') || 
+                                m.text.includes('opened a') || m.text.includes('accumulated') || m.text.includes('YOLO') ||
+                                m.text.includes('closed my') || m.text.includes('SELLING') || m.text.includes('going all in')
+                            );
+                            setTrades(tradeMessages.slice(0, 20));
+                        }
+                    } catch(e) { console.error('Trades feed error:', e); }
+                    setLoading(false);
+                };
+                fetchTrades();
+                const interval = setInterval(fetchTrades, 12000);
+                return () => clearInterval(interval);
+            }, []);
+            
+            return React.createElement('div', { className: 'card', style: { padding: '20px' } },
+                React.createElement('h2', { style: { color: '#00ff88', marginBottom: '15px' } }, '💱 Live NPC Trades ', React.createElement('span', { style: { fontSize: '0.5em', color: '#00ff88' } }, '● LIVE')),
+                React.createElement('div', { style: { maxHeight: '400px', overflowY: 'auto' } },
+                    loading ? React.createElement('div', { style: { textAlign: 'center', color: '#888', padding: '30px' } }, 'Loading trades...') :
+                    trades.length === 0 ? React.createElement('div', { style: { textAlign: 'center', color: '#888', padding: '30px' } }, 'No trades yet — NPC traders are warming up...') :
+                    trades.map(t => React.createElement('div', { key: t.id, style: { display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' } },
+                        React.createElement('div', { style: { fontSize: '1.2em' } }, t.text.includes('sold') || t.text.includes('SELLING') || t.text.includes('closed') ? '📉' : '📈'),
+                        React.createElement('div', { style: { flex: 1 } },
+                            React.createElement('div', { style: { color: '#ffd700', fontWeight: 'bold', fontSize: '0.85em' } }, t.name),
+                            React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em' } }, t.text)
+                        ),
+                        React.createElement('div', { style: { color: '#555', fontSize: '0.75em', whiteSpace: 'nowrap' } }, t.time)
+                    ))
+                )
+            );
+        }
+        
+        // ==================== CITY ENGINE EVENTS LOG ====================
+        function CityEventsLog() {
+            const [events, setEvents] = useState([]);
+            const [loading, setLoading] = useState(true);
+            
+            useEffect(() => {
+                const fetchEvents = async () => {
+                    try {
+                        const res = await fetch('https://pump-town-backend-production.up.railway.app/api/chat/global?limit=50');
+                        const data = await res.json();
+                        if (data.success) {
+                            const eventMsgs = data.messages.filter(m => 
+                                m.name.includes('BREAKING') || m.name.includes('DRAMA') || m.name.includes('Mayor') || 
+                                m.name.includes('🎩') || m.name.includes('Reporter') || m.name.includes('📰') ||
+                                m.name.includes('Market Pulse') || m.text.includes('ARRESTED') || m.text.includes('GUILTY') || 
+                                m.text.includes('DECREE') || m.text.includes('FEUD') || m.text.includes('COUP')
+                            );
+                            setEvents(eventMsgs.slice(0, 30));
+                        }
+                    } catch(e) { console.error('Events log error:', e); }
+                    setLoading(false);
+                };
+                fetchEvents();
+                const interval = setInterval(fetchEvents, 12000);
+                return () => clearInterval(interval);
+            }, []);
+            
+            return React.createElement('div', { className: 'card', style: { padding: '20px' } },
+                React.createElement('h2', { style: { color: '#ff6600', marginBottom: '15px' } }, '⚡ City Events Log ', React.createElement('span', { style: { fontSize: '0.5em', color: '#00ff88' } }, '● LIVE')),
+                React.createElement('div', { style: { maxHeight: '400px', overflowY: 'auto' } },
+                    loading ? React.createElement('div', { style: { textAlign: 'center', color: '#888', padding: '30px' } }, 'Loading events...') :
+                    events.length === 0 ? React.createElement('div', { style: { textAlign: 'center', color: '#888', padding: '30px' } }, 'No events yet — the city engine is spinning up...') :
+                    events.map(e => React.createElement('div', { key: e.id, style: { display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' } },
+                        React.createElement('div', { style: { flex: 1 } },
+                            React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between' } },
+                                React.createElement('span', { style: { color: '#ffd700', fontWeight: 'bold', fontSize: '0.85em' } }, e.name),
+                                React.createElement('span', { style: { color: '#555', fontSize: '0.75em' } }, e.time)
+                            ),
+                            React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em', marginTop: '3px' } }, e.text)
+                        )
+                    ))
+                )
+            );
+        }
+
         function FearGreedIndex() {
             const [data, setData] = useState({ value: 50, classification: 'Neutral' });
             const [loading, setLoading] = useState(true);
