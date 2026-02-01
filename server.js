@@ -2728,3 +2728,4 @@ app.listen(PORT, () => {
   console.log(`📅 Day ${getDayAndRound().day}, Round ${getDayAndRound().round}`);
   console.log(`⏰ Vote ends in ${Math.floor(getTimeRemaining() / 60000)} minutes`);
 });
+// Agent API v1.0
