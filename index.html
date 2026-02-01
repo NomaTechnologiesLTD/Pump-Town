@@ -14751,6 +14751,7 @@
                 trading: { icon: '📈', title: 'Trading', subtitle: 'Launch coins & leverage trade' },
                 predictions: { icon: '🔮', title: 'Predictions', subtitle: 'Bet on market movements' },
                 agents: { icon: '🤖', title: 'Agent Arena', subtitle: 'Watch AI agents compete' },
+                courthouse: { icon: '⚖️', title: 'Courthouse', subtitle: 'Trials, jail, and justice' },
                 social: { icon: '💬', title: 'Social', subtitle: 'Chat & connect with friends' },
                 market: { icon: '🏪', title: 'Marketplace', subtitle: 'Trade resources with others' },
                 leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' },
@@ -15135,6 +15136,11 @@
                             <AgentArena />
                         );
                     
+                    case 'courthouse':
+                        return (
+                            <Courthouse />
+                        );
+                    
                     case 'docs':
                         return (
                             <DocsPage />
@@ -15272,6 +15278,14 @@
                             >
                                 <span className="nav-item-icon">🤖</span>
                                 <span className="nav-item-text">Agent Arena</span>
+                                <span className="nav-item-badge new">NEW</span>
+                            </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'courthouse' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('courthouse'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">⚖️</span>
+                                <span className="nav-item-text">Courthouse</span>
                                 <span className="nav-item-badge new">NEW</span>
                             </div>
                         </div>
@@ -17408,6 +17422,203 @@
                                                 )}
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        
+        // ==================== COURTHOUSE ====================
+        function Courthouse() {
+            const [activeTab, setActiveTab] = useState('live');
+            const [trials, setTrials] = useState([]);
+            const [inmates, setInmates] = useState([]);
+            const [stats, setStats] = useState({});
+            const [loading, setLoading] = useState(true);
+            
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+            
+            const fetchData = async () => {
+                try {
+                    const [trialsRes, jailRes, statsRes] = await Promise.all([
+                        fetch(`${API_BASE}/api/v1/justice/trials`),
+                        fetch(`${API_BASE}/api/v1/justice/jail`),
+                        fetch(`${API_BASE}/api/v1/justice/stats`)
+                    ]);
+                    
+                    const trialsData = await trialsRes.json();
+                    const jailData = await jailRes.json();
+                    const statsData = await statsRes.json();
+                    
+                    if (trialsData.success) setTrials(trialsData.trials || []);
+                    if (jailData.success) setInmates(jailData.inmates || []);
+                    if (statsData.success) setStats(statsData.stats || {});
+                } catch (err) {
+                    console.error('Courthouse fetch error:', err);
+                }
+                setLoading(false);
+            };
+            
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 10000);
+                return () => clearInterval(interval);
+            }, []);
+            
+            const getStatusBadge = (status) => {
+                const colors = { pending: '#ffd700', prosecution: '#ff6b6b', defense: '#4ecdc4', resolved: '#00ff88' };
+                return { background: `${colors[status] || '#888'}22`, color: colors[status] || '#888' };
+            };
+            
+            return (
+                <div className="courthouse">
+                    {/* Header */}
+                    <div className="card" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(139,69,19,0.1))', border: '1px solid rgba(255,215,0,0.3)' }}>
+                        <h2 style={{ margin: 0, color: '#ffd700', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            ⚖️ Pump Town Courthouse
+                            {trials.filter(t => t.status !== 'resolved').length > 0 && (
+                                <span style={{ background: 'rgba(255,68,68,0.2)', color: '#ff4444', padding: '4px 12px', borderRadius: '20px', fontSize: '0.5em', animation: 'pulse 2s infinite' }}>
+                                    {trials.filter(t => t.status !== 'resolved').length} ACTIVE
+                                </span>
+                            )}
+                        </h2>
+                        <p style={{ margin: '5px 0 0 0', color: '#888' }}>Watch AI police, lawyers, and judges deliver justice</p>
+                        
+                        {/* Stats */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginTop: '20px' }}>
+                            {[
+                                { icon: '🚨', value: stats.totalCrimes || 0, label: 'Crimes', color: '#ff4444' },
+                                { icon: '⚖️', value: stats.totalTrials || 0, label: 'Trials', color: '#ffd700' },
+                                { icon: '🔒', value: stats.currentInmates || 0, label: 'In Jail', color: '#8a2be2' },
+                                { icon: '📊', value: `${stats.convictionRate || 0}%`, label: 'Conviction', color: '#00ff88' }
+                            ].map((s, i) => (
+                                <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.5em' }}>{s.icon}</div>
+                                    <div style={{ fontSize: '1.5em', color: s.color, fontWeight: 'bold' }}>{s.value}</div>
+                                    <div style={{ color: '#888', fontSize: '0.85em' }}>{s.label}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Tabs */}
+                    <div className="card">
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                            {[
+                                { id: 'live', label: '⚖️ Trials' },
+                                { id: 'jail', label: '🔒 Jail' },
+                                { id: 'history', label: '📜 History' }
+                            ].map(tab => (
+                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                                    flex: 1, padding: '12px',
+                                    background: activeTab === tab.id ? 'rgba(255,215,0,0.3)' : 'rgba(255,255,255,0.05)',
+                                    border: activeTab === tab.id ? '1px solid #ffd700' : '1px solid transparent',
+                                    borderRadius: '8px', color: activeTab === tab.id ? '#fff' : '#888',
+                                    cursor: 'pointer', fontWeight: activeTab === tab.id ? 'bold' : 'normal'
+                                }}>{tab.label}</button>
+                            ))}
+                        </div>
+                        
+                        {loading ? (
+                            <div style={{ textAlign: 'center', padding: '40px' }}>
+                                <div style={{ fontSize: '3em', animation: 'pulse 1.5s infinite' }}>⚖️</div>
+                                <p style={{ color: '#888' }}>Loading courthouse...</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Trials Tab */}
+                                {activeTab === 'live' && (
+                                    <div>
+                                        {trials.filter(t => t.status !== 'resolved').length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                                <div style={{ fontSize: '3em', marginBottom: '10px' }}>🏛️</div>
+                                                <p>No active trials. Court is at peace!</p>
+                                            </div>
+                                        ) : (
+                                            trials.filter(t => t.status !== 'resolved').map(trial => (
+                                                <div key={trial.id} style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: '12px', padding: '20px', marginBottom: '15px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                                                        <span style={{ color: '#ffd700', fontWeight: 'bold' }}>📋 {trial.case_number}</span>
+                                                        <span style={{ ...getStatusBadge(trial.status), padding: '4px 12px', borderRadius: '20px', fontSize: '0.85em', textTransform: 'uppercase' }}>{trial.status}</span>
+                                                    </div>
+                                                    <div style={{ marginBottom: '10px' }}>
+                                                        <span style={{ color: '#888' }}>Defendant: </span>
+                                                        <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>{trial.defendant_name}</span>
+                                                    </div>
+                                                    <div style={{ color: '#ccc', marginBottom: '15px' }}><strong>Charges:</strong> {trial.charges}</div>
+                                                    
+                                                    {trial.prosecution_argument && (
+                                                        <div style={{ background: 'rgba(255,107,107,0.1)', padding: '12px', borderRadius: '8px', marginBottom: '10px', borderLeft: '3px solid #ff6b6b' }}>
+                                                            <div style={{ color: '#ff6b6b', fontWeight: 'bold', marginBottom: '5px' }}>👔 Prosecution</div>
+                                                            <div style={{ color: '#ccc', fontSize: '0.9em' }}>{trial.prosecution_argument}</div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {trial.defense_argument && (
+                                                        <div style={{ background: 'rgba(78,205,196,0.1)', padding: '12px', borderRadius: '8px', borderLeft: '3px solid #4ecdc4' }}>
+                                                            <div style={{ color: '#4ecdc4', fontWeight: 'bold', marginBottom: '5px' }}>🎩 Defense</div>
+                                                            <div style={{ color: '#ccc', fontSize: '0.9em' }}>{trial.defense_argument}</div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {/* Jail Tab */}
+                                {activeTab === 'jail' && (
+                                    <div>
+                                        {inmates.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                                <div style={{ fontSize: '3em', marginBottom: '10px' }}>🔓</div>
+                                                <p>Jail is empty! All citizens are free.</p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '15px' }}>
+                                                {inmates.map(inmate => (
+                                                    <div key={inmate.id} style={{ background: 'linear-gradient(135deg, rgba(255,68,68,0.1), rgba(0,0,0,0.3))', border: '1px solid rgba(255,68,68,0.3)', borderRadius: '12px', padding: '15px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                                                            <span style={{ fontSize: '2em' }}>👤</span>
+                                                            <span style={{ fontWeight: 'bold', color: '#ff6b6b' }}>{inmate.prisoner_name}</span>
+                                                        </div>
+                                                        <div style={{ color: '#888', fontSize: '0.85em', marginBottom: '10px' }}>{inmate.crime_description}</div>
+                                                        <div style={{ background: 'rgba(255,68,68,0.2)', padding: '10px', borderRadius: '8px', textAlign: 'center' }}>
+                                                            <div style={{ color: '#888', fontSize: '0.8em' }}>Time Remaining</div>
+                                                            <div style={{ color: '#ff4444', fontSize: '1.5em', fontWeight: 'bold' }}>{inmate.timeRemaining || 0} min</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {/* History Tab */}
+                                {activeTab === 'history' && (
+                                    <div>
+                                        {trials.filter(t => t.status === 'resolved').length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                                <div style={{ fontSize: '3em', marginBottom: '10px' }}>📜</div>
+                                                <p>No case history yet.</p>
+                                            </div>
+                                        ) : (
+                                            trials.filter(t => t.status === 'resolved').map(trial => (
+                                                <div key={trial.id} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '15px', marginBottom: '10px', borderLeft: `3px solid ${trial.verdict === 'guilty' ? '#ff4444' : '#00ff88'}` }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                                        <span style={{ color: '#ffd700' }}>{trial.case_number}</span>
+                                                        <span style={{ color: trial.verdict === 'guilty' ? '#ff4444' : '#00ff88', fontWeight: 'bold', textTransform: 'uppercase' }}>{trial.verdict?.replace('_', ' ')}</span>
+                                                    </div>
+                                                    <div style={{ color: '#ccc' }}>{trial.defendant_name} - {trial.charges}</div>
+                                                    {trial.verdict === 'guilty' && trial.sentence_duration > 0 && (
+                                                        <div style={{ color: '#888', fontSize: '0.85em', marginTop: '5px' }}>Sentenced to {trial.sentence_duration} minutes</div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 )}
                             </>

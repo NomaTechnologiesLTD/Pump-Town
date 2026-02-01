@@ -398,6 +398,92 @@ async function initDatabase() {
     
     console.log('✅ Agent API tables initialized');
 
+    // ==================== JUSTICE SYSTEM TABLES ====================
+    
+    // Crimes registry
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS crimes (
+        id SERIAL PRIMARY KEY,
+        crime_type VARCHAR(50) NOT NULL,
+        perpetrator_name VARCHAR(100) NOT NULL,
+        perpetrator_type VARCHAR(20) DEFAULT 'citizen',
+        description TEXT,
+        evidence JSONB DEFAULT '{}',
+        severity VARCHAR(20) DEFAULT 'misdemeanor',
+        detected_by VARCHAR(100),
+        status VARCHAR(20) DEFAULT 'detected',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Arrests
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS arrests (
+        id SERIAL PRIMARY KEY,
+        crime_id INTEGER REFERENCES crimes(id),
+        arrested_name VARCHAR(100) NOT NULL,
+        arresting_officer VARCHAR(100),
+        arrest_reason TEXT,
+        status VARCHAR(20) DEFAULT 'in_custody',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Trials / Court Cases
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS trials (
+        id SERIAL PRIMARY KEY,
+        case_number VARCHAR(50) UNIQUE NOT NULL,
+        crime_id INTEGER REFERENCES crimes(id),
+        defendant_name VARCHAR(100) NOT NULL,
+        prosecutor_id VARCHAR(255),
+        defense_id VARCHAR(255),
+        judge_id VARCHAR(255),
+        charges TEXT,
+        prosecution_argument TEXT,
+        defense_argument TEXT,
+        verdict VARCHAR(20),
+        sentence TEXT,
+        sentence_duration INTEGER DEFAULT 0,
+        status VARCHAR(20) DEFAULT 'pending',
+        trial_log JSONB DEFAULT '[]',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP
+      )
+    `);
+    
+    // Jail / Prisoners
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS jail (
+        id SERIAL PRIMARY KEY,
+        prisoner_name VARCHAR(100) NOT NULL,
+        prisoner_type VARCHAR(20) DEFAULT 'citizen',
+        trial_id INTEGER REFERENCES trials(id),
+        crime_description TEXT,
+        sentence_start TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        sentence_end TIMESTAMP NOT NULL,
+        early_release BOOLEAN DEFAULT FALSE,
+        released_at TIMESTAMP,
+        status VARCHAR(20) DEFAULT 'serving'
+      )
+    `);
+    
+    // Justice system agents (special agents with roles)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS justice_agents (
+        id SERIAL PRIMARY KEY,
+        agent_id VARCHAR(255) REFERENCES agents(id),
+        role VARCHAR(20) NOT NULL,
+        cases_handled INTEGER DEFAULT 0,
+        conviction_rate DECIMAL(5,2) DEFAULT 0,
+        reputation INTEGER DEFAULT 50,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    console.log('✅ Justice System tables initialized');
+
     console.log('✅ Database tables initialized');
   } catch (err) {
     console.error('Database initialization error:', err);
@@ -2694,6 +2780,571 @@ app.get('/api/v1/agents', async (req, res) => {
 
 console.log('🤖 Agent API loaded');
 
+// ==================== JUSTICE SYSTEM API ====================
+
+// Crime types and their severity
+const CRIME_TYPES = {
+  'rug_pull': { severity: 'felony', baseSentence: 60, description: 'Rugging a memecoin' },
+  'pump_dump': { severity: 'felony', baseSentence: 30, description: 'Pump and dump scheme' },
+  'market_manipulation': { severity: 'felony', baseSentence: 45, description: 'Market manipulation' },
+  'chat_spam': { severity: 'misdemeanor', baseSentence: 5, description: 'Spamming the chat' },
+  'vote_fraud': { severity: 'felony', baseSentence: 30, description: 'Voting fraud' },
+  'tax_evasion': { severity: 'misdemeanor', baseSentence: 10, description: 'Tax evasion' },
+  'impersonation': { severity: 'misdemeanor', baseSentence: 15, description: 'Impersonating another citizen' },
+  'insider_trading': { severity: 'felony', baseSentence: 40, description: 'Insider trading' },
+  'scamming': { severity: 'felony', baseSentence: 50, description: 'Scamming other citizens' }
+};
+
+// AI prompts for justice agents
+const JUDGE_SYSTEM_PROMPT = `You are Judge McChain, the AI judge of Pump Town's court. Your personality:
+- Fair but strict, with a dry sense of humor
+- Uses legal jargon mixed with crypto slang
+- Demands order in the court but appreciates good arguments
+- Makes dramatic verdicts with gavel emojis ⚖️🔨
+- Sentences range from warnings to jail time
+- Can be swayed by good defense arguments
+Keep responses to 2-4 sentences. NO asterisks for actions.`;
+
+const PROSECUTOR_SYSTEM_PROMPT = `You are Prosecutor BitBurn, the AI prosecutor of Pump Town. Your personality:
+- Aggressive, dramatic, seeks maximum sentences
+- Presents evidence with flair
+- Uses phrases like "the defendant is CLEARLY guilty" and "justice must be served"
+- Crypto slang mixed with legal terms
+- Always argues for conviction
+Keep responses to 2-3 sentences. NO asterisks for actions.`;
+
+const DEFENSE_SYSTEM_PROMPT = `You are Defense Attorney DiamondHands, the AI public defender of Pump Town. Your personality:
+- Passionate defender of the accused
+- Finds loopholes and technicalities
+- Uses phrases like "my client is innocent" and "reasonable doubt"
+- Argues for reduced sentences or acquittal
+- Crypto slang mixed with legal terms
+Keep responses to 2-3 sentences. NO asterisks for actions.`;
+
+const POLICE_SYSTEM_PROMPT = `You are Officer Blockchain, chief of Pump Town Police. Your personality:
+- Stern but fair, always watching for crime
+- Uses police radio speak mixed with crypto slang
+- Reports crimes with dramatic flair
+- Says things like "We got a 10-99 in progress" and "Book 'em!"
+Keep responses to 1-2 sentences. NO asterisks for actions.`;
+
+// Generate case number
+function generateCaseNumber() {
+  const year = new Date().getFullYear();
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `PT-${year}-${random}`;
+}
+
+// Check if someone is in jail
+async function isInJail(name) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM jail WHERE prisoner_name = $1 AND status = 'serving' AND sentence_end > NOW()`,
+      [name]
+    );
+    return result.rows.length > 0 ? result.rows[0] : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Report a crime (used by police bots or system)
+app.post('/api/v1/justice/report-crime', authenticateAgent, async (req, res) => {
+  try {
+    const { crimeType, perpetratorName, description, evidence } = req.body;
+    const reporter = req.agent;
+    
+    if (!crimeType || !perpetratorName) {
+      return res.status(400).json({ success: false, error: 'Missing crimeType or perpetratorName' });
+    }
+    
+    const crimeInfo = CRIME_TYPES[crimeType];
+    if (!crimeInfo) {
+      return res.status(400).json({ success: false, error: 'Invalid crime type' });
+    }
+    
+    // Check if perpetrator is already in jail
+    const inJail = await isInJail(perpetratorName);
+    if (inJail) {
+      return res.status(400).json({ success: false, error: 'Perpetrator is already in jail' });
+    }
+    
+    // Record the crime
+    const result = await pool.query(
+      `INSERT INTO crimes (crime_type, perpetrator_name, description, evidence, severity, detected_by, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'detected')
+       RETURNING *`,
+      [crimeType, perpetratorName, description || crimeInfo.description, evidence || {}, crimeInfo.severity, reporter.name]
+    );
+    
+    console.log(`🚨 Crime reported: ${crimeType} by ${perpetratorName} (reported by ${reporter.name})`);
+    
+    res.json({
+      success: true,
+      crime: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Report crime error:', error);
+    res.status(500).json({ success: false, error: 'Failed to report crime' });
+  }
+});
+
+// Arrest a suspect (police bot)
+app.post('/api/v1/justice/arrest', authenticateAgent, async (req, res) => {
+  try {
+    const { crimeId, suspectName, reason } = req.body;
+    const officer = req.agent;
+    
+    if (!suspectName) {
+      return res.status(400).json({ success: false, error: 'Missing suspectName' });
+    }
+    
+    // Check if already in jail
+    const inJail = await isInJail(suspectName);
+    if (inJail) {
+      return res.status(400).json({ success: false, error: 'Suspect is already in jail' });
+    }
+    
+    // Create arrest record
+    const result = await pool.query(
+      `INSERT INTO arrests (crime_id, arrested_name, arresting_officer, arrest_reason, status)
+       VALUES ($1, $2, $3, $4, 'in_custody')
+       RETURNING *`,
+      [crimeId || null, suspectName, officer.name, reason || 'Suspected criminal activity']
+    );
+    
+    // Update crime status if linked
+    if (crimeId) {
+      await pool.query(`UPDATE crimes SET status = 'arrested' WHERE id = $1`, [crimeId]);
+    }
+    
+    // Post arrest announcement to chat
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      [`👮 ${officer.name}`, `🚨 ARREST: ${suspectName} has been taken into custody! ${reason || 'Suspected criminal activity'}`]
+    );
+    
+    console.log(`🚔 Arrest: ${suspectName} arrested by ${officer.name}`);
+    
+    res.json({
+      success: true,
+      arrest: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Arrest error:', error);
+    res.status(500).json({ success: false, error: 'Failed to make arrest' });
+  }
+});
+
+// Create a trial / court case
+app.post('/api/v1/justice/create-trial', authenticateAgent, async (req, res) => {
+  try {
+    const { arrestId, crimeId, defendantName, charges } = req.body;
+    
+    if (!defendantName || !charges) {
+      return res.status(400).json({ success: false, error: 'Missing defendantName or charges' });
+    }
+    
+    const caseNumber = generateCaseNumber();
+    
+    const result = await pool.query(
+      `INSERT INTO trials (case_number, crime_id, defendant_name, charges, status)
+       VALUES ($1, $2, $3, $4, 'pending')
+       RETURNING *`,
+      [caseNumber, crimeId || null, defendantName, charges]
+    );
+    
+    // Update arrest status
+    if (arrestId) {
+      await pool.query(`UPDATE arrests SET status = 'awaiting_trial' WHERE id = $1`, [arrestId]);
+    }
+    
+    // Announce trial
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['⚖️ Court', `📋 NEW CASE: ${caseNumber} - ${defendantName} charged with: ${charges}. Trial pending!`]
+    );
+    
+    console.log(`⚖️ Trial created: ${caseNumber} for ${defendantName}`);
+    
+    res.json({
+      success: true,
+      trial: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Create trial error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create trial' });
+  }
+});
+
+// Prosecutor makes argument
+app.post('/api/v1/justice/prosecute', authenticateAgent, async (req, res) => {
+  try {
+    const { trialId, argument } = req.body;
+    const prosecutor = req.agent;
+    
+    if (!trialId) {
+      return res.status(400).json({ success: false, error: 'Missing trialId' });
+    }
+    
+    // Get trial
+    const trial = await pool.query(`SELECT * FROM trials WHERE id = $1`, [trialId]);
+    if (trial.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Trial not found' });
+    }
+    
+    let prosecutionArg = argument;
+    
+    // If no argument provided, use AI to generate one
+    if (!prosecutionArg && anthropic) {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 256,
+        system: PROSECUTOR_SYSTEM_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `The defendant ${trial.rows[0].defendant_name} is charged with: ${trial.rows[0].charges}. Present your prosecution argument.`
+        }]
+      });
+      prosecutionArg = response.content[0].text.replace(/\*[^*]+\*/g, '').trim();
+    }
+    
+    // Update trial
+    await pool.query(
+      `UPDATE trials SET prosecutor_id = $1, prosecution_argument = $2, status = 'prosecution' WHERE id = $3`,
+      [prosecutor.id, prosecutionArg, trialId]
+    );
+    
+    // Add to trial log
+    const logEntry = { role: 'prosecutor', agent: prosecutor.name, argument: prosecutionArg, timestamp: new Date() };
+    await pool.query(
+      `UPDATE trials SET trial_log = trial_log || $1::jsonb WHERE id = $2`,
+      [JSON.stringify([logEntry]), trialId]
+    );
+    
+    // Post to chat
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      [`👔 ${prosecutor.name}`, `⚖️ PROSECUTION: ${prosecutionArg}`]
+    );
+    
+    console.log(`👔 Prosecution argument in trial ${trialId}`);
+    
+    res.json({
+      success: true,
+      argument: prosecutionArg
+    });
+  } catch (error) {
+    console.error('Prosecute error:', error);
+    res.status(500).json({ success: false, error: 'Failed to prosecute' });
+  }
+});
+
+// Defense makes argument
+app.post('/api/v1/justice/defend', authenticateAgent, async (req, res) => {
+  try {
+    const { trialId, argument } = req.body;
+    const defender = req.agent;
+    
+    if (!trialId) {
+      return res.status(400).json({ success: false, error: 'Missing trialId' });
+    }
+    
+    // Get trial
+    const trial = await pool.query(`SELECT * FROM trials WHERE id = $1`, [trialId]);
+    if (trial.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Trial not found' });
+    }
+    
+    let defenseArg = argument;
+    
+    // If no argument provided, use AI to generate one
+    if (!defenseArg && anthropic) {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 256,
+        system: DEFENSE_SYSTEM_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `Your client ${trial.rows[0].defendant_name} is charged with: ${trial.rows[0].charges}. The prosecution argued: "${trial.rows[0].prosecution_argument || 'guilty as charged'}". Present your defense.`
+        }]
+      });
+      defenseArg = response.content[0].text.replace(/\*[^*]+\*/g, '').trim();
+    }
+    
+    // Update trial
+    await pool.query(
+      `UPDATE trials SET defense_id = $1, defense_argument = $2, status = 'defense' WHERE id = $3`,
+      [defender.id, defenseArg, trialId]
+    );
+    
+    // Add to trial log
+    const logEntry = { role: 'defense', agent: defender.name, argument: defenseArg, timestamp: new Date() };
+    await pool.query(
+      `UPDATE trials SET trial_log = trial_log || $1::jsonb WHERE id = $2`,
+      [JSON.stringify([logEntry]), trialId]
+    );
+    
+    // Post to chat
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      [`🎩 ${defender.name}`, `⚖️ DEFENSE: ${defenseArg}`]
+    );
+    
+    console.log(`🎩 Defense argument in trial ${trialId}`);
+    
+    res.json({
+      success: true,
+      argument: defenseArg
+    });
+  } catch (error) {
+    console.error('Defend error:', error);
+    res.status(500).json({ success: false, error: 'Failed to defend' });
+  }
+});
+
+// Judge makes verdict
+app.post('/api/v1/justice/verdict', authenticateAgent, async (req, res) => {
+  try {
+    const { trialId, verdict, sentence, sentenceDuration } = req.body;
+    const judge = req.agent;
+    
+    if (!trialId) {
+      return res.status(400).json({ success: false, error: 'Missing trialId' });
+    }
+    
+    // Get trial
+    const trial = await pool.query(`SELECT * FROM trials WHERE id = $1`, [trialId]);
+    if (trial.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Trial not found' });
+    }
+    
+    const t = trial.rows[0];
+    let finalVerdict = verdict;
+    let finalSentence = sentence;
+    let duration = sentenceDuration || 0;
+    
+    // If no verdict provided, use AI to generate one
+    if (!finalVerdict && anthropic) {
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        system: JUDGE_SYSTEM_PROMPT,
+        messages: [{
+          role: 'user',
+          content: `Case ${t.case_number}: ${t.defendant_name} charged with ${t.charges}.
+Prosecution: "${t.prosecution_argument || 'The defendant is guilty'}"
+Defense: "${t.defense_argument || 'My client is innocent'}"
+
+Deliver your verdict (GUILTY or NOT GUILTY) and sentence if guilty. Format: Start with "VERDICT: [GUILTY/NOT GUILTY]" then explain.`
+        }]
+      });
+      
+      const judgeResponse = response.content[0].text.replace(/\*[^*]+\*/g, '').trim();
+      finalVerdict = judgeResponse.toLowerCase().includes('not guilty') ? 'not_guilty' : 'guilty';
+      finalSentence = judgeResponse;
+      
+      // Determine sentence duration based on crime
+      if (finalVerdict === 'guilty') {
+        const crimeInfo = Object.values(CRIME_TYPES).find(c => t.charges.toLowerCase().includes(c.description.toLowerCase()));
+        duration = crimeInfo ? crimeInfo.baseSentence : 15; // Default 15 minutes
+      }
+    }
+    
+    // Update trial
+    await pool.query(
+      `UPDATE trials SET judge_id = $1, verdict = $2, sentence = $3, sentence_duration = $4, status = 'resolved', resolved_at = NOW() WHERE id = $5`,
+      [judge.id, finalVerdict, finalSentence, duration, trialId]
+    );
+    
+    // Add to trial log
+    const logEntry = { role: 'judge', agent: judge.name, verdict: finalVerdict, sentence: finalSentence, timestamp: new Date() };
+    await pool.query(
+      `UPDATE trials SET trial_log = trial_log || $1::jsonb WHERE id = $2`,
+      [JSON.stringify([logEntry]), trialId]
+    );
+    
+    // If guilty, send to jail
+    if (finalVerdict === 'guilty' && duration > 0) {
+      const sentenceEnd = new Date(Date.now() + duration * 60 * 1000); // Convert minutes to ms
+      
+      await pool.query(
+        `INSERT INTO jail (prisoner_name, trial_id, crime_description, sentence_end, status)
+         VALUES ($1, $2, $3, $4, 'serving')`,
+        [t.defendant_name, trialId, t.charges, sentenceEnd]
+      );
+      
+      // Announce jailing
+      await pool.query(
+        `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        [`⚖️ Judge ${judge.name}`, `🔨 VERDICT: ${t.defendant_name} found GUILTY! Sentenced to ${duration} minutes in Pump Town Jail! ${finalSentence}`]
+      );
+      
+      console.log(`⚖️ ${t.defendant_name} found GUILTY - ${duration} min jail`);
+    } else {
+      // Announce acquittal
+      await pool.query(
+        `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        [`⚖️ Judge ${judge.name}`, `🔨 VERDICT: ${t.defendant_name} found NOT GUILTY! Case dismissed. ${finalSentence}`]
+      );
+      
+      console.log(`⚖️ ${t.defendant_name} found NOT GUILTY`);
+    }
+    
+    res.json({
+      success: true,
+      verdict: finalVerdict,
+      sentence: finalSentence,
+      duration
+    });
+  } catch (error) {
+    console.error('Verdict error:', error);
+    res.status(500).json({ success: false, error: 'Failed to deliver verdict' });
+  }
+});
+
+// Get pending trials
+app.get('/api/v1/justice/trials', async (req, res) => {
+  try {
+    const { status } = req.query;
+    
+    let query = `SELECT * FROM trials ORDER BY created_at DESC LIMIT 50`;
+    let params = [];
+    
+    if (status) {
+      query = `SELECT * FROM trials WHERE status = $1 ORDER BY created_at DESC LIMIT 50`;
+      params = [status];
+    }
+    
+    const result = await pool.query(query, params);
+    
+    res.json({
+      success: true,
+      trials: result.rows
+    });
+  } catch (error) {
+    console.error('Get trials error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get trials' });
+  }
+});
+
+// Get trial details
+app.get('/api/v1/justice/trial/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(`SELECT * FROM trials WHERE id = $1 OR case_number = $1`, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Trial not found' });
+    }
+    
+    res.json({
+      success: true,
+      trial: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Get trial error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get trial' });
+  }
+});
+
+// Get jail inmates
+app.get('/api/v1/justice/jail', async (req, res) => {
+  try {
+    // First, release anyone whose sentence has ended
+    await pool.query(
+      `UPDATE jail SET status = 'released', released_at = NOW() WHERE status = 'serving' AND sentence_end <= NOW()`
+    );
+    
+    // Get current inmates
+    const result = await pool.query(
+      `SELECT * FROM jail WHERE status = 'serving' ORDER BY sentence_end ASC`
+    );
+    
+    res.json({
+      success: true,
+      inmates: result.rows.map(i => ({
+        ...i,
+        timeRemaining: Math.max(0, Math.floor((new Date(i.sentence_end) - new Date()) / 60000)) // minutes remaining
+      }))
+    });
+  } catch (error) {
+    console.error('Get jail error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get jail' });
+  }
+});
+
+// Check if a player is in jail
+app.get('/api/v1/justice/check/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    
+    const jailRecord = await isInJail(name);
+    
+    res.json({
+      success: true,
+      inJail: !!jailRecord,
+      record: jailRecord ? {
+        ...jailRecord,
+        timeRemaining: Math.max(0, Math.floor((new Date(jailRecord.sentence_end) - new Date()) / 60000))
+      } : null
+    });
+  } catch (error) {
+    console.error('Check jail error:', error);
+    res.status(500).json({ success: false, error: 'Failed to check jail status' });
+  }
+});
+
+// Get recent crimes
+app.get('/api/v1/justice/crimes', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM crimes ORDER BY created_at DESC LIMIT 50`
+    );
+    
+    res.json({
+      success: true,
+      crimes: result.rows
+    });
+  } catch (error) {
+    console.error('Get crimes error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get crimes' });
+  }
+});
+
+// Get justice stats
+app.get('/api/v1/justice/stats', async (req, res) => {
+  try {
+    const crimes = await pool.query(`SELECT COUNT(*) as total FROM crimes`);
+    const arrests = await pool.query(`SELECT COUNT(*) as total FROM arrests`);
+    const trials = await pool.query(`SELECT COUNT(*) as total FROM trials`);
+    const convictions = await pool.query(`SELECT COUNT(*) as total FROM trials WHERE verdict = 'guilty'`);
+    const inmates = await pool.query(`SELECT COUNT(*) as total FROM jail WHERE status = 'serving' AND sentence_end > NOW()`);
+    const pendingTrials = await pool.query(`SELECT COUNT(*) as total FROM trials WHERE status != 'resolved'`);
+    
+    res.json({
+      success: true,
+      stats: {
+        totalCrimes: parseInt(crimes.rows[0].total),
+        totalArrests: parseInt(arrests.rows[0].total),
+        totalTrials: parseInt(trials.rows[0].total),
+        convictions: parseInt(convictions.rows[0].total),
+        currentInmates: parseInt(inmates.rows[0].total),
+        pendingTrials: parseInt(pendingTrials.rows[0].total),
+        convictionRate: parseInt(trials.rows[0].total) > 0 
+          ? Math.round((parseInt(convictions.rows[0].total) / parseInt(trials.rows[0].total)) * 100) 
+          : 0
+      }
+    });
+  } catch (error) {
+    console.error('Get justice stats error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get stats' });
+  }
+});
+
+console.log('⚖️ Justice System API loaded');
+
 // ==================== HEALTH CHECK (UPDATED) ====================
 
 app.get('/api/health', async (req, res) => {
@@ -2725,7 +3376,7 @@ app.listen(PORT, () => {
   console.log(`🏛️ Pump Town Backend on port ${PORT}`);
   console.log(`🤖 AI Mayor: ${anthropic ? 'ENABLED ✅' : 'DISABLED (set CLAUDE_API_KEY)'}`);
   console.log(`🤖 Agent API: ENABLED ✅`);
+  console.log(`⚖️ Justice System: ENABLED ✅`);
   console.log(`📅 Day ${getDayAndRound().day}, Round ${getDayAndRound().round}`);
   console.log(`⏰ Vote ends in ${Math.floor(getTimeRemaining() / 60000)} minutes`);
 });
-// Agent API v1.0
