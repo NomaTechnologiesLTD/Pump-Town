@@ -13696,6 +13696,9 @@
             const [currentPage, setCurrentPage] = useState('dashboard');
             const [sidebarOpen, setSidebarOpen] = useState(false);
             
+            // Scroll to top on page change
+            useEffect(() => { window.scrollTo(0, 0); }, [currentPage]);
+            
             // Tutorial state
             const [showTutorial, setShowTutorial] = useState(() => {
                 return !localStorage.getItem('pumptown_tutorial_complete');
