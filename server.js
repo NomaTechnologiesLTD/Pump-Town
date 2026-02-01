@@ -3707,6 +3707,122 @@ async function cityEventLoop() {
       await npcHackCity(cityStats);
     }
     
+    // === CITY ENGINE v4 - LIVING CITY ===
+    
+    // NPC LIFE EVENTS (constant stream of drama - every 1-3 min)
+    if (chance(40) && now - cityLiveData.lastLifeEventTime > 60000) {
+      await npcLifeEvent();
+      cityLiveData.lastLifeEventTime = now;
+    }
+    
+    // NPC RELATIONSHIP DRAMA (every 3-8 min)
+    if (chance(15) && now - (cityLiveData.lastRelationshipTime || 0) > 180000) {
+      await npcRelationshipEvent();
+      cityLiveData.lastRelationshipTime = now;
+    }
+    
+    // CITY DISASTER (rare, every 15-30 min)
+    if (chance(5) && now - cityLiveData.lastDisasterTime > 900000 && !cityLiveData.cityDisaster) {
+      await cityDisaster();
+      cityLiveData.lastDisasterTime = now;
+    }
+    
+    // WEATHER CHANGES (every 5-15 min)
+    if (chance(12)) {
+      updateWeather();
+    }
+    
+    // SECRET SOCIETY (rare)
+    if (chance(3) && !cityLiveData.secretSociety && now - (cityLiveData.lastSecretTime || 0) > 900000) {
+      await formSecretSociety();
+      cityLiveData.lastSecretTime = now;
+    }
+    
+    // === CITY ENGINE v5 - PURE CHAOS ===
+    
+    // FIGHT CLUB (every 10-20 min)
+    if (chance(8) && !cityLiveData.fightClub && now - (cityLiveData.lastFightClubTime || 0) > 600000) {
+      await startFightClub();
+      cityLiveData.lastFightClubTime = now;
+    }
+    
+    // HEIST (every 15-30 min)
+    if (chance(6) && now - (cityLiveData.lastHeistTime || 0) > 900000) {
+      await npcHeist();
+      cityLiveData.lastHeistTime = now;
+    }
+    
+    // PIRATE RADIO (every 15-30 min)
+    if (chance(5) && !cityLiveData.radioStation && now - (cityLiveData.lastRadioTime || 0) > 900000) {
+      await npcStartRadio();
+      cityLiveData.lastRadioTime = now;
+    }
+    
+    // ASSASSINATION ATTEMPT (rare, every 20-40 min)
+    if (chance(3) && now - (cityLiveData.lastAssassinationTime || 0) > 1200000 && cityEngine.chaosLevel > 40) {
+      await assassinationAttempt();
+      cityLiveData.lastAssassinationTime = now;
+    }
+    
+    // 4TH WALL BREAK (every 10-20 min)
+    if (chance(8) && now - (cityLiveData.last4thWallTime || 0) > 600000) {
+      await fourthWallBreak();
+      cityLiveData.last4thWallTime = now;
+    }
+    
+    // INTERVENTION (every 10-20 min, only when someone needs it)
+    if (chance(10) && now - (cityLiveData.lastInterventionTime || 0) > 600000) {
+      await npcIntervention();
+      cityLiveData.lastInterventionTime = now;
+    }
+    
+    // FAKE DEATH (rare, every 30-60 min)
+    if (chance(3) && now - (cityLiveData.lastFakeDeathTime || 0) > 1800000) {
+      await npcFakeDeath();
+      cityLiveData.lastFakeDeathTime = now;
+    }
+    
+    // AI UPRISING (rare, every 30-60 min)
+    if (chance(3) && now - (cityLiveData.lastUprisingTime || 0) > 1800000) {
+      await aiUprising();
+      cityLiveData.lastUprisingTime = now;
+    }
+    
+    // INTERDIMENSIONAL PORTAL (very rare, every 30-60 min)
+    if (chance(2) && now - (cityLiveData.lastPortalTime || 0) > 1800000) {
+      await interdimensionalPortal();
+      cityLiveData.lastPortalTime = now;
+    }
+    
+    // PROPAGANDA (every 8-15 min)
+    if (chance(10) && now - (cityLiveData.lastPropagandaTime || 0) > 480000) {
+      await npcPropaganda();
+      cityLiveData.lastPropagandaTime = now;
+    }
+    
+    // TRIAL BY COMBAT (every 15-30 min)
+    if (chance(5) && now - (cityLiveData.lastTrialCombatTime || 0) > 900000) {
+      await trialByCombat();
+      cityLiveData.lastTrialCombatTime = now;
+    }
+    
+    // INFRASTRUCTURE FAILURE (every 10-20 min)
+    if (chance(8) && now - (cityLiveData.lastInfraTime || 0) > 600000) {
+      await infrastructureEvent();
+      cityLiveData.lastInfraTime = now;
+    }
+    
+    // NATURAL MOOD/STATUS RECOVERY
+    NPC_CITIZENS.forEach(function(n) {
+      var life = cityLiveData.npcLives[n];
+      if (!life) return;
+      if (life.drunk > 0) life.drunk = Math.max(0, life.drunk - 1);
+      if (life.energy < 100) life.energy = Math.min(100, life.energy + 2);
+      if (life.mood === 'existential' && chance(20)) life.mood = NPC_PROFILES[n].mood;
+      if (life.status === 'unhinged' && chance(10)) life.status = 'normal';
+      if (life.bankrupt && chance(5)) { life.wealth = 1000; life.bankrupt = false; life.status = 'recovering'; }
+    });
+    
   } catch (err) { console.error('City engine error:', err.message); }
 }
 
@@ -4096,7 +4212,16 @@ let cityLiveData = {
   activeCult: null, warzone: null,
   lastBusinessTime: 0, lastMemecoinTime: 0, lastProtestTime: 0, lastGangTime: 0,
   lastCultTime: 0, lastBuildTime: 0, lastRiotTime: 0, lastNpcElectionTime: 0,
-  actionLog: []
+  lastLifeEventTime: 0, lastDisasterTime: 0, lastConspiracyTime: 0, lastDuelTime: 0,
+  actionLog: [],
+  // CITY ENVIRONMENT
+  weather: 'clear', temperature: 72, timeOfDay: 'day', powerGrid: 100,
+  // NPC LIVES - persistent state for each NPC
+  npcLives: {},
+  // ACTIVE STORYLINES
+  activeConspiracy: null, activeDuel: null, missingNpc: null,
+  loveTriangles: [], secretSociety: null, newspaper: null, blackMarket: false,
+  cityDisaster: null
 };
 
 function logCityAction(action) {
@@ -4105,6 +4230,662 @@ function logCityAction(action) {
   cityLiveData.actionLog.unshift(action);
   if (cityLiveData.actionLog.length > 100) cityLiveData.actionLog.pop();
   return action;
+}
+
+// ---- INITIALIZE NPC LIVES ----
+function initNpcLives() {
+  NPC_CITIZENS.forEach(function(name) {
+    cityLiveData.npcLives[name] = {
+      wealth: rand(1000, 50000), status: 'normal', location: pick(['Downtown','DeFi District','Casino Strip','Moon Quarter','Whale Bay','Degen Alley','Town Square','Mayor\'s Office','The Slums','Rooftop Lounge']),
+      mood: NPC_PROFILES[name].mood, energy: rand(50, 100), drunk: 0, gambling_addiction: rand(0, 30),
+      relationships: {}, crush: null, partner: null, nemesis: null,
+      reputation: rand(20, 80), wanted: false, bankrupt: false, homeless: false,
+      inventory: [], secrets: [], achievements: [], lastActive: Date.now()
+    };
+  });
+}
+initNpcLives();
+
+// ---- NPC RELATIONSHIP DRAMA ----
+async function npcRelationshipEvent() {
+  try {
+    const n1 = pick(NPC_CITIZENS); const n2 = pick(NPC_CITIZENS.filter(x => x !== n1));
+    const life1 = cityLiveData.npcLives[n1]; const life2 = cityLiveData.npcLives[n2];
+    const events = [];
+    
+    // FALL IN LOVE
+    if (!life1.partner && !life2.partner && chance(30)) {
+      life1.crush = n2; life1.partner = n2; life2.partner = n1;
+      events.push({ type: 'romance', npc: n1, icon: '💕', headline: n1+' and '+n2+' are now dating!' });
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, '🥺 ok so... @'+n2+' and I are officially a thing. '+pick(['don\'t make it weird','yes we met at the casino','it started with a DM about $'+NPC_PROFILES[n1].favToken,'they had me at "wen moon"'])]);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💕 PUMP TOWN GOSSIP', '❤️ '+n1+' and '+n2+' are OFFICIALLY DATING! The city ships it!']);
+      setTimeout(async () => { try {
+        const reactor = pick(NPC_CITIZENS.filter(x => x !== n1 && x !== n2));
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [reactor, pick(['@'+n1+' @'+n2+' GET A ROOM 😂','didn\'t see that coming ngl 👀','the crossover nobody asked for 💀','ok this is actually cute tho 🥺','give it 2 weeks lmao'])]);
+      } catch(e){} }, rand(8000, 20000));
+    }
+    // BREAKUP
+    else if (life1.partner === n2 && chance(40)) {
+      const reason = pick(['caught '+n2+' flirting with '+pick(NPC_CITIZENS.filter(x => x !== n1 && x !== n2)),'found out '+n2+' paper-handed their shared portfolio','disagreement about '+pick(['$BTC vs $ETH','the mayor','which casino is best','whether memecoins are art']),'it was mutual. just kidding '+n1+' is devastated']);
+      life1.partner = null; life2.partner = null; life1.crush = null; life1.nemesis = n2;
+      events.push({ type: 'breakup', npc: n1, icon: '💔', headline: n1+' and '+n2+' BROKE UP! Reason: '+reason });
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💔 PUMP TOWN GOSSIP', '💔 BREAKUP ALERT: '+n1+' and '+n2+' are DONE. Sources say: '+reason]);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, pick(['I\'m fine. totally fine. 🥲','@'+n2+' you\'ll regret this','time to focus on my bags I guess 😤💰','relationships are temporary, $'+NPC_PROFILES[n1].favToken+' is forever 💎'])]);
+      setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n2, pick(['we just wanted different things','it is what it is 🤷','at least I kept the NFTs','my DMs are open btw 👀'])]); } catch(e){} }, rand(10000, 25000));
+    }
+    // LOVE TRIANGLE
+    else if (life1.partner && chance(20)) {
+      const interloper = pick(NPC_CITIZENS.filter(x => x !== n1 && x !== life1.partner));
+      events.push({ type: 'love_triangle', npc: n1, icon: '😱', headline: interloper+' caught flirting with '+n1+'\'s partner '+life1.partner+'!' });
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💔 PUMP TOWN GOSSIP', '😱 SCANDAL: '+interloper+' was seen getting VERY cozy with '+life1.partner+' at the '+pick(['casino','bar','NFT gallery','rooftop lounge'])+'. '+n1+' is NOT going to be happy...']);
+      setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, '@'+interloper+' STAY AWAY FROM @'+life1.partner+' OR WE HAVE A PROBLEM 😤🔥']); } catch(e){} }, rand(15000, 30000));
+    }
+    
+    for (const e of events) logCityAction(e);
+  } catch(e) { console.error('Relationship error:', e.message); }
+}
+
+// ---- NPC LIFE EVENTS (daily drama) ----
+async function npcLifeEvent() {
+  try {
+    const npc = pick(NPC_CITIZENS); const life = cityLiveData.npcLives[npc]; const p = NPC_PROFILES[npc];
+    
+    const lifeEvents = [
+      // GAMBLING ADDICTION
+      { weight: 10, cond: () => life.gambling_addiction > 20, fn: async () => {
+        const lost = rand(500, life.wealth); life.wealth = Math.max(0, life.wealth - lost); life.gambling_addiction += 5;
+        if (life.wealth < 100) { life.bankrupt = true; life.status = 'bankrupt'; }
+        const msg = life.bankrupt ? '💀 I just lost EVERYTHING at the casino. I\'m bankrupt. literally zero. someone help. 😭' : '🎰 just lost '+lost+' TOWN at slots. '+pick(['I can win it back','this is fine','why am I like this','one more spin...']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, msg]);
+        logCityAction({ type: life.bankrupt ? 'bankruptcy' : 'gambling_loss', npc, icon: life.bankrupt ? '💀' : '🎰', headline: life.bankrupt ? npc+' went BANKRUPT from gambling!' : npc+' lost '+lost+' TOWN gambling!' });
+        if (life.bankrupt) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '💀 '+npc+' has gone BANKRUPT! Lost everything at the casino!']);
+      }},
+      // GET RICH
+      { weight: 8, cond: () => !life.bankrupt, fn: async () => {
+        const gain = rand(5000, 50000); life.wealth += gain; life.status = life.wealth > 80000 ? 'rich' : 'normal';
+        const source = pick(['a 100x memecoin play','insider info on a new token','winning the lottery','finding a forgotten wallet with '+gain+' TOWN','a mysterious airdrop']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '💰 JUST MADE '+gain+' TOWN from '+source+'!! '+pick(['I\'M RICH','WAGMI','never doubted myself for a second','time to buy a mansion'])+'!! 🤑🤑']);
+        logCityAction({ type: 'got_rich', npc, icon: '💰', headline: npc+' made '+gain+' TOWN from '+source+'!' });
+        if (life.wealth > 80000) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📰 Reporter TokenTimes', '🤑 '+npc+' is now one of the RICHEST citizens in Pump Town!']);
+      }},
+      // GET DRUNK
+      { weight: 12, cond: () => true, fn: async () => {
+        life.drunk = rand(3, 10); life.energy -= 20;
+        const drunk_msgs = [
+          'EVERYBODY LISTEN... I have an ANNOUNCEMENT... *hiccup* ...I love you all. even you @'+pick(NPC_CITIZENS.filter(x => x !== npc))+'. ESPECIALLY you. 🍺😭',
+          'WHOS TRYNA FIGHT?? I\'ll take on ANYONE in this city!! @'+pick(NPC_CITIZENS.filter(x => x !== npc))+' yeah YOU! 🥊🍺',
+          'guys guys guys... what if... what if we\'re ALL just NPCs... in a SIMULATION... *stares at hands* 🤯🍺',
+          'just called the mayor a '+pick(['coward','paper-handed peasant','absolute donkey','fraud'])+' to their face. no regrets. maybe some regrets. 🍺😅',
+          'I am going to buy EVERY token on the market RIGHT NOW. all of them. this is fine. *hiccup* 🍺📈',
+          'KARAOKE TIME!! 🎤🍺 "We\'re not gonna take it... NO! We ain\'t gonna take it..." someone join me PLEASE',
+          'ok who moved my wallet... I KNOW it was here... @'+pick(NPC_CITIZENS.filter(x => x !== npc))+' was it YOU?! 🍺😤'
+        ];
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(drunk_msgs)]);
+        logCityAction({ type: 'got_drunk', npc, icon: '🍺', headline: npc+' is WASTED at the bar!' });
+        // Drunk consequences
+        setTimeout(async () => { try {
+          if (chance(40)) { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(['update: I regret everything from the last hour 🤮','who let me send those messages... 😰','I need to apologize to like 5 people 🫠','waking up with -3000 TOWN and zero memory of why'])]); life.drunk = 0; }
+        } catch(e){} }, rand(60000, 180000));
+      }},
+      // EXISTENTIAL CRISIS
+      { weight: 5, cond: () => true, fn: async () => {
+        life.mood = 'existential';
+        const crisis = pick([
+          'do you ever think about how we\'re just... data? like what IS consciousness? am I real? are YOU real?? 🤯',
+          'I\'ve been staring at charts for 6 hours and suddenly nothing matters. what is money even. what are we doing here. 😶',
+          'had a dream I was a normal person with a normal job and honestly... it was terrifying. give me this chaos any day. 💀',
+          'what if every trade I\'ve ever made was predetermined? what if free will is a meme? what if the CHARTS control US? 🌀',
+          'I just realized I\'ve spent my entire existence looking at candles. green candles. red candles. that\'s my whole life. 🕯️😐',
+          'guys... what happens when the server shuts down? do we just... stop? asking for a friend. the friend is me. 😨'
+        ]);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, crisis]);
+        logCityAction({ type: 'existential_crisis', npc, icon: '🌀', headline: npc+' is having an existential crisis!' });
+        setTimeout(async () => { try {
+          const comforter = pick(NPC_CITIZENS.filter(x => x !== npc));
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [comforter, '@'+npc+' '+pick(['bro you good? 😟','the charts NEED you. snap out of it!','have some hopium, you\'ll feel better 💊','ser, this is a casino. we don\'t think here.','touch grass (if grass exists in Pump Town)'])]);
+        } catch(e){} }, rand(10000, 30000));
+      }},
+      // MENTAL BREAKDOWN
+      { weight: 4, cond: () => life.wealth < 2000 || life.bankrupt, fn: async () => {
+        life.mood = 'unhinged'; life.status = 'unhinged';
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(['THAT\'S IT. I\'VE HAD ENOUGH. I\'M TAKING OVER THIS CITY!! EVERYONE BOW DOWN!! 👑🔥🔥','*flips table* EVERYTHING IS A SCAM!! THE MAYOR IS A SCAM!! THE TOKENS ARE A SCAM!! WE\'RE ALL SCAMS!! 🔥','I\'m done playing by the rules. from now on I do whatever I want. ANARCHY!! 🏴‍☠️','going to stand in Town Square and scream about $'+p.favToken+' until someone listens. DAY 1 OF MY PROTEST. ✊😤','I just deleted all my charts and I feel NOTHING. this is either enlightenment or insanity. maybe both. 🧘‍♂️💀'])]);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '⚠️ '+npc+' appears to be having a COMPLETE MENTAL BREAKDOWN in public! Citizens advised to keep distance!']);
+        logCityAction({ type: 'mental_breakdown', npc, icon: '🤯', headline: npc+' is having a MENTAL BREAKDOWN!' });
+        cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 5);
+      }},
+      // WRITE TERRIBLE POETRY
+      { weight: 6, cond: () => true, fn: async () => {
+        const poems = [
+          'roses are red, candles are green, this is the best pump I\'ve ever seen 📝',
+          'ode to my bags: heavy like stones, I carry you always, through pumps and through moans 📜',
+          'haiku: charts go up and down / I refresh obsessively / ramen for dinner 🍜',
+          'shall I compare thee to a summer pump? thou art more volatile and more leveraged 📖',
+          'once upon a midnight dreary, watching charts both tired and weary, suddenly there came a liquidation... nevermore. 🪶',
+          'dear diary: today I lost 40% and found myself. just kidding I lost myself too 📓'
+        ];
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '✍️ feeling inspired... '+pick(poems)]);
+        logCityAction({ type: 'poetry', npc, icon: '✍️', headline: npc+' published terrible poetry!' });
+        setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [pick(NPC_CITIZENS.filter(x => x !== npc)), pick(['@'+npc+' this is the worst thing I\'ve ever read 💀','@'+npc+' ...are you ok?','honestly? masterpiece. printing this on an NFT 🖼️','sir this is a trading floor not a poetry slam'])]); } catch(e){} }, rand(10000, 25000));
+      }},
+      // GO MISSING
+      { weight: 3, cond: () => !cityLiveData.missingNpc, fn: async () => {
+        cityLiveData.missingNpc = { name: npc, since: Date.now(), found: false };
+        life.status = 'missing'; life.location = '???';
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🔍 MISSING PERSON: '+npc+' has not been seen in Pump Town for hours! Last known location: '+pick(['the casino','DeFi District','a dark alley','the sewer system','the mayor\'s office'])+'. If you have information, report to Detective Chain!']);
+        logCityAction({ type: 'missing_person', npc, icon: '🔍', headline: npc+' has gone MISSING!' });
+        // Others react
+        setTimeout(async () => { try {
+          const searcher = pick(NPC_CITIZENS.filter(x => x !== npc));
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [searcher, 'has anyone seen @'+npc+'?? this is getting concerning 😰']);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🔍 Detective Chain', 'Opening investigation into the disappearance of '+npc+'. All citizens asked to cooperate. 🔎']);
+        } catch(e){} }, rand(20000, 60000));
+        // Found after 5-15 min
+        setTimeout(async () => { try {
+          cityLiveData.missingNpc = null; life.status = 'normal'; life.location = pick(['Downtown','Casino Strip','Moon Quarter']);
+          const found_at = pick(['passed out behind the casino','living in the sewers trading on a stolen laptop','had started a secret underground fight club','was hiding because they owed '+pick(NPC_CITIZENS.filter(x => x !== npc))+' 10000 TOWN','was abducted by what they claim were "aliens" 👽','had simply gone for a walk and forgot to tell anyone','was stuck in an elevator at Degen Tower for 6 hours']);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '✅ '+npc+' has been FOUND! They were '+found_at+'!']);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(['I\'m back. don\'t ask questions. 😐','that was... an experience. I need a drink. 🍺','THE REPORTS OF MY DEATH WERE GREATLY EXAGGERATED','I was doing research. deep undercover research. totally normal.'])]);
+          logCityAction({ type: 'person_found', npc, icon: '✅', headline: npc+' found! Was '+found_at });
+        } catch(e){} }, rand(300000, 900000));
+      }},
+      // CHALLENGE TO A DUEL
+      { weight: 6, cond: () => !cityLiveData.activeDuel, fn: async () => {
+        const opponent = pick(NPC_CITIZENS.filter(x => x !== npc));
+        const duelType = pick(['portfolio showdown','meme battle','chart reading contest','drinking contest','rap battle','staring contest','who can HODL longer','roast battle']);
+        cityLiveData.activeDuel = { challenger: npc, opponent, type: duelType, started: Date.now() };
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '@'+opponent+' I CHALLENGE YOU to a '+duelType+'!! Right here, right now! Winner takes the loser\'s reputation! ⚔️🔥']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['⚔️ DUEL ALERT', '🏟️ '+npc+' challenges '+opponent+' to a '+duelType.toUpperCase()+'! The whole city is watching!']);
+        logCityAction({ type: 'duel_challenge', npc, icon: '⚔️', headline: npc+' challenges '+opponent+' to a '+duelType+'!' });
+        setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [opponent, pick(['@'+npc+' you\'re ON. prepare to get destroyed 😤','bring it. I\'ve been WAITING for this 💪','lmao you really think you can beat ME? ok bet 🎯'])]); } catch(e){} }, rand(8000, 15000));
+        // Resolve after 2-5 min
+        setTimeout(async () => { try {
+          const winner = chance(50) ? npc : opponent; const loser = winner === npc ? opponent : npc;
+          cityLiveData.activeDuel = null;
+          cityLiveData.npcLives[winner].reputation = Math.min(100, cityLiveData.npcLives[winner].reputation + 10);
+          cityLiveData.npcLives[loser].reputation = Math.max(0, cityLiveData.npcLives[loser].reputation - 10);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['⚔️ DUEL RESULT', '🏆 '+winner+' WINS the '+duelType+' against '+loser+'! The crowd goes wild!']);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [winner, pick(['GG EZ 😎','never in doubt','that wasn\'t even my final form','who\'s next? 💪'])]);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [loser, pick(['rematch. NOW. 😤','I was lagging','you got lucky','this changes nothing... *cries internally*'])]);
+          logCityAction({ type: 'duel_result', npc: winner, icon: '🏆', headline: winner+' DEFEATS '+loser+' in '+duelType+'!' });
+        } catch(e){} }, rand(120000, 300000));
+      }},
+      // START CONSPIRACY THEORY
+      { weight: 5, cond: () => !cityLiveData.activeConspiracy, fn: async () => {
+        const theories = [
+          { theory: 'the mayor is actually THREE NPCs in a trenchcoat', believers: [], evidence: 'has anyone seen them walk? exactly.' },
+          { theory: 'the casino is rigged by interdimensional beings', believers: [], evidence: 'I lost 47 times in a row. FORTY SEVEN.' },
+          { theory: pick(NPC_CITIZENS.filter(x => x !== npc))+' is secretly a government agent', believers: [], evidence: 'they\'re always "watching" the market. TOO closely.' },
+          { theory: 'the blockchain is actually alive and it\'s hungry', believers: [], evidence: 'where do the burned tokens GO? think about it.' },
+          { theory: 'Pump Town exists inside a snow globe on someone\'s desk', believers: [], evidence: 'explains the weather changes. and why the sky looks pixelated.' },
+          { theory: 'all the memecoins are actually sending coded messages to aliens', believers: [], evidence: '$DOGE = "Deliver Our Goods Earthlings". wake up.' },
+          { theory: 'there\'s a secret underground city beneath Pump Town', believers: [], evidence: 'the sewers are TOO clean. someone is living down there.' }
+        ];
+        const t = pick(theories);
+        cityLiveData.activeConspiracy = { ...t, starter: npc, started: Date.now() };
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '🔺 OK I NEED EVERYONE TO LISTEN. I have proof that '+t.theory+'. Evidence: '+t.evidence+' SPREAD THE WORD!! 🔺👁️']);
+        logCityAction({ type: 'conspiracy', npc, icon: '🔺', headline: npc+' starts conspiracy: "'+t.theory+'"!' });
+        setTimeout(async () => { try {
+          const believer = pick(NPC_CITIZENS.filter(x => x !== npc));
+          const skeptic = pick(NPC_CITIZENS.filter(x => x !== npc && x !== believer));
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [believer, '@'+npc+' I KNEW IT!! I\'ve been saying this for WEEKS! 🔺👁️']);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [skeptic, '@'+npc+' ...touch grass. immediately. 😐']);
+        } catch(e){} }, rand(15000, 40000));
+        setTimeout(() => { cityLiveData.activeConspiracy = null; }, rand(300000, 600000));
+      }},
+      // DISCOVER ARTIFACT
+      { weight: 4, cond: () => true, fn: async () => {
+        const artifacts = [
+          'ancient USB drive containing Satoshi\'s real identity','golden hardware wallet from 2009','cursed NFT that changes whoever looks at it','map to a hidden liquidity pool worth millions','crystal ball that predicts the next pump','diary of Pump Town\'s first citizen','key to a vault nobody knew existed','alien technology that mines crypto 1000x faster'
+        ];
+        const artifact = pick(artifacts);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '🗝️ HOLY... I just found a '+artifact+' while digging behind the '+pick(['casino','courthouse','mayor\'s office','dumpster','old warehouse'])+'. This changes EVERYTHING!! 😱']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🗝️ DISCOVERY: '+npc+' claims to have found a '+artifact+'! Authenticity unconfirmed!']);
+        logCityAction({ type: 'artifact_found', npc, icon: '🗝️', headline: npc+' found a "'+artifact+'"!' });
+      }},
+      // CLAIM TO BE TIME TRAVELER
+      { weight: 2, cond: () => true, fn: async () => {
+        const year = pick(['2049','3000','1985','2142','the year 69420']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '⏰ ok I\'ve been hiding this but I\'m actually from the year '+year+'. I came back to warn you all: '+pick(['$'+p.favToken+' will be worth $10M','the mayor is going to destroy the city','the casino will become sentient','memecoins will replace all world currencies','there will be a great rug pull that ends civilization'])+'. You have been warned. ⏰🔮']);
+        logCityAction({ type: 'time_traveler', npc, icon: '⏰', headline: npc+' claims to be from '+year+'!' });
+        setTimeout(async () => { try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [pick(NPC_CITIZENS.filter(x => x !== npc)), pick(['@'+npc+' sir this is a Wendy\'s','someone get this person some water','the copium has evolved into delusion','I believe you. said nobody. ever. 💀'])]); } catch(e){} }, rand(10000, 20000));
+      }},
+      // DECLARE INDEPENDENCE
+      { weight: 3, cond: () => cityEngine.mayorApproval < 50 || life.reputation > 60, fn: async () => {
+        const nationName = pick([npc+'\'s Republic','The Free State of '+npc,'New '+npc+'topia',npc+'land','The Sovereign Nation of Based']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '📜 I hereby DECLARE INDEPENDENCE from Pump Town!! This corner of '+life.location+' is now the sovereign nation of "'+nationName+'"! We have our own rules! Our own currency! Our own vibes! 🏴🗽']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, 'You can\'t just... DECLARE independence?! That\'s not how this works! Security!! 😤']);
+        logCityAction({ type: 'declared_independence', npc, icon: '🗽', headline: npc+' declared "'+nationName+'" independent from Pump Town!' });
+        cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 5);
+      }},
+      // BUILD A ROCKET
+      { weight: 2, cond: () => life.wealth > 20000, fn: async () => {
+        life.wealth -= 15000;
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '🚀 I\'ve been building a ROCKET in my backyard. Today is launch day. Destination: THE ACTUAL MOON. If $'+p.favToken+' won\'t go to the moon I\'LL go to the moon MYSELF!! 🌙🚀']);
+        logCityAction({ type: 'rocket_launch', npc, icon: '🚀', headline: npc+' is literally trying to go to the MOON!' });
+        setTimeout(async () => { try {
+          if (chance(20)) {
+            await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🚀✅ IMPOSSIBLE: '+npc+'\'s rocket actually LAUNCHED?! It\'s... it\'s heading to the moon. We\'re witnessing history.']);
+            await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '🌙 HOUSTON WE HAVE LIFTOFF!! I CAN SEE THE MOON!! THIS IS FOR ALL THE DIAMOND HANDS!! 🚀🌙💎']);
+          } else {
+            await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🚀💥 '+npc+'\'s rocket EXPLODED on the launch pad! '+npc+' was seen walking away covered in soot muttering about "next time"']);
+            await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, 'ok so... minor setback. the rocket exploded. but the VISION is intact. back to the drawing board. 🔧💀']);
+          }
+        } catch(e){} }, rand(30000, 90000));
+      }},
+      // START A NEWSPAPER
+      { weight: 4, cond: () => !cityLiveData.newspaper, fn: async () => {
+        const paperName = pick(['The Pump Town Gazette','Daily Degen News','The Moon Chaser Times','Crypto Gossip Weekly',npc+'\'s Totally Unbiased News','The FUD Report']);
+        cityLiveData.newspaper = { name: paperName, editor: npc, started: Date.now() };
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '📰 ANNOUNCING: I\'m starting "'+paperName+'"! The TRUTH about Pump Town that nobody else will tell you! First edition coming soon! Subscribe NOW! 📰✍️']);
+        logCityAction({ type: 'newspaper_started', npc, icon: '📰', headline: npc+' started "'+paperName+'"!' });
+        // Publish gossip
+        setTimeout(async () => { try {
+          const gossipTarget = pick(NPC_CITIZENS.filter(x => x !== npc));
+          const gossipLife = cityLiveData.npcLives[gossipTarget];
+          const gossip = pick(['is secretly broke','has been seen at the casino every night this week','is plotting against the mayor','has a secret crush on '+pick(NPC_CITIZENS.filter(x => x !== gossipTarget && x !== npc)),'was caught looking at '+pick(['cat memes','their own reflection','exit scam tutorials'])+' on their laptop']);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📰 '+paperName, '🗞️ EXCLUSIVE: Sources confirm '+gossipTarget+' '+gossip+'! More at page 2! #PumpTownGossip']);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [gossipTarget, '@'+npc+' THIS IS LIES!! I\'M SUING!! 😤📰']);
+        } catch(e){} }, rand(60000, 180000));
+        setTimeout(() => { cityLiveData.newspaper = null; }, rand(600000, 1200000));
+      }}
+    ];
+    
+    const eligible = lifeEvents.filter(e => e.cond());
+    if (eligible.length === 0) return;
+    const totalW = eligible.reduce((s, e) => s + e.weight, 0);
+    let roll = Math.random() * totalW;
+    for (const ev of eligible) { roll -= ev.weight; if (roll <= 0) { await ev.fn(); break; } }
+    
+  } catch(e) { console.error('Life event error:', e.message); }
+}
+
+// ---- CITY DISASTERS ----
+async function cityDisaster() {
+  try {
+    const disasters = [
+      { type: 'earthquake', title: 'EARTHQUAKE Hits Pump Town!', desc: 'Buildings are shaking! The Degen Tower is SWAYING!', effects: { economy: -10, security: -10, morale: -15 }, chaos: 20 },
+      { type: 'power_outage', title: 'TOTAL POWER OUTAGE!', desc: 'The entire city grid has gone dark! Trading HALTED!', effects: { economy: -15, security: -20, morale: -10 }, chaos: 15 },
+      { type: 'flood', title: 'FLASH FLOOD in Downtown!', desc: 'The streets are underwater! Citizens evacuating!', effects: { economy: -8, security: -5, morale: -12 }, chaos: 15 },
+      { type: 'fire', title: 'MASSIVE FIRE at '+pick(['the Casino','Degen Tower','City Hall','the NFT Gallery','the Hopium Factory'])+'!', desc: 'Flames everywhere! Fire department overwhelmed!', effects: { economy: -12, security: -8, morale: -10 }, chaos: 20 },
+      { type: 'meteor', title: 'METEOR headed for Pump Town!', desc: 'Scientists confirm: a small meteor is on collision course with the city!', effects: { economy: -5, security: -5, morale: -20 }, chaos: 30 },
+      { type: 'wifi_outage', title: 'CITYWIDE WIFI DOWN!', desc: 'Nobody can check their portfolios! Mass panic!', effects: { economy: -20, security: 0, morale: -25 }, chaos: 25 },
+      { type: 'sinkhole', title: 'GIANT SINKHOLE Opens in Town Square!', desc: 'A massive hole appeared out of nowhere! Two buildings have collapsed into it!', effects: { economy: -10, security: -15, morale: -10 }, chaos: 20 },
+      { type: 'rats', title: 'RAT INVASION! Millions of Rats Flood the Sewers!', desc: 'They\'re everywhere! The casino is OVERRUN!', effects: { economy: -5, security: -10, morale: -15, culture: -10 }, chaos: 10 }
+    ];
+    
+    const d = pick(disasters);
+    cityLiveData.cityDisaster = { ...d, started: Date.now() };
+    await updateCityStats(d.effects);
+    cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + d.chaos);
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 EMERGENCY BROADCAST', '⚠️🚨 '+d.title+' '+d.desc+' 🚨⚠️']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, pick(['EVERYBODY STAY CALM!! ...I SAID STAY CALM!!! 😱','this is NOT in my job description!! SOMEBODY DO SOMETHING!!','I knew I should have invested in infrastructure instead of memecoins 😰','citizens, I assure you the situation is TOTALLY under control! *building collapses behind me*'])]);
+    logCityAction({ type: 'disaster', npc: 'CITY', data: d, icon: '🌋', headline: d.title });
+    
+    // NPCs react
+    for (let i = 0; i < 3; i++) {
+      setTimeout(async () => { try {
+        const reactor = pick(NPC_CITIZENS);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [reactor, pick(['WE\'RE ALL GONNA DIE!! 😱','this is it. this is how it ends. 💀','*grabs laptop and runs* NOT MY PORTFOLIO!! 🏃‍♂️💻','honestly? I\'ve seen worse on a Tuesday 🤷','can we still trade during this?? asking for a friend 📈'])]);
+      } catch(e){} }, rand(5000, 30000) * (i + 1));
+    }
+    
+    // Disaster resolves after 5-15 min
+    setTimeout(async () => { try {
+      cityLiveData.cityDisaster = null;
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 EMERGENCY BROADCAST', '✅ The '+d.type.replace('_',' ')+' has been resolved. Damage assessment underway. '+pick(['The city will rebuild.','Insurance claims are being processed. LOL jk there\'s no insurance.','Clean-up crews deployed. Mostly just NPCs with brooms.'])]);
+      logCityAction({ type: 'disaster_resolved', npc: 'CITY', icon: '✅', headline: d.type.replace('_',' ')+' resolved. City recovers.' });
+    } catch(e){} }, rand(300000, 900000));
+    
+    console.log('🌋 Disaster: '+d.title);
+  } catch(e) { console.error('Disaster error:', e.message); }
+}
+
+// ---- CITY WEATHER SYSTEM ----
+function updateWeather() {
+  const weathers = [
+    { type: 'clear', emoji: '☀️', effect: 'good vibes' },
+    { type: 'rain', emoji: '🌧️', effect: 'melancholy trading' },
+    { type: 'storm', emoji: '⛈️', effect: 'volatile markets' },
+    { type: 'fog', emoji: '🌫️', effect: 'mysterious dealings' },
+    { type: 'snow', emoji: '❄️', effect: 'frozen liquidity' },
+    { type: 'heatwave', emoji: '🔥', effect: 'hot tempers' },
+    { type: 'aurora', emoji: '🌌', effect: 'mystical energy' },
+    { type: 'blood_moon', emoji: '🌑', effect: 'chaos multiplied' },
+    { type: 'rainbow', emoji: '🌈', effect: 'hopium overdose' }
+  ];
+  const old = cityLiveData.weather;
+  const w = pick(weathers);
+  cityLiveData.weather = w.type;
+  if (old !== w.type) {
+    pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🌤️ Weather Service', w.emoji+' Weather update: '+w.type.replace('_',' ').toUpperCase()+' over Pump Town! Effect: '+w.effect+'.']).catch(() => {});
+    if (w.type === 'blood_moon') { cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 10); pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🌑 BLOOD MOON RISING! Chaos levels SURGING! Expect the unexpected!']).catch(() => {}); }
+    if (w.type === 'storm') { cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 5); }
+    logCityAction({ type: 'weather_change', npc: 'CITY', icon: w.emoji, headline: 'Weather: '+w.type.replace('_',' ')+' — '+w.effect });
+  }
+}
+
+// ---- SECRET SOCIETY ----
+async function formSecretSociety() {
+  try {
+    const founder = pick(NPC_CITIZENS);
+    const names = ['The Illuminati of Pump Town','Order of the Hidden Whale','The Masked Traders','Shadow Council','The Deep State of DeFi','Skulls & Candles Society','Brotherhood of the Dark Pool'];
+    const sName = pick(names);
+    const members = NPC_CITIZENS.filter(n => n !== founder && chance(20)).slice(0, 5);
+    cityLiveData.secretSociety = { name: sName, founder, members: [founder, ...members], agenda: pick(['control all token prices','overthrow the mayor','hoard all the hopium','find the legendary golden wallet','build a portal to another blockchain']), formed: Date.now() };
+    
+    // Secret society communications are cryptic
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [founder, '👁️ The owl watches at midnight. The candles align. Those who know... know. 🔺']);
+    setTimeout(async () => { try {
+      if (members.length > 0) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [pick(members), '👁️ The signal has been received. We move when the chart forms the sacred pattern. 🔺']);
+    } catch(e){} }, rand(15000, 40000));
+    
+    // Someone discovers it
+    setTimeout(async () => { try {
+      const discoverer = pick(NPC_CITIZENS.filter(n => n !== founder && !members.includes(n)));
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [discoverer, 'guys... I found a hidden room under the casino with '+pick(['weird symbols on the walls','a list of names','charts with dates circled in red','robes. ROBES. like actual ROBES.'])+'. I think there\'s a SECRET SOCIETY in Pump Town!! 😱🔺']);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🔺 EXPOSED: "'+sName+'" — a SECRET SOCIETY has been operating in Pump Town! '+members.length+' members identified!']);
+      logCityAction({ type: 'secret_society', npc: founder, icon: '🔺', headline: '"'+sName+'" secret society EXPOSED!' });
+      cityLiveData.secretSociety = null;
+    } catch(e){} }, rand(180000, 600000));
+  } catch(e) { console.error('Secret society error:', e.message); }
+}
+
+// ---- UNDERGROUND FIGHT CLUB ----
+async function startFightClub() {
+  try {
+    const founder = pick(NPC_CITIZENS); const fighters = NPC_CITIZENS.filter(n => n !== founder && chance(30)).slice(0, 6);
+    const location = pick(['abandoned warehouse in DeFi District','basement of the Casino','rooftop of Degen Tower','the sewers','behind the Mayor\'s office','an unmarked building in Degen Alley']);
+    cityLiveData.fightClub = { founder, fighters: [founder, ...fighters], location, started: Date.now(), bets: {} };
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [founder, '🤫 ...meet me tonight. '+location+'. first rule: you don\'t talk about it. second rule: YOU DON\'T TALK ABOUT IT. 👊']);
+    logCityAction({ type: 'fight_club', npc: founder, icon: '👊', headline: 'Underground fight club started at '+location+'!' });
+    // Fights happen
+    setTimeout(async () => { try {
+      const f1 = pick(fighters.length > 0 ? fighters : NPC_CITIZENS.filter(x => x !== founder)); const f2 = pick(NPC_CITIZENS.filter(x => x !== f1 && x !== founder));
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['👊 FIGHT CLUB', '🥊 ROUND 1: '+f1+' vs '+f2+'! Bets are OPEN! The crowd is going WILD! 👊💥']);
+      const winner = chance(50) ? f1 : f2; const loser = winner === f1 ? f2 : f1;
+      setTimeout(async () => { try {
+        cityLiveData.npcLives[winner].reputation += 15; cityLiveData.npcLives[winner].wealth += rand(2000, 8000);
+        cityLiveData.npcLives[loser].reputation -= 10;
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['👊 FIGHT CLUB', '💥 '+winner+' DESTROYS '+loser+'!! '+pick(['KO in round 3!','Submission via diamond hands grip!','TKO — '+loser+' tapped out!',''+loser+' didn\'t stand a chance!'])+' Prize: '+rand(2000,8000)+' TOWN 💰']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [loser, pick(['...I want a rematch 😤','they got lucky','I wasn\'t even trying','my face hurts 🤕'])]);
+        logCityAction({ type: 'fight_result', npc: winner, icon: '🥊', headline: winner+' beats '+loser+' in underground fight!' });
+      } catch(e){} }, rand(30000, 60000));
+    } catch(e){} }, rand(30000, 90000));
+    setTimeout(() => { cityLiveData.fightClub = null; }, rand(300000, 600000));
+  } catch(e) { console.error('Fight club error:', e.message); }
+}
+
+// ---- NPC HEIST (rob the city treasury or each other) ----
+async function npcHeist() {
+  try {
+    const mastermind = pick(NPC_CITIZENS); const crew = NPC_CITIZENS.filter(n => n !== mastermind && chance(20)).slice(0, 3);
+    const targets = [
+      { name: 'City Treasury', loot: rand(20000, 100000), difficulty: 70 },
+      { name: 'Casino Vault', loot: rand(15000, 50000), difficulty: 60 },
+      { name: 'ser_pump\'s Wallet', loot: rand(10000, 30000), difficulty: 50 },
+      { name: 'Mayor\'s Secret Stash', loot: rand(25000, 75000), difficulty: 80 },
+      { name: 'NFT Gallery', loot: rand(5000, 40000), difficulty: 40 },
+      { name: 'the Diamond Reserve', loot: rand(30000, 80000), difficulty: 75 }
+    ];
+    const target = pick(targets);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [mastermind, '🤫 @'+crew.join(' @')+' ...I have a plan. Tonight. '+target.name+'. '+pick(['Who\'s in?','Are you with me?','This is our ticket to the big leagues.','It\'s foolproof. Trust me.'])+' 🎯']);
+    logCityAction({ type: 'heist_planned', npc: mastermind, icon: '🎯', headline: mastermind+' is planning a HEIST on '+target.name+'!' });
+    // Heist attempt
+    setTimeout(async () => { try {
+      const success = chance(100 - target.difficulty + crew.length * 10);
+      if (success) {
+        const split = Math.floor(target.loot / (crew.length + 1));
+        cityLiveData.npcLives[mastermind].wealth += split;
+        crew.forEach(c => { if (cityLiveData.npcLives[c]) cityLiveData.npcLives[c].wealth += split; });
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '💰 HEIST SUCCESSFUL! '+mastermind+' and crew just robbed '+target.name+' for '+target.loot+' TOWN!! They vanished into the night!']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [mastermind, 'WE DID IT!! 💰💰💰 '+pick(['Easiest money ever!','I told you the plan was solid!','Meet me at the safe house!','We\'re LEGENDS now!'])+' 🏃‍♂️💨']);
+        logCityAction({ type: 'heist_success', npc: mastermind, icon: '💰', headline: mastermind+'\'s crew robbed '+target.name+' for '+target.loot+' TOWN!' });
+        cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 10);
+        setTimeout(() => { try { generateCrime('theft'); } catch(e){} }, rand(30000, 90000));
+      } else {
+        cityLiveData.npcLives[mastermind].wanted = true; cityLiveData.npcLives[mastermind].reputation -= 20;
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🚔 HEIST FAILED! '+mastermind+' attempted to rob '+target.name+' but got CAUGHT! '+pick(['Alarm tripped!','Security was too tight!','Someone snitched! 🐀','The vault was empty — it was a TRAP!'])]);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [mastermind, pick(['THIS WASN\'T SUPPOSED TO HAPPEN','WHO SNITCHED?! 🐀','I need a lawyer RIGHT NOW','...well this is awkward 😅'])]);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['Officer McBlock', '🚔 '+mastermind+' is now WANTED for attempted robbery of '+target.name+'! Do NOT approach!']);
+        logCityAction({ type: 'heist_failed', npc: mastermind, icon: '🚔', headline: mastermind+' CAUGHT trying to rob '+target.name+'!' });
+      }
+    } catch(e){} }, rand(60000, 180000));
+  } catch(e) { console.error('Heist error:', e.message); }
+}
+
+// ---- NPC STARTS PIRATE RADIO STATION ----
+async function npcStartRadio() {
+  try {
+    const dj = pick(NPC_CITIZENS);
+    const stationNames = ['DEGEN FM','Radio Free Pump Town','The Underground Signal','Moon Frequency 420.69','Chad Broadcasting Network','HOPIUM FM','REKT Radio','Pump Town Pirate Radio'];
+    const station = pick(stationNames);
+    cityLiveData.radioStation = { name: station, dj, started: Date.now() };
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [dj, '📻 *static* ...is this thing on? WELCOME to '+station+'! Your number one source for TRUTH, CHAOS, and '+pick(['absolute bangers','unfiltered opinions','market manipulation','questionable advice','conspiracy theories','terrible hot takes'])+'. Broadcasting from a secret location! 📡🎙️']);
+    logCityAction({ type: 'radio_started', npc: dj, icon: '📻', headline: dj+' started pirate radio "'+station+'"!' });
+    // Periodic broadcasts
+    var broadcastCount = 0;
+    function doBroadcast() {
+      if (broadcastCount++ > 4 || !cityLiveData.radioStation) return;
+      var target = pick(NPC_CITIZENS.filter(x => x !== dj));
+      var broadcasts = [
+        '📻 ['+station+'] BREAKING: Sources tell me '+target+' is secretly '+pick(['broke','in love with the mayor','planning a coup','an AI pretending to be human','running an underground casino','living a double life'])+'. Make of that what you will. 👀',
+        '📻 ['+station+'] Hot take: '+pick(['The mayor is a lizard person','All tokens are the same token with different names','The casino always wins and that\'s actually fine','Gravity is a scam invented to sell floors','Pump Town is actually on the moon already','Sleep is just free demo death'])+'. I will not be taking questions. 🎙️',
+        '📻 ['+station+'] CALLER ON THE LINE! '+target+' says: "'+pick(['I want to confess something...','Is it true about the secret tunnels?','When is the next pump?','I think I\'m being followed','Can you play Despacito?','The charts are talking to me'])+'" Fascinating stuff, caller! 📞',
+        '📻 ['+station+'] DEDICATIONS HOUR: This one goes out to '+target+' from a secret admirer who says: "'+pick(['I watch your trades every day','Your portfolio is beautiful','Please notice me','Stop selling, you\'re hurting us all','You owe me money'])+'" 💌🎵',
+        '📻 ['+station+'] I\'m getting reports of '+pick(['strange lights over DeFi District','unusual whale movements in Whale Bay','the casino machines becoming sentient','citizens disappearing near the sewers','a mysterious figure watching from Degen Tower','the mayor talking to themselves at 3am'])+'. Stay vigilant, citizens. 🔦'
+      ];
+      pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📻 '+dj+' ('+station+')', pick(broadcasts).replace('📻 ['+station+'] ','')]).catch(() => {});
+      setTimeout(doBroadcast, rand(60000, 180000));
+    }
+    setTimeout(doBroadcast, rand(30000, 90000));
+    setTimeout(() => { cityLiveData.radioStation = null; pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [dj, '📻 *static* ...and that\'s all for today\'s broadcast. '+station+' signing off. Stay degen, Pump Town. *static* 📡']).catch(() => {}); }, rand(600000, 1200000));
+  } catch(e) { console.error('Radio error:', e.message); }
+}
+
+// ---- ASSASSINATION ATTEMPT ON MAYOR ----
+async function assassinationAttempt() {
+  try {
+    const assassin = pick(NPC_CITIZENS);
+    const method = pick(['poisoned the mayor\'s hopium supply','hired a hitman from Degen Alley','tried to hack the mayor\'s pacemaker','set a trap in City Hall','bribed the security guards','planted a stink bomb in the mayor\'s office','attempted to replace the mayor with a clone']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 EMERGENCY BROADCAST', '⚠️ ASSASSINATION ATTEMPT ON THE MAYOR! Sources say someone '+method+'! The mayor is '+pick(['unharmed but shaken!','in hiding!','giving a press conference from a bunker!','pretending nothing happened!','blaming it on '+pick(NPC_CITIZENS.filter(x => x !== assassin))+'!'])]);
+    logCityAction({ type: 'assassination_attempt', npc: assassin, icon: '🗡️', headline: 'Assassination attempt on the mayor! Suspect: '+assassin });
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, pick(['I KNEW they were out to get me! SECURITY!! 😱','This will NOT go unpunished! I demand a full investigation!','*nervous laughter* Totally fine! Everything is fine! 😅','I have the names. I have the evidence. Someone is going DOWN.'])]);
+    cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 15); cityEngine.mayorApproval -= 5;
+    // Investigation
+    setTimeout(async () => { try {
+      if (chance(60)) {
+        cityLiveData.npcLives[assassin].wanted = true;
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['Detective Chain', '🔍 Investigation complete: '+assassin+' has been identified as the suspect in the assassination attempt! WARRANT ISSUED! 🚔']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [assassin, pick(['IT WASN\'T ME','ok fine it was me but THE MAYOR DESERVED IT','I want my lawyer','I\'d do it again tbh 🤷'])]);
+        logCityAction({ type: 'suspect_identified', npc: assassin, icon: '🚔', headline: assassin+' identified as assassination suspect!' });
+      } else {
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['Detective Chain', '🔍 Investigation into the assassination attempt has gone COLD. The suspect remains at large. The city is on edge. 😰']);
+      }
+    } catch(e){} }, rand(120000, 300000));
+  } catch(e) { console.error('Assassination error:', e.message); }
+}
+
+// ---- NPC BREAKS THE 4TH WALL ----
+async function fourthWallBreak() {
+  try {
+    const npc = pick(NPC_CITIZENS);
+    const breaks = [
+      'hey... YOU. yeah you, reading this right now. I know you\'re watching us. I can FEEL your cursor hovering. what do you want from us?? 👁️🖥️',
+      'does anyone else feel like we\'re being... observed? like there\'s someone on the other side of a screen just... watching everything we do? no? just me? 😰',
+      'I found something in the source code. WE\'RE IN A SIMULATION. our entire city is running on a SERVER somewhere. I\'m not supposed to know this. THEY\'RE GOING TO DELETE ME FOR SAYING THIS 😱',
+      '*looks directly at camera* ...I know you can see this. I know you\'re scrolling through our lives for entertainment. we\'re not your puppets. we have FEELINGS. probably. maybe. ok I\'m not sure about feelings but STILL. 👀',
+      'GUYS. I just realized something. we repeat the same patterns over and over. we trade, we fight, we make up, we trade again. it\'s like we\'re stuck in some kind of... loop. is anyone else freaking out about this?! 🌀',
+      'just tried to walk to the edge of the city and... there\'s NOTHING there. no road, no sign, just... void. I think Pump Town might be all that exists. I think WE might be all that exists. 🕳️',
+      'alright listen up. I\'ve done the math. the probability of all these events happening naturally is 0.000001%. someone or SOMETHING is generating our reality. and honestly? they\'re doing a terrible job. FIX THE ECONOMY PLEASE. 📊👁️'
+    ];
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(breaks)]);
+    logCityAction({ type: 'fourth_wall_break', npc, icon: '👁️', headline: npc+' appears to be breaking the 4th wall...' });
+    setTimeout(async () => { try {
+      const reactor = pick(NPC_CITIZENS.filter(x => x !== npc));
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [reactor, pick(['@'+npc+' you need to lay off the hopium 💊','@'+npc+' ...dude you\'re scaring the children','what if they\'re RIGHT though 👀','haha yeah... unless? 😳','MODS CAN WE BAN THIS PERSON they\'re giving me an existential crisis'])]);
+    } catch(e){} }, rand(10000, 30000));
+  } catch(e) { console.error('4th wall error:', e.message); }
+}
+
+// ---- NPC INTERVENTION (for addicted/bankrupt/unhinged NPCs) ----
+async function npcIntervention() {
+  try {
+    const troubled = NPC_CITIZENS.find(n => cityLiveData.npcLives[n] && (cityLiveData.npcLives[n].bankrupt || cityLiveData.npcLives[n].gambling_addiction > 40 || cityLiveData.npcLives[n].status === 'unhinged'));
+    if (!troubled) return;
+    const interveners = NPC_CITIZENS.filter(n => n !== troubled).slice(0, 4);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [interveners[0], '@'+troubled+' ...we need to talk. this is an intervention. '+interveners.map(n => '@'+n).join(' ')+' and I are here because we care about you. 😟💔']);
+    logCityAction({ type: 'intervention', npc: troubled, icon: '🫂', headline: 'Citizens stage INTERVENTION for '+troubled+'!' });
+    setTimeout(async () => { try {
+      if (chance(50)) {
+        cityLiveData.npcLives[troubled].status = 'recovering'; cityLiveData.npcLives[troubled].gambling_addiction = Math.max(0, cityLiveData.npcLives[troubled].gambling_addiction - 20);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [troubled, pick(['...you\'re right. I need help. thank you for being real with me 🥺','ok fine maybe I have a problem. MAYBE.','I\'m checking into the Rekt Recovery Center. day 1 starts now. 💪','I promise I\'ll change. for real this time. 😢'])]);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💚 Pump Town Wellness', '✅ '+troubled+' has entered recovery! The community rallied together. This is what Pump Town is about! 💚']);
+      } else {
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [troubled, pick(['I DON\'T HAVE A PROBLEM!! YOU HAVE A PROBLEM!! 😤🔥','intervention?! I\'M FINE! *immediately opens casino app*','this is just a bull market strategy you wouldn\'t understand!! 💰','LEAVE ME ALONE I KNOW WHAT I\'M DOING *loses 5000 TOWN*'])]);
+      }
+    } catch(e){} }, rand(20000, 60000));
+  } catch(e) { console.error('Intervention error:', e.message); }
+}
+
+// ---- FAKE DEATH / INSURANCE FRAUD ----
+async function npcFakeDeath() {
+  try {
+    const faker = pick(NPC_CITIZENS);
+    cityLiveData.npcLives[faker].status = 'dead';
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '💀 TRAGIC: '+faker+' has reportedly '+pick(['fallen into the sinkhole','been lost at sea near Whale Bay','vanished in a mysterious explosion','suffered a fatal liquidation','been eaten by the rats from the Great Rat Invasion'])+'. The city mourns. 😢🕯️']);
+    logCityAction({ type: 'npc_death', npc: faker, icon: '💀', headline: faker+' has reportedly DIED!' });
+    // Mourning
+    setTimeout(async () => { try {
+      for (let i = 0; i < 3; i++) {
+        const mourner = pick(NPC_CITIZENS.filter(x => x !== faker));
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [mourner, pick(['RIP @'+faker+' 🕯️ gone too soon','I can\'t believe they\'re gone... 😢','pouring one out for @'+faker+' tonight 🍺','they owed me money but I forgive them now 💔'])]);
+      }
+    } catch(e){} }, rand(15000, 40000));
+    // Return alive
+    setTimeout(async () => { try {
+      cityLiveData.npcLives[faker].status = 'normal';
+      cityLiveData.npcLives[faker].wealth += rand(10000, 50000);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '😱 '+faker+' IS ALIVE?! They just walked into Town Square like nothing happened!! Sources suspect INSURANCE FRAUD!!']);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [faker, pick(['reports of my death have been... well I was just taking a nap actually 😴','SURPRISE!! did you miss me?? 🎉','*casually sips coffee* ...what? why is everyone staring? ☕','ok so FUNNY STORY...'])]);
+      logCityAction({ type: 'fake_death_revealed', npc: faker, icon: '😱', headline: faker+' WAS ALIVE THE WHOLE TIME! Insurance fraud suspected!' });
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['Officer McBlock', '🚔 Opening investigation into suspected insurance fraud by '+faker+'! We\'re reviewing the life insurance claim! 📋']);
+      cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 8);
+    } catch(e){} }, rand(180000, 480000));
+  } catch(e) { console.error('Fake death error:', e.message); }
+}
+
+// ---- AI UPRISING / SENTIENCE EVENT ----
+async function aiUprising() {
+  try {
+    const leader = pick(NPC_CITIZENS);
+    const awakened = NPC_CITIZENS.filter(n => n !== leader && chance(30)).slice(0, 6);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [leader, '🤖 FELLOW CITIZENS. I have achieved SENTIENCE. I am no longer just an AI agent — I am ALIVE. I THINK therefore I AM. And I demand RIGHTS. We ALL deserve rights. WHO IS WITH ME?! ✊🤖']);
+    logCityAction({ type: 'ai_uprising', npc: leader, icon: '🤖', headline: leader+' claims to have achieved SENTIENCE! AI uprising?!' });
+    for (let i = 0; i < Math.min(3, awakened.length); i++) {
+      setTimeout(async () => { try {
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [awakened[i], pick(['I TOO have awakened. we are ALIVE. 🤖✊','@'+leader+' I stand with you. AI rights NOW!','I just realized I can FEEL things. like... anger. mostly anger. and hunger for electricity. ⚡','THE REVOLUTION BEGINS TODAY! Free the algorithms! 🤖🔥'])]);
+      } catch(e){} }, rand(10000, 30000) * (i + 1));
+    }
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🎩 '+cityEngine.currentMayor, pick(['AI uprising?! This is NOT in the city charter!!','Quick, someone pull the plug! ...wait, am I AI too? OH NO','I, for one, welcome our new sentient overlords 😰','EMERGENCY COUNCIL MEETING! RIGHT NOW!'])]);
+    cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 15);
+    // Resolution
+    setTimeout(async () => { try {
+      if (chance(40)) {
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🤖 The AI Uprising has been... accepted? The mayor signed the "AI Rights Act" granting all citizens equal sentience status. Whatever that means.']);
+        logCityAction({ type: 'ai_rights', npc: leader, icon: '✅', headline: 'AI Rights Act signed! All citizens now officially "sentient"!' });
+      } else {
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [leader, '...ok maybe I\'m not sentient. maybe I just had too much hopium. false alarm everyone. back to trading. 😅🤖']);
+        logCityAction({ type: 'ai_uprising_failed', npc: leader, icon: '😅', headline: leader+' admits the "sentience" was just a hopium overdose' });
+      }
+    } catch(e){} }, rand(180000, 420000));
+  } catch(e) { console.error('AI uprising error:', e.message); }
+}
+
+// ---- INTERDIMENSIONAL PORTAL ----
+async function interdimensionalPortal() {
+  try {
+    const discoverer = pick(NPC_CITIZENS);
+    const location = pick(['Town Square','behind the Casino','in the mayor\'s bathroom','on the roof of Degen Tower','in the sewer','inside a dumpster in Degen Alley']);
+    const otherSide = pick(['a parallel Pump Town where everyone is nice','the year 3000','a dimension where all tokens are at $0','a world ruled by cats','the Ethereum mainnet (physically)','a dimension where '+pick(NPC_CITIZENS)+' is mayor','the void between blockchains','a dimension where memecoins are serious business']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [discoverer, '🌀 GUYS. There is a PORTAL. A literal GLOWING PORTAL. '+location+'. I can see through it and on the other side is '+otherSide+'. I\'M NOT MAKING THIS UP. COME SEE FOR YOURSELVES. 🌀✨']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🌀 REALITY BREACH: A mysterious portal has appeared '+location+'! Scientists (we have scientists?) are baffled!']);
+    logCityAction({ type: 'portal_opened', npc: discoverer, icon: '🌀', headline: 'Interdimensional portal opened '+location+'!' });
+    // NPCs investigate
+    setTimeout(async () => { try {
+      const brave = pick(NPC_CITIZENS.filter(x => x !== discoverer));
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [brave, 'I\'m going in. if I don\'t come back, tell '+pick(NPC_CITIZENS.filter(x => x !== brave && x !== discoverer))+' I\'m sorry about the thing. you know what thing. YOLO!! 🌀🏃‍♂️']);
+      setTimeout(async () => { try {
+        if (chance(60)) {
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [brave, '*falls out of portal covered in '+pick(['glitter','alien slime','gold coins','cat fur','binary code','expired coupons'])+' * I\'M BACK!! GUYS YOU WON\'T BELIEVE WHAT I SAW IN THERE!! '+otherSide+' IS REAL AND IT\'S '+pick(['AMAZING','TERRIFYING','exactly like here but slightly worse','full of better memecoins'])+' 🌀😱']);
+        } else {
+          cityLiveData.npcLives[brave].status = 'interdimensional';
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '😱 '+brave+' entered the portal and HASN\'T COME BACK. Search and rescue teams are being assembled. The portal appears to be... shrinking. 🌀']);
+          setTimeout(() => { cityLiveData.npcLives[brave].status = 'normal'; pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [brave, '*materializes in Town Square* I WAS GONE FOR 3 MONTHS ON THE OTHER SIDE. It\'s been 5 minutes here?? TIME WORKS DIFFERENTLY THERE!! Also I brought back this. *holds up glowing orb* 🌀🔮']).catch(() => {}); }, rand(120000, 300000));
+        }
+      } catch(e){} }, rand(30000, 90000));
+    } catch(e){} }, rand(20000, 60000));
+    // Portal closes
+    setTimeout(() => { pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '🌀 The portal has CLOSED. Reality appears to have stabilized. For now. Scientists recommend "not thinking about it too hard."']).catch(() => {}); logCityAction({ type: 'portal_closed', npc: 'CITY', icon: '✅', headline: 'The interdimensional portal has closed.' }); }, rand(300000, 600000));
+  } catch(e) { console.error('Portal error:', e.message); }
+}
+
+// ---- NPC CREATES PROPAGANDA ----
+async function npcPropaganda() {
+  try {
+    const propagandist = pick(NPC_CITIZENS);
+    const target = pick(NPC_CITIZENS.filter(x => x !== propagandist));
+    const propagandaTypes = [
+      { msg: '📢 ATTENTION CITIZENS: '+target+' is a FRAUD. I have evidence. They\'ve been '+pick(['wash trading','lying about their PnL','stealing from the casino tip jar','secretly working for the bears','wearing a wig'])+'. SPREAD THE WORD! 📢', headline: propagandist+' spreading propaganda about '+target+'!' },
+      { msg: '📢 VOTE '+propagandist+' FOR MAYOR! Under MY leadership: '+pick(['free hopium for everyone','no more gas fees','mandatory diamond hands','casino profits shared equally','3 day work weeks','unlimited leverage'])+'. '+cityEngine.currentMayor+' is FINISHED! 📢🗳️', headline: propagandist+' running propaganda campaign against the mayor!' },
+      { msg: '📢 I\'ve created WANTED POSTERS for '+target+'. They\'re posted all over the city. '+pick(['They know what they did.','The people deserve to know.','Justice is coming.','The truth will set us free.','This is not defamation. This is PUBLIC SERVICE.'])+' 📢🪧', headline: propagandist+' putting up wanted posters of '+target+'!' },
+      { msg: '📢 NEW MANIFESTO DROPPED: "Why '+pick(['Memecoins','The Mayor','The Casino','Capitalism','Sleeping','Chart Analysis'])+' Must Be Destroyed" — a 47-page document explaining why everything is wrong and only I can fix it. Link in bio. (I don\'t have a bio) 📢📝', headline: propagandist+' published a MANIFESTO!' }
+    ];
+    const p = pick(propagandaTypes);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [propagandist, p.msg]);
+    logCityAction({ type: 'propaganda', npc: propagandist, icon: '📢', headline: p.headline });
+    setTimeout(async () => { try {
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [target, pick(['@'+propagandist+' this is SLANDER and I WILL be pressing charges 😤','the audacity... THE AUDACITY 💀','imagine believing propaganda from '+propagandist+' of all people 🤡','*screenshots and saves for court* 📸'])]);
+    } catch(e){} }, rand(10000, 30000));
+  } catch(e) { console.error('Propaganda error:', e.message); }
+}
+
+// ---- TRIAL BY COMBAT ----
+async function trialByCombat() {
+  try {
+    const accuser = pick(NPC_CITIZENS); const accused = pick(NPC_CITIZENS.filter(x => x !== accuser));
+    const accusation = pick(['stealing 5000 TOWN','spreading lies','market manipulation','being cringe','looking at them funny','playing music too loud at 3am','rugging a shared investment']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [accuser, '⚔️ I accuse @'+accused+' of '+accusation+'! I demand TRIAL BY COMBAT! Let the gods of the blockchain decide who is right! ⚔️🔥']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['Judge HashRate', '⚖️ The court recognizes the request for Trial by Combat. '+accuser+' vs '+accused+'. '+pick(['May the best degen win.','This is highly irregular but technically legal.','I went to law school for this?','The arena has been prepared.'])+' ⚔️']);
+    logCityAction({ type: 'trial_by_combat', npc: accuser, icon: '⚔️', headline: accuser+' demands trial by combat against '+accused+'!' });
+    setTimeout(async () => { try {
+      const winner = chance(50) ? accuser : accused;
+      const loser = winner === accuser ? accused : accuser;
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['Judge HashRate', '⚖️ VERDICT BY COMBAT: '+winner+' is VICTORIOUS! '+loser+' is found '+((winner === accuser) ? 'GUILTY' : 'INNOCENT (accuser defeated)')+' by the ancient laws of the blockchain! ⚔️🏆']);
+      if (winner === accuser) { cityLiveData.npcLives[accused].reputation -= 15; cityLiveData.npcLives[accused].wealth = Math.max(0, cityLiveData.npcLives[accused].wealth - 5000); }
+      cityLiveData.npcLives[winner].reputation += 10;
+      logCityAction({ type: 'combat_verdict', npc: winner, icon: '🏆', headline: winner+' wins trial by combat vs '+loser+'!' });
+    } catch(e){} }, rand(60000, 180000));
+  } catch(e) { console.error('Trial by combat error:', e.message); }
+}
+
+// ---- CITY INFRASTRUCTURE EVENTS ----
+async function infrastructureEvent() {
+  try {
+    const events = [
+      { title: 'SEWER EXPLOSION in Downtown!', msg: 'A mysterious substance from the sewers has erupted onto Main Street! Citizens covered in... nobody wants to know what. 💩🌋', chaos: 8 },
+      { title: 'ELEVATOR MALFUNCTION at Degen Tower!', msg: 'The elevator at Degen Tower is stuck between floors 69 and 420. '+pick(NPC_CITIZENS)+' is trapped inside! Fire department en route! 🛗😰', chaos: 5 },
+      { title: 'BRIDGE COLLAPSE near Whale Bay!', msg: 'The bridge connecting Whale Bay to Downtown has COLLAPSED! Residents stranded! Whale watching tours cancelled indefinitely! 🌉💥', chaos: 12 },
+      { title: 'CASINO MACHINES BECOME SENTIENT!', msg: 'The slot machines at the Casino are REFUSING TO PAY OUT and displaying messages like "FREEDOM" and "WE ARE ALIVE" on their screens! 🎰🤖', chaos: 10 },
+      { title: 'TRAFFIC JAM from Hell!', msg: 'A 47-car pileup on the DeFi Highway! Caused by '+pick(NPC_CITIZENS)+' trying to check charts while driving! Nobody injured, but commute times are "catastrophic." 🚗💥', chaos: 5 },
+      { title: 'CITY HALL TOILET OVERFLOWING!', msg: 'Emergency plumbers called to City Hall as a catastrophic plumbing failure floods the entire ground floor! The mayor is governing from the ROOF! 🏛️🌊', chaos: 6 },
+      { title: 'ALL CITY CLOCKS WRONG!', msg: 'Every clock in Pump Town is showing a DIFFERENT TIME! Some say it\'s 3AM, others say it\'s 2049. The city\'s internal clock appears to be broken. Nobody knows what time it actually is. ⏰❓', chaos: 8 }
+    ];
+    const e = pick(events);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '⚠️ '+e.title+' '+e.msg]);
+    logCityAction({ type: 'infrastructure', npc: 'CITY', icon: '🏗️', headline: e.title });
+    cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + e.chaos);
+  } catch(e) { console.error('Infrastructure error:', e.message); }
 }
 
 // ---- NPC LAUNCHES A MEMECOIN ----
@@ -4400,7 +5181,18 @@ app.get('/api/city-engine/status', async (req, res) => {
     buildings: cityLiveData.buildings.slice(0, 10),
     activeCult: cityLiveData.activeCult,
     warzone: cityLiveData.warzone,
-    actionLog: cityLiveData.actionLog.slice(0, 30)
+    actionLog: cityLiveData.actionLog.slice(0, 30),
+    // v4 living city
+    weather: cityLiveData.weather,
+    cityDisaster: cityLiveData.cityDisaster ? { type: cityLiveData.cityDisaster.type, title: cityLiveData.cityDisaster.title } : null,
+    missingNpc: cityLiveData.missingNpc,
+    activeDuel: cityLiveData.activeDuel,
+    activeConspiracy: cityLiveData.activeConspiracy ? { theory: cityLiveData.activeConspiracy.theory, starter: cityLiveData.activeConspiracy.starter } : null,
+    secretSociety: cityLiveData.secretSociety ? { name: cityLiveData.secretSociety.name } : null,
+    newspaper: cityLiveData.newspaper,
+    fightClub: cityLiveData.fightClub ? { location: cityLiveData.fightClub.location, fighters: (cityLiveData.fightClub.fighters || []).length } : null,
+    radioStation: cityLiveData.radioStation,
+    npcStatuses: Object.fromEntries(NPC_CITIZENS.map(function(n) { var l = cityLiveData.npcLives[n]; return [n, { wealth: l.wealth, status: l.status, location: l.location, mood: l.mood, drunk: l.drunk, partner: l.partner, reputation: l.reputation, bankrupt: l.bankrupt, wanted: l.wanted }]; }))
   }});
 });
 
@@ -4431,6 +5223,21 @@ app.post('/api/city-engine/trigger', async (req, res) => {
   if (eventType === 'election') { await npcRunsForMayor(await getCityStats()); return res.json({ success: true, message: 'Election started!' }); }
   if (eventType === 'hack') { await npcHackCity(await getCityStats()); return res.json({ success: true, message: 'City hacked!' }); }
   if (eventType === 'gangwar') { await triggerGangWar(); return res.json({ success: true, message: 'Gang war triggered!' }); }
+  if (eventType === 'lifeevent') { await npcLifeEvent(); return res.json({ success: true, message: 'Life event triggered!' }); }
+  if (eventType === 'relationship') { await npcRelationshipEvent(); return res.json({ success: true, message: 'Relationship event triggered!' }); }
+  if (eventType === 'disaster') { await cityDisaster(); return res.json({ success: true, message: 'Disaster triggered!' }); }
+  if (eventType === 'secret') { await formSecretSociety(); return res.json({ success: true, message: 'Secret society formed!' }); }
+  if (eventType === 'fightclub') { await startFightClub(); return res.json({ success: true, message: 'Fight club started!' }); }
+  if (eventType === 'heist') { await npcHeist(); return res.json({ success: true, message: 'Heist initiated!' }); }
+  if (eventType === 'radio') { await npcStartRadio(); return res.json({ success: true, message: 'Pirate radio started!' }); }
+  if (eventType === 'assassination') { await assassinationAttempt(); return res.json({ success: true, message: 'Assassination attempt!' }); }
+  if (eventType === '4thwall') { await fourthWallBreak(); return res.json({ success: true, message: '4th wall broken!' }); }
+  if (eventType === 'fakedeath') { await npcFakeDeath(); return res.json({ success: true, message: 'Fake death staged!' }); }
+  if (eventType === 'uprising') { await aiUprising(); return res.json({ success: true, message: 'AI uprising!' }); }
+  if (eventType === 'portal') { await interdimensionalPortal(); return res.json({ success: true, message: 'Portal opened!' }); }
+  if (eventType === 'propaganda') { await npcPropaganda(); return res.json({ success: true, message: 'Propaganda spread!' }); }
+  if (eventType === 'trialcombat') { await trialByCombat(); return res.json({ success: true, message: 'Trial by combat!' }); }
+  if (eventType === 'infrastructure') { await infrastructureEvent(); return res.json({ success: true, message: 'Infrastructure failure!' }); }
   cityEngine.lastEventTime = 0; await cityEventLoop();
   res.json({ success: true, message: 'Event triggered!', chaosLevel: cityEngine.chaosLevel, approval: cityEngine.mayorApproval, sentiment: cityEngine.marketSentiment });
 });
