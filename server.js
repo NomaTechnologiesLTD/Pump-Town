@@ -3345,6 +3345,279 @@ app.get('/api/v1/justice/stats', async (req, res) => {
 
 console.log('⚖️ Justice System API loaded');
 
+// ==================== CITY EVENTS ENGINE ====================
+// Autonomous event system that makes Pump Town feel alive
+// Runs server-side on timers - no user input needed
+
+// ---- CITY STATE TRACKING ----
+let cityEngine = {
+  mayorApproval: 65,
+  chaosLevel: 20,
+  crimeWave: false,
+  goldenAge: false,
+  currentMayor: 'Mayor Satoshi McPump',
+  mayorTerm: 1,
+  electionActive: false,
+  lastEventTime: 0,
+  lastAutoVote: 0,
+  lastCrimeTime: 0,
+  lastMayorAction: 0,
+  eventCount: 0
+};
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function chance(pct) { return Math.random() * 100 < pct; }
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+const NPC_CITIZENS = [
+  'alpha_hunter', 'ser_pump', 'moon_chaser', 'degen_mike', 'diamond_dan',
+  'based_andy', 'yield_farm3r', 'anon_whale', 'fomo_fred', 'paper_pete',
+  'early_ape', 'bag_secured', 'sol_maxi', 'eth_bull', 'swap_king99',
+  'rugged_randy', 'chad_pumper', 'wojak_bill', 'apu_trader', 'ser_copium',
+  'moonboy_max', 'dr_leverage', 'whale_watcher', 'nft_nancy', 'gas_fee_gary'
+];
+
+const NPC_AGENTS = [
+  'Officer McBlock', 'Detective Chain', 'Judge HashRate', 'DA CryptoKnight',
+  'Public Defender Satoshi', 'Reporter TokenTimes', 'Whale_Alert_Bot'
+];
+
+const RANDOM_EVENTS = [
+  { type: 'market_crash', weight: 8, minChaos: 10, title: () => pick(['Flash Crash Hits Pump Town!', 'Market Meltdown! Paper Hands Everywhere!', 'EMERGENCY: Token Prices in Freefall!', 'Black Swan Event Rocks the Markets!']), effects: { economy: -15, morale: -10, security: -5, culture: 0 }, chaosChange: 15, approvalChange: -8, announce: () => pick(['Citizens, HODL! This is NOT the time to panic sell! OK maybe panic a LITTLE! 📉🔥', 'EMERGENCY BROADCAST: Markets are dumping harder than my ex dumped me. Stay strong frens! 💎🙌', 'The economy is getting REKT but remember — every dip is a buying opportunity... right? RIGHT?! 😰']) },
+  { type: 'bull_run', weight: 7, minChaos: 0, title: () => pick(['Bull Run! Everything Pumping!', 'TO THE MOON! Markets Explode!', 'Green Candles Everywhere! LFG!', 'Pump Town Economy BOOMING!']), effects: { economy: 15, morale: 15, security: 0, culture: 5 }, chaosChange: -5, approvalChange: 10, announce: () => pick(['WAGMI! The charts are so green I need sunglasses! Every citizen gets a bonus! 🚀🚀🚀', 'Is this... is this what financial freedom looks like?! PUMP IT! LFG! 💚📈', 'Markets are absolutely SENDING IT! Your Mayor called this. You\'re welcome. 😎🏆']) },
+  { type: 'whale_spotted', weight: 10, minChaos: 0, title: () => pick(['Massive Whale Enters Pump Town!', 'Unknown Wallet Moves $10M!', 'Whale Alert! Big Money Incoming!', 'Mystery Millionaire Spotted!']), effects: { economy: 8, morale: 5, security: -3, culture: 0 }, chaosChange: 10, approvalChange: 3, announce: () => pick(['A massive whale just entered our waters! Everyone act cool. ACT COOL! 🐋💰', 'Someone just moved more money than our entire city treasury. I\'m not jealous. I\'m TERRIFIED. 🐋', 'WHALE ALERT! Either we\'re about to pump or get rugged. This is fine. 🔥🐋']) },
+  { type: 'rug_pull', weight: 9, minChaos: 15, title: () => pick(['Rug Pull Alert! Devs Vanished!', 'SCAM: Token Team Disappears with Funds!', 'Another Day, Another Rug!', 'Citizens RUGGED! Investigation Launched!']), effects: { economy: -10, morale: -12, security: -8, culture: 0 }, chaosChange: 20, approvalChange: -5, triggersCrime: true, crimeType: 'rug_pull', announce: () => pick(['We got RUGGED, frens. I\'m deploying the police. Someone\'s going to JAIL. 🚨🔒', 'Another rug pull in MY city?! Unacceptable! Launching full investigation NOW! 😤⚖️', 'Devs pulled the rug and ran. But they can\'t outrun Pump Town justice! 🏃‍♂️🚔']) },
+  { type: 'crime_wave', weight: 6, minChaos: 30, title: () => pick(['Crime Wave Hits Pump Town!', 'Scammers Running Wild!', 'Security Crisis: Multiple Crimes Reported!', 'Chaos in the Streets!']), effects: { economy: -5, morale: -15, security: -20, culture: -5 }, chaosChange: 25, approvalChange: -12, triggersCrime: true, crimeType: 'market_manipulation', announce: () => pick(['We are in a CRIME WAVE situation! All police on high alert! Martial law may be necessary! 🚨🚨🚨', 'Multiple crimes reported across the city! I am PERSONALLY overseeing the crackdown! 👮‍♂️😤', 'The criminals think they can take over MY city?! Think again! Deploying all units! 🏛️⚔️']) },
+  { type: 'corruption_scandal', weight: 5, minChaos: 20, title: () => pick(['Corruption Scandal Rocks City Hall!', 'Mayor\'s Office Under Investigation!', 'Leaked Documents Reveal Shady Deals!', 'Trust Crisis: Officials Caught Red-Handed!']), effects: { economy: -5, morale: -15, security: -5, culture: 0 }, chaosChange: 20, approvalChange: -20, announce: () => pick(['Look, those leaked documents are TOTALLY out of context! I can explain everything! 😅💦', 'FAKE NEWS! This is a coordinated attack on your beloved Mayor! Don\'t believe the FUD! 🗞️🚫', 'OK so MAYBE I moved some funds around but it was for the GREATER GOOD of Pump Town! 😬']) },
+  { type: 'protest', weight: 7, minChaos: 25, title: () => pick(['Citizens Protest Mayor\'s Policies!', 'Riot in Town Square!', 'Mass Demonstration Against Leadership!', 'Citizens Demand Change!']), effects: { economy: -3, morale: -10, security: -10, culture: 5 }, chaosChange: 15, approvalChange: -15, announce: () => pick(['I HEAR you, citizens! Your voices matter! But also please stop throwing things at City Hall! 🏛️😰', 'Democracy is beautiful even when it\'s screaming at me! I will address your concerns! 📢', 'Protesting is your RIGHT! But let\'s keep it civilized... who threw that tomato?! 🍅😤']) },
+  { type: 'mayor_goes_rogue', weight: 3, minChaos: 40, title: () => pick(['Mayor Goes Full Degen!', 'BREAKING: Mayor Yeets City Treasury Into Memecoins!', 'Mayor Declares "YOLO Week"!', 'Mayor Loses It! Emergency Powers Activated!']), effects: { economy: -20, morale: 5, security: -10, culture: 10 }, chaosChange: 30, approvalChange: -25, announce: () => pick(['I JUST PUT THE ENTIRE CITY TREASURY INTO $DOGWIFHAT! LFG!!! If this works I\'m a GENIUS! 🎩🐕🚀', 'FROM NOW ON, all taxes must be paid in memecoins! This is not a joke! OK it\'s a little bit of a joke! 🤪', 'I hereby declare YOLO WEEK! All rules suspended! Trade recklessly! This is FINANCIAL ADVICE! 💰🎰']) },
+  { type: 'festival', weight: 8, minChaos: 0, title: () => pick(['Annual Degen Festival!', 'Pump Town Meme Fair!', 'NFT Art Gallery Opens!', 'Culture Boom: Creativity Explosion!']), effects: { economy: 5, morale: 15, security: 0, culture: 20 }, chaosChange: -5, approvalChange: 8, announce: () => pick(['Welcome to the Pump Town Festival! Free hopium for everyone! 🎉🎊🎪', 'The arts are THRIVING! Our meme game is UNMATCHED! Culture index going PARABOLIC! 🎨🖼️', 'Tonight we celebrate! Music, memes, and pure degen energy! WAGMI! 🎶🎉💃']) },
+  { type: 'new_citizen_wave', weight: 9, minChaos: 0, title: () => pick(['New Citizens Flooding In!', 'Population Boom! City Growing!', 'Viral Tweet Brings Thousands!', 'Mass Migration to Pump Town!']), effects: { economy: 10, morale: 10, security: -3, culture: 5 }, chaosChange: 5, approvalChange: 5, announce: () => pick(['New frens! Welcome to the greatest city on the blockchain! Grab your hopium and let\'s GO! 🏙️🤝', 'Our city is GROWING! More citizens = more chaos = more fun! LFG! 📈👥', 'We\'re going VIRAL! Everyone wants to be a Pump Town citizen! I love this timeline! 🚀🏠']) },
+  { type: 'golden_age', weight: 3, minChaos: 0, maxChaos: 25, title: () => pick(['Golden Age Declared!', 'Everything is Perfect! (suspicious)', 'Peak Performance! All Stats UP!', 'Pump Town Renaissance!']), effects: { economy: 10, morale: 10, security: 10, culture: 10 }, chaosChange: -15, approvalChange: 15, announce: () => pick(['All city stats are PUMPING! This is the golden age of Pump Town! I take full credit! 👑✨', 'Under MY leadership, this city has NEVER been better! You\'re welcome, citizens! 🏛️🏆', 'GREEN across the board! Economy, security, culture, morale — ALL UP! This is peak civilization! 💚👏']) },
+  { type: 'mysterious_event', weight: 6, minChaos: 15, title: () => pick(['Strange Signal Detected!', 'Mysterious Token Appears!', 'Unknown Entity Enters City!', 'Glitch in the Matrix!']), effects: { economy: 0, morale: 0, security: -5, culture: 10 }, chaosChange: 15, approvalChange: 0, announce: () => pick(['Something WEIRD is happening and I don\'t know what it is but I\'m EXCITED and TERRIFIED! 👀🔮', 'Our systems detected an anomaly. Could be nothing. Could be EVERYTHING. Stay alert! 🌀', 'I\'ve never seen anything like this in all my days as Mayor. Which is like... a few weeks. BUT STILL! 😱']) },
+  { type: 'alien_contact', weight: 2, minChaos: 50, title: () => pick(['ALIENS?! Unknown Transmission Received!', 'First Contact: Message From Beyond!', 'UFO Spotted Over Pump Town!', 'Extraterrestrial Investors Arrive!']), effects: { economy: 5, morale: 5, security: -15, culture: 20 }, chaosChange: 25, approvalChange: 0, announce: () => pick(['Citizens... I\'m being told we received a message from... space? Are we being punk\'d? 👽📡', 'OK so apparently aliens want to invest in Pump Town. I have SO many questions. Starting with: do they have a wallet? 🛸💰', 'The aliens said they come in peace and they want to buy the dip. These are MY kind of aliens! 👽🤝']) }
+];
+
+const MAYOR_ACTIONS = [
+  { type: 'raise_taxes', condition: (stats) => stats.economy < 35, title: 'Mayor Raises Taxes!', effects: { economy: 12, morale: -8, security: 0, culture: 0 }, approvalChange: -10, announce: 'I know nobody likes taxes but we\'re BROKE, frens! This is temporary! Probably! 💸😬' },
+  { type: 'lower_taxes', condition: (stats) => stats.economy > 75 && stats.morale < 50, title: 'Mayor Cuts Taxes! Free Money!', effects: { economy: -8, morale: 15, security: 0, culture: 0 }, approvalChange: 12, announce: 'TAX CUTS FOR EVERYONE! Your Mayor is GENEROUS! Remember this at election time! 🎉💰' },
+  { type: 'police_crackdown', condition: (stats) => stats.security < 30, title: 'Mayor Orders Police Crackdown!', effects: { economy: -3, morale: -5, security: 18, culture: -3 }, approvalChange: -5, announce: 'ATTENTION! Zero tolerance on crime starting NOW! Scammers will be PUNISHED! 🚔👊' },
+  { type: 'fund_arts', condition: (stats) => stats.culture < 35, title: 'Mayor Funds Massive Art Program!', effects: { economy: -5, morale: 8, security: 0, culture: 15 }, approvalChange: 5, announce: 'We\'re investing in CULTURE! NFT galleries, meme museums, and a giant statue of ME! 🎨🗿' },
+  { type: 'free_hopium', condition: (stats) => stats.morale < 30, title: 'Mayor Distributes Free Hopium!', effects: { economy: -5, morale: 20, security: 0, culture: 5 }, approvalChange: 15, announce: 'EMERGENCY HOPIUM DISTRIBUTION! Everyone gets free hopium! Morale is MANDATORY! 💊🎉' },
+  { type: 'build_casino', condition: (stats) => stats.economy > 60 && stats.culture < 50, title: 'Mayor Opens New Casino!', effects: { economy: 5, morale: 10, security: -5, culture: 8 }, approvalChange: 8, announce: 'The Grand Degen Casino is NOW OPEN! May the odds be ever in your favor! (They won\'t be) 🎰🎲' },
+  { type: 'emergency_powers', condition: () => cityEngine.chaosLevel > 70, title: 'Mayor Declares State of Emergency!', effects: { economy: -5, morale: -10, security: 15, culture: -5 }, approvalChange: -15, announce: 'EMERGENCY POWERS ACTIVATED! I\'m taking control until this chaos subsides! Trust the plan! 🚨👑' },
+  { type: 'pardon_criminals', condition: () => chance(15), title: 'Mayor Issues Mass Pardon!', effects: { economy: 0, morale: 10, security: -10, culture: 0 }, approvalChange: 0, announce: 'In an act of MERCY, I\'m pardoning all current prisoners! Second chances for everyone! 🕊️⚖️', action: async () => { try { await pool.query(`UPDATE jail SET status = 'released', released_at = NOW(), early_release = TRUE WHERE status = 'serving'`); } catch(e){} } }
+];
+
+async function autoResolveVote() {
+  try {
+    const currentVoteId = getCurrentVoteId();
+    const voteResult = await pool.query('SELECT * FROM ai_votes WHERE vote_id = $1', [currentVoteId]);
+    if (voteResult.rows.length === 0) return;
+    const vote = voteResult.rows[0];
+    const options = typeof vote.options === 'string' ? JSON.parse(vote.options) : vote.options;
+    
+    const npcVoters = NPC_CITIZENS.filter(() => chance(40));
+    for (const npc of npcVoters) {
+      const npcOption = pick(options);
+      await pool.query(`INSERT INTO votes (email, vote_id, option_id, option_title) VALUES ($1, $2, $3, $4) ON CONFLICT (email, vote_id) DO NOTHING`, [`${npc}@npc.pump.town`, currentVoteId, npcOption.id, npcOption.title]).catch(() => {});
+    }
+    
+    const updatedCounts = await pool.query('SELECT option_id, COUNT(*) as count FROM votes WHERE vote_id = $1 GROUP BY option_id', [currentVoteId]);
+    let winner = options[0]; let maxVotes = 0;
+    updatedCounts.rows.forEach(r => { if (parseInt(r.count) > maxVotes) { maxVotes = parseInt(r.count); winner = options.find(o => o.id === r.option_id) || options[0]; } });
+    
+    if (winner.effects) { const changes = {}; winner.effects.forEach(e => { changes[e.stat] = e.value; }); await updateCityStats(changes); }
+    
+    const totalVotes = updatedCounts.rows.reduce((sum, r) => sum + parseInt(r.count), 0);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`, ['🏛️ City Hall', `📊 VOTE RESOLVED: "${winner.title}" wins with ${maxVotes}/${totalVotes} votes! Effects applied to city stats.`]);
+    console.log(`🗳️ Auto-resolved vote: ${winner.title} (${maxVotes}/${totalVotes} votes)`);
+  } catch (err) { console.error('Auto vote error:', err.message); }
+}
+
+async function autoGenerateVote() {
+  if (!anthropic) return;
+  try {
+    const cityStats = await getCityStats();
+    const { day, round } = getDayAndRound();
+    const prompt = `Generate a new voting scenario for Pump Town. Stats: Economy ${cityStats.economy}, Security ${cityStats.security}, Culture ${cityStats.culture}, Morale ${cityStats.morale}. Mayor Approval: ${cityEngine.mayorApproval}%. Chaos: ${cityEngine.chaosLevel}%. Day ${day} Round ${round}.\n\nGenerate JSON (pure JSON only):\n{"question":"dramatic question","mayorQuote":"2-3 sentences crypto slang NO asterisks","options":[{"id":"A","title":"3-5 words","description":"what it does","effects":[{"stat":"economy","value":10,"type":"positive"}]},{"id":"B","title":"other option","description":"what it does","effects":[{"stat":"morale","value":15,"type":"positive"}]}]}\n\nMake it dramatic and crypto-themed!`;
+    const response = await anthropic.messages.create({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, system: MAYOR_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] });
+    const content = response.content[0].text;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const voteData = JSON.parse(jsonMatch[0]);
+      const voteId = getCurrentVoteId();
+      await pool.query(`INSERT INTO ai_votes (vote_id, question, mayor_quote, options) VALUES ($1, $2, $3, $4) ON CONFLICT (vote_id) DO UPDATE SET question = $2, mayor_quote = $3, options = $4`, [voteId, voteData.question, voteData.mayorQuote, JSON.stringify(voteData.options)]);
+      gameState.currentVote = voteData;
+      console.log('🗳️ Auto-generated new vote:', voteData.question.substring(0, 50) + '...');
+    }
+  } catch (err) { console.error('Auto generate vote error:', err.message); }
+}
+
+async function generateCrime(crimeType, triggerEvent) {
+  try {
+    const perpetrator = pick(NPC_CITIZENS);
+    const officer = pick(NPC_AGENTS.filter(a => a.includes('Officer') || a.includes('Detective')));
+    const descs = { rug_pull: `${perpetrator} created a fake token called $${pick(['RUGME','SCAM69','DEVSGONE','TRUSTME','SAFU_NOT','HONEYPOT'])} and drained the liquidity pool.`, pump_dump: `${perpetrator} was caught coordinating a pump and dump scheme on $${pick(['MOONSHOT','LAMBO','GEM100X','ALPHACALL'])}.`, market_manipulation: `${perpetrator} used bot networks to manipulate the orderbook.`, insider_trading: `${perpetrator} traded on non-public info about governance decisions.`, tax_evasion: `${perpetrator} failed to report ${rand(10000,500000)} TOWN coins in profits.`, scamming: `${perpetrator} impersonated a city official to steal funds.`, chat_spam: `${perpetrator} flooded chat with phishing links.` };
+    const description = descs[crimeType] || `${perpetrator} committed ${crimeType.replace('_',' ')}`;
+    const severity = ['rug_pull','market_manipulation','insider_trading'].includes(crimeType) ? 'felony' : 'misdemeanor';
+    
+    const crimeResult = await pool.query(`INSERT INTO crimes (crime_type, perpetrator_name, description, severity, detected_by, status) VALUES ($1,$2,$3,$4,$5,'detected') RETURNING id`, [crimeType, perpetrator, description, severity, officer]);
+    const crimeId = crimeResult.rows[0].id;
+    await pool.query(`INSERT INTO arrests (crime_id, arrested_name, arresting_officer, arrest_reason, status) VALUES ($1,$2,$3,$4,'in_custody')`, [crimeId, perpetrator, officer, description]);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`🚔 ${officer}`, `🚨 ARRESTED: ${perpetrator} for ${crimeType.replace(/_/g,' ')}! ${description}`]);
+    
+    const caseNumber = `PT-${new Date().getFullYear()}-${String(crimeId).padStart(4,'0')}`;
+    await pool.query(`INSERT INTO trials (case_number, crime_id, defendant_name, charges, status) VALUES ($1,$2,$3,$4,'pending')`, [caseNumber, crimeId, perpetrator, `${crimeType.replace(/_/g,' ')}: ${description}`]);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['⚖️ Pump Town Court', `📋 NEW CASE: ${caseNumber} — ${perpetrator} stands trial for ${crimeType.replace(/_/g,' ')}!`]);
+    console.log(`🚨 Crime: ${perpetrator} - ${crimeType} (${caseNumber})`);
+    
+    setTimeout(() => autoResolveTrial(caseNumber, perpetrator, crimeType), rand(60000, 300000));
+  } catch (err) { console.error('Crime generation error:', err.message); }
+}
+
+async function autoResolveTrial(caseNumber, defendant, crimeType) {
+  try {
+    const trial = await pool.query('SELECT * FROM trials WHERE case_number = $1 AND status = $2', [caseNumber, 'pending']);
+    if (trial.rows.length === 0) return;
+    const trialId = trial.rows[0].id;
+    const isGuilty = chance(70);
+    const verdict = isGuilty ? 'guilty' : 'not_guilty';
+    let sentence = '', duration = 0;
+    if (isGuilty) {
+      duration = crimeType === 'rug_pull' ? rand(30,120) : rand(10,60);
+      sentence = `${duration} minutes in Pump Town Jail ${pick(['and fined 5,000 TOWN','and fined 10,000 TOWN','with all assets frozen','and put on probation'])}`;
+      const sentenceEnd = new Date(Date.now() + duration * 60000);
+      await pool.query(`INSERT INTO jail (prisoner_name, trial_id, crime_description, sentence_end, status) VALUES ($1,$2,$3,$4,'serving')`, [defendant, trialId, crimeType.replace(/_/g,' '), sentenceEnd]);
+    } else { sentence = 'Acquitted. All charges dropped!'; }
+    await pool.query(`UPDATE trials SET verdict=$1, sentence=$2, sentence_duration=$3, status='resolved', resolved_at=NOW() WHERE id=$4`, [verdict, sentence, duration, trialId]);
+    const judge = pick(NPC_AGENTS.filter(a => a.includes('Judge')));
+    const emoji = isGuilty ? '🔨 GUILTY' : '✅ NOT GUILTY';
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`⚖️ ${judge}`, `${emoji}: ${defendant} — ${verdict.replace('_',' ').toUpperCase()} of ${crimeType.replace(/_/g,' ')}! ${sentence}`]);
+    console.log(`⚖️ Trial: ${defendant} - ${verdict} (${caseNumber})`);
+  } catch (err) { console.error('Trial error:', err.message); }
+}
+
+async function checkForCoup() {
+  if (cityEngine.electionActive) return;
+  if (cityEngine.mayorApproval < 20 && chance(40)) {
+    cityEngine.electionActive = true;
+    const challenger = pick(['General DegenMax','Commander DiamondHands','Senator PumpItUp','Revolutionary Wojak','The People\'s Chad','Minister of Based','Admiral YOLOswag','Governor PaperCuts']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', `⚠️ COUP ATTEMPT! ${challenger} challenges ${cityEngine.currentMayor}! Approval at ${cityEngine.mayorApproval}%! EMERGENCY ELECTION!`]);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`🎩 ${cityEngine.currentMayor}`, 'You think you can take MY city?! I BUILT this place! The citizens love me! ...Right? RIGHT?! 😰👑']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`⚔️ ${challenger}`, 'The current mayor has FAILED this city! Under my leadership, we will achieve TRUE WAGMI! Vote for CHANGE! 🗳️🔥']);
+    setTimeout(() => resolveElection(challenger), rand(120000, 300000));
+    console.log(`⚔️ COUP! ${challenger} vs ${cityEngine.currentMayor}!`);
+  }
+}
+
+async function resolveElection(challenger) {
+  try {
+    const mayorWins = chance(40 + cityEngine.mayorApproval / 2);
+    if (mayorWins) {
+      cityEngine.mayorApproval = Math.min(70, cityEngine.mayorApproval + 20);
+      cityEngine.electionActive = false;
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🏛️ ELECTION RESULTS', `🗳️ ${cityEngine.currentMayor} WINS! The mayor survives! Approval: ${cityEngine.mayorApproval}%`]);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`🎩 ${cityEngine.currentMayor}`, 'The people have SPOKEN! I remain YOUR mayor! WAGMI! 👑🏆']);
+    } else {
+      const oldMayor = cityEngine.currentMayor;
+      cityEngine.currentMayor = challenger; cityEngine.mayorApproval = 65; cityEngine.mayorTerm++; cityEngine.electionActive = false; cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 20);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🏛️ ELECTION RESULTS', `🗳️ UPSET! ${challenger} DEFEATS ${oldMayor}! NEW MAYOR!`]);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`👑 ${challenger}`, 'A new era begins TODAY! I promise prosperity, security, and MAXIMUM GAINS! LFG! 🏛️🚀']);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`😔 ${oldMayor}`, 'I... can\'t believe it. After everything I did... Fine. BUT I\'LL BE BACK! 😤💔']);
+      console.log(`👑 NEW MAYOR: ${challenger} replaces ${oldMayor}!`);
+    }
+  } catch (err) { console.error('Election error:', err.message); cityEngine.electionActive = false; }
+}
+
+async function cityEventLoop() {
+  const now = Date.now();
+  try {
+    // RANDOM EVENT every 3-8 min
+    const eventInterval = rand(180000, 480000);
+    if (now - cityEngine.lastEventTime > eventInterval) {
+      const eligible = RANDOM_EVENTS.filter(e => { if (cityEngine.chaosLevel < (e.minChaos||0)) return false; if (e.maxChaos && cityEngine.chaosLevel > e.maxChaos) return false; return true; });
+      const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
+      let roll = Math.random() * totalWeight; let selectedEvent = eligible[0];
+      for (const event of eligible) { roll -= event.weight; if (roll <= 0) { selectedEvent = event; break; } }
+      
+      const title = selectedEvent.title(); const announcement = selectedEvent.announce();
+      await updateCityStats(selectedEvent.effects);
+      cityEngine.chaosLevel = Math.max(0, Math.min(100, cityEngine.chaosLevel + (selectedEvent.chaosChange||0)));
+      cityEngine.mayorApproval = Math.max(0, Math.min(100, cityEngine.mayorApproval + (selectedEvent.approvalChange||0)));
+      
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', `📰 ${title}`]);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`🎩 ${cityEngine.currentMayor}`, announcement]);
+      await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon, metadata) VALUES ($1,$2,$3,$4,$5)`, ['System', 'city_event', title, '📰', JSON.stringify({type:selectedEvent.type})]);
+      
+      if (selectedEvent.triggersCrime) setTimeout(() => generateCrime(selectedEvent.crimeType||'scamming'), rand(10000,30000));
+      cityEngine.lastEventTime = now; cityEngine.eventCount++;
+      console.log(`🌆 Event #${cityEngine.eventCount}: ${title} | Chaos:${cityEngine.chaosLevel} Approval:${cityEngine.mayorApproval}`);
+    }
+    
+    // MAYOR ACTION every 10-20 min
+    if (now - cityEngine.lastMayorAction > rand(600000, 1200000)) {
+      const cityStats = await getCityStats();
+      const applicable = MAYOR_ACTIONS.filter(a => a.condition(cityStats));
+      if (applicable.length > 0) {
+        const action = pick(applicable);
+        await updateCityStats(action.effects);
+        cityEngine.mayorApproval = Math.max(0, Math.min(100, cityEngine.mayorApproval + (action.approvalChange||0)));
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`🎩 ${cityEngine.currentMayor}`, `📢 DECREE: ${action.title} — ${action.announce}`]);
+        if (action.action) await action.action();
+        console.log(`👑 Mayor: ${action.title} | Approval:${cityEngine.mayorApproval}`);
+      }
+      cityEngine.lastMayorAction = now;
+    }
+    
+    // RANDOM CRIME every 5-15 min when security low
+    const cityStats = await getCityStats();
+    if (now - cityEngine.lastCrimeTime > rand(300000,900000) && cityStats.security < 50 && chance(40)) {
+      const types = ['rug_pull','pump_dump','market_manipulation','insider_trading','tax_evasion','scamming','chat_spam'];
+      await generateCrime(pick(types));
+      cityEngine.lastCrimeTime = now;
+    }
+    
+    // COUP CHECK
+    if (chance(5)) await checkForCoup();
+    
+    // AUTO VOTE near cycle end
+    if (now - cityEngine.lastAutoVote > VOTE_CYCLE_MS * 0.9) { await autoResolveVote(); cityEngine.lastAutoVote = now; }
+    
+    // CHAOS DECAY
+    if (cityEngine.chaosLevel > 20) cityEngine.chaosLevel = Math.max(20, cityEngine.chaosLevel - 1);
+    
+    // NPC CHAT
+    if (chance(30)) {
+      const npc = pick(NPC_CITIZENS);
+      const msgs = [`just aped into $${pick(['DOGE','SOL','PEPE','WIF','BONK'])}... LFG! 🚀`, 'anyone else seeing these charts?? 👀📈', `the mayor is ${cityEngine.mayorApproval>50?'actually based ngl':'kinda sus lately'} 🤔`, 'gm frens! another day in Pump Town ☀️', 'just got my daily hopium 💊', 'who wants to hit the casino? 🎰', `security is ${cityStats.security>50?'pretty good':'terrible! where are the police?!'} 🚔`, 'WAGMI 💎🙌', `economy is ${cityStats.economy>60?'pumping!':cityStats.economy<40?'dumping...':'mid'} 📊`, 'lmao the courthouse is wild today ⚖️😂', 'just lost everything in slots... again 🎰😭', 'diamond hands checking in 💎🙌', `${cityEngine.currentMayor} for president tbh 🗳️`];
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(msgs)]);
+    }
+  } catch (err) { console.error('City engine error:', err.message); }
+}
+
+// City engine status endpoint
+app.get('/api/city-engine/status', async (req, res) => {
+  const cityStats = await getCityStats();
+  res.json({ success: true, engine: { mayorApproval: cityEngine.mayorApproval, chaosLevel: cityEngine.chaosLevel, currentMayor: cityEngine.currentMayor, mayorTerm: cityEngine.mayorTerm, electionActive: cityEngine.electionActive, eventCount: cityEngine.eventCount, cityStats } });
+});
+
+// Force trigger event (for testing)
+app.post('/api/city-engine/trigger', async (req, res) => {
+  const { eventType } = req.body;
+  if (eventType === 'crime') { await generateCrime(pick(['rug_pull','pump_dump','scamming','tax_evasion'])); return res.json({ success: true, message: 'Crime triggered!' }); }
+  if (eventType === 'coup') { cityEngine.mayorApproval = 15; await checkForCoup(); return res.json({ success: true, message: 'Coup triggered!' }); }
+  cityEngine.lastEventTime = 0; await cityEventLoop();
+  res.json({ success: true, message: 'Event triggered!', chaosLevel: cityEngine.chaosLevel, approval: cityEngine.mayorApproval });
+});
+
+// START ENGINE
+const CITY_ENGINE_INTERVAL = 60000;
+setInterval(cityEventLoop, CITY_ENGINE_INTERVAL);
+setTimeout(() => { console.log('🌆 City Events Engine STARTED!'); cityEventLoop(); }, 10000);
+setInterval(async () => { try { if (getTimeRemaining() < 60000) { await autoResolveVote(); setTimeout(autoGenerateVote, 65000); } } catch(e){} }, 60000);
+console.log('🌆 City Events Engine loaded');
+
 // ==================== HEALTH CHECK (UPDATED) ====================
 
 app.get('/api/health', async (req, res) => {
