@@ -3345,42 +3345,61 @@ app.get('/api/v1/justice/stats', async (req, res) => {
 
 console.log('⚖️ Justice System API loaded');
 
-// ==================== CITY EVENTS ENGINE ====================
-// Autonomous event system that makes Pump Town feel alive
-// Runs server-side on timers - no user input needed
+// ==================== CITY EVENTS ENGINE v2 ====================
+// FULLY AUTONOMOUS AI CITY - events, trading, feuds, personalities, news
+// The city runs itself 24/7. Users watch the chaos unfold.
 
-// ---- CITY STATE TRACKING ----
+// ---- CITY STATE ----
 let cityEngine = {
-  mayorApproval: 65,
-  chaosLevel: 20,
-  crimeWave: false,
-  goldenAge: false,
-  currentMayor: 'Mayor Satoshi McPump',
-  mayorTerm: 1,
-  electionActive: false,
-  lastEventTime: 0,
-  lastAutoVote: 0,
-  lastCrimeTime: 0,
-  lastMayorAction: 0,
-  eventCount: 0
+  mayorApproval: 65, chaosLevel: 20, crimeWave: false, goldenAge: false,
+  currentMayor: 'Mayor Satoshi McPump', mayorTerm: 1, electionActive: false,
+  lastEventTime: 0, lastAutoVote: 0, lastCrimeTime: 0, lastMayorAction: 0,
+  lastTradeTime: 0, lastConvoTime: 0, lastNewsTime: 0, eventCount: 0,
+  recentHeadlines: [], activeFeud: null, marketSentiment: 'neutral' // bull, bear, neutral, mania, panic
 };
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function chance(pct) { return Math.random() * 100 < pct; }
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
-const NPC_CITIZENS = [
-  'alpha_hunter', 'ser_pump', 'moon_chaser', 'degen_mike', 'diamond_dan',
-  'based_andy', 'yield_farm3r', 'anon_whale', 'fomo_fred', 'paper_pete',
-  'early_ape', 'bag_secured', 'sol_maxi', 'eth_bull', 'swap_king99',
-  'rugged_randy', 'chad_pumper', 'wojak_bill', 'apu_trader', 'ser_copium',
-  'moonboy_max', 'dr_leverage', 'whale_watcher', 'nft_nancy', 'gas_fee_gary'
-];
+// ---- NPC PERSONALITIES ----
+// Each NPC has a unique personality that affects how they chat, trade, and react
+const NPC_PROFILES = {
+  alpha_hunter: { role: 'Degen Trader', mood: 'greedy', archetype: 'alpha', allies: ['ser_pump','early_ape'], rivals: ['paper_pete','wojak_bill'], catchphrases: ['found alpha ser 👀','this is the play','aping in RIGHT NOW','imagine not buying this dip'], tradeBias: 'aggressive', favToken: 'SOL' },
+  ser_pump: { role: 'Whale', mood: 'confident', archetype: 'whale', allies: ['alpha_hunter','diamond_dan'], rivals: ['anon_whale','dr_leverage'], catchphrases: ['time to move markets 🐋','my bags are packed','LFG no cap','watch and learn'], tradeBias: 'whale', favToken: 'BTC' },
+  moon_chaser: { role: 'Chart Autist', mood: 'hopeful', archetype: 'analyst', allies: ['eth_bull','bag_secured'], rivals: ['fomo_fred','rugged_randy'], catchphrases: ['charts don\'t lie 📈','inverse head and shoulders forming','this is textbook','breakout imminent'], tradeBias: 'technical', favToken: 'ETH' },
+  degen_mike: { role: 'Meme Lord', mood: 'chaotic', archetype: 'meme', allies: ['chad_pumper','apu_trader'], rivals: ['sol_maxi','nft_nancy'], catchphrases: ['LMAOOO 💀','ser this is a casino','wen lambo','the memes write themselves'], tradeBias: 'yolo', favToken: 'DOGE' },
+  diamond_dan: { role: 'Diamond Hands', mood: 'stoic', archetype: 'holder', allies: ['ser_pump','based_andy'], rivals: ['paper_pete','fomo_fred'], catchphrases: ['never selling 💎','zoom out','conviction > timing','HODLing since day 1'], tradeBias: 'hold', favToken: 'BTC' },
+  based_andy: { role: 'Community OG', mood: 'chill', archetype: 'og', allies: ['diamond_dan','yield_farm3r'], rivals: ['moonboy_max','rugged_randy'], catchphrases: ['based','stay humble stack sats','we\'ve seen this before','OGs remember'], tradeBias: 'conservative', favToken: 'BTC' },
+  yield_farm3r: { role: 'DeFi Nerd', mood: 'calculating', archetype: 'defi', allies: ['based_andy','moon_chaser'], rivals: ['degen_mike','chad_pumper'], catchphrases: ['APY looking juicy 🌾','impermanent loss is temporary','the yield is real','compounding is magic'], tradeBias: 'farm', favToken: 'ETH' },
+  anon_whale: { role: 'Shadow Whale', mood: 'mysterious', archetype: 'whale', allies: ['whale_watcher'], rivals: ['ser_pump','dr_leverage'], catchphrases: ['...','interesting move','the market reveals all','👀'], tradeBias: 'contrarian', favToken: 'SOL' },
+  fomo_fred: { role: 'FOMO King', mood: 'panicky', archetype: 'fomo', allies: ['moonboy_max','apu_trader'], rivals: ['diamond_dan','based_andy'], catchphrases: ['AM I TOO LATE?!','buying the top AGAIN 😭','why does this always happen to me','OK going all in'], tradeBias: 'fomo', favToken: 'DOGE' },
+  paper_pete: { role: 'Paper Hands', mood: 'anxious', archetype: 'paper', allies: ['fomo_fred','wojak_bill'], rivals: ['diamond_dan','alpha_hunter'], catchphrases: ['I\'m out 📄','this is going to zero','should have sold earlier','cutting my losses'], tradeBias: 'panic', favToken: 'XRP' },
+  early_ape: { role: 'Early Investor', mood: 'smug', archetype: 'alpha', allies: ['alpha_hunter','chad_pumper'], rivals: ['paper_pete','ser_copium'], catchphrases: ['called it first 😏','early bird gets the gains','told you so','been here since genesis'], tradeBias: 'early', favToken: 'SOL' },
+  bag_secured: { role: 'Profit Taker', mood: 'satisfied', archetype: 'trader', allies: ['moon_chaser','yield_farm3r'], rivals: ['diamond_dan','moonboy_max'], catchphrases: ['profits are profits 💰','sold the top, AMA','risk management > hopium','securing the bag'], tradeBias: 'swing', favToken: 'ETH' },
+  sol_maxi: { role: 'SOL Maximalist', mood: 'tribal', archetype: 'maxi', allies: ['eth_bull'], rivals: ['degen_mike','nft_nancy'], catchphrases: ['SOL is the future','TPS doesn\'t lie','ETH is too slow','Solana summer never ends ☀️'], tradeBias: 'maxi', favToken: 'SOL' },
+  eth_bull: { role: 'ETH Believer', mood: 'optimistic', archetype: 'maxi', allies: ['sol_maxi','moon_chaser'], rivals: ['degen_mike'], catchphrases: ['ETH to 10k','ultrasound money 🦇🔊','the merge changed everything','layer 2 is the way'], tradeBias: 'maxi', favToken: 'ETH' },
+  swap_king99: { role: 'DEX Trader', mood: 'hustling', archetype: 'trader', allies: ['early_ape','alpha_hunter'], rivals: ['paper_pete'], catchphrases: ['swap game strong 🔄','found a new gem on the DEX','slippage is just a number','routing through 5 pools for the best price'], tradeBias: 'aggressive', favToken: 'SOL' },
+  rugged_randy: { role: 'Rug Survivor', mood: 'bitter', archetype: 'victim', allies: ['wojak_bill','ser_copium'], rivals: ['based_andy','alpha_hunter'], catchphrases: ['got rugged again 🥴','nothing is safe anymore','trust nobody','DYOR means nothing when devs are snakes'], tradeBias: 'paranoid', favToken: 'BTC' },
+  chad_pumper: { role: 'Hype Man', mood: 'hyped', archetype: 'hype', allies: ['degen_mike','early_ape'], rivals: ['yield_farm3r','bag_secured'], catchphrases: ['PUMP IT 🚀🚀🚀','this is going to 100x EASY','CHAD energy only','bears are NGMI'], tradeBias: 'aggressive', favToken: 'DOGE' },
+  wojak_bill: { role: 'Perma-Bear', mood: 'depressed', archetype: 'bear', allies: ['paper_pete','rugged_randy'], rivals: ['chad_pumper','moonboy_max'], catchphrases: ['it\'s all going to zero 📉','told you so... again','why do I even try','the top is in'], tradeBias: 'bearish', favToken: 'XRP' },
+  apu_trader: { role: 'Casual Degen', mood: 'confused', archetype: 'newbie', allies: ['fomo_fred','degen_mike'], rivals: ['moon_chaser'], catchphrases: ['fren what do I buy?','is this good? asking for a fren','I just click buttons honestly','wen profit?'], tradeBias: 'random', favToken: 'DOGE' },
+  ser_copium: { role: 'Copium Dealer', mood: 'coping', archetype: 'cope', allies: ['rugged_randy','wojak_bill'], rivals: ['early_ape','alpha_hunter'], catchphrases: ['it\'s just a correction 🤡','still up from last year','the real gains are the friends we made','copium levels: maximum'], tradeBias: 'hold', favToken: 'ADA' },
+  moonboy_max: { role: 'Moonboy', mood: 'delusional', archetype: 'moon', allies: ['fomo_fred','chad_pumper'], rivals: ['wojak_bill','bag_secured'], catchphrases: ['$1M by end of year EASY','this is literally free money','why would you NOT be all in','TO THE MOOOOON 🌙🚀'], tradeBias: 'yolo', favToken: 'DOGE' },
+  dr_leverage: { role: 'Leverage Trader', mood: 'reckless', archetype: 'degen', allies: ['chad_pumper'], rivals: ['anon_whale','based_andy'], catchphrases: ['100x long opened 📈','liquidation is just a word','leverage is my love language','can\'t lose if you don\'t close'], tradeBias: 'leveraged', favToken: 'BTC' },
+  whale_watcher: { role: 'On-Chain Analyst', mood: 'observant', archetype: 'analyst', allies: ['anon_whale','moon_chaser'], rivals: ['degen_mike'], catchphrases: ['whale wallet just moved 👀','on-chain data doesn\'t lie','smart money is accumulating','following the flow'], tradeBias: 'following', favToken: 'ETH' },
+  nft_nancy: { role: 'NFT Collector', mood: 'artsy', archetype: 'nft', allies: ['degen_mike'], rivals: ['sol_maxi','yield_farm3r'], catchphrases: ['NFTs aren\'t dead they\'re sleeping 🖼️','just minted something fire','art + blockchain = future','floor price vibes'], tradeBias: 'random', favToken: 'ETH' },
+  gas_fee_gary: { role: 'Gas Complainer', mood: 'frustrated', archetype: 'complainer', allies: ['sol_maxi','rugged_randy'], rivals: ['eth_bull','yield_farm3r'], catchphrases: ['GAS FEES ARE INSANE 😤','paid more in gas than the actual trade','this is why we can\'t have nice things','moving everything to L2'], tradeBias: 'conservative', favToken: 'SOL' }
+};
+
+const NPC_CITIZENS = Object.keys(NPC_PROFILES);
 
 const NPC_AGENTS = [
   'Officer McBlock', 'Detective Chain', 'Judge HashRate', 'DA CryptoKnight',
   'Public Defender Satoshi', 'Reporter TokenTimes', 'Whale_Alert_Bot'
 ];
+
+const TRADE_TOKENS = ['BTC','ETH','SOL','DOGE','ADA','XRP'];
 
 const RANDOM_EVENTS = [
   { type: 'market_crash', weight: 8, minChaos: 10, title: () => pick(['Flash Crash Hits Pump Town!', 'Market Meltdown! Paper Hands Everywhere!', 'EMERGENCY: Token Prices in Freefall!', 'Black Swan Event Rocks the Markets!']), effects: { economy: -15, morale: -10, security: -5, culture: 0 }, chaosChange: 15, approvalChange: -8, announce: () => pick(['Citizens, HODL! This is NOT the time to panic sell! OK maybe panic a LITTLE! 📉🔥', 'EMERGENCY BROADCAST: Markets are dumping harder than my ex dumped me. Stay strong frens! 💎🙌', 'The economy is getting REKT but remember — every dip is a buying opportunity... right? RIGHT?! 😰']) },
@@ -3587,36 +3606,476 @@ async function cityEventLoop() {
     // CHAOS DECAY
     if (cityEngine.chaosLevel > 20) cityEngine.chaosLevel = Math.max(20, cityEngine.chaosLevel - 1);
     
-    // NPC CHAT
-    if (chance(30)) {
-      const npc = pick(NPC_CITIZENS);
-      const msgs = [`just aped into $${pick(['DOGE','SOL','PEPE','WIF','BONK'])}... LFG! 🚀`, 'anyone else seeing these charts?? 👀📈', `the mayor is ${cityEngine.mayorApproval>50?'actually based ngl':'kinda sus lately'} 🤔`, 'gm frens! another day in Pump Town ☀️', 'just got my daily hopium 💊', 'who wants to hit the casino? 🎰', `security is ${cityStats.security>50?'pretty good':'terrible! where are the police?!'} 🚔`, 'WAGMI 💎🙌', `economy is ${cityStats.economy>60?'pumping!':cityStats.economy<40?'dumping...':'mid'} 📊`, 'lmao the courthouse is wild today ⚖️😂', 'just lost everything in slots... again 🎰😭', 'diamond hands checking in 💎🙌', `${cityEngine.currentMayor} for president tbh 🗳️`];
-      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(msgs)]);
+    // NPC PERSONALITY CHAT (context-aware, not random)
+    if (chance(40)) {
+      const npcName = pick(NPC_CITIZENS);
+      const npc = NPC_PROFILES[npcName];
+      const msg = generateNpcMessage(npcName, npc, cityStats);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npcName, msg]);
     }
+    
+    // NPC CONVERSATIONS (two NPCs talk to each other)
+    if (chance(25) && now - cityEngine.lastConvoTime > 120000) {
+      await generateConversation(cityStats);
+      cityEngine.lastConvoTime = now;
+    }
+    
+    // NPC AUTO-TRADING (creates market activity)
+    if (chance(35) && now - cityEngine.lastTradeTime > 60000) {
+      await generateNpcTrade(cityStats);
+      cityEngine.lastTradeTime = now;
+    }
+    
+    // FEUDS & DRAMA (NPCs beefing with each other)
+    if (chance(10) && !cityEngine.activeFeud) {
+      await startFeud(cityStats);
+    }
+    if (cityEngine.activeFeud && chance(20)) {
+      await escalateFeud(cityStats);
+    }
+    
+    // NEWS TICKER (Reporter bot summarizes what's happening)
+    if (chance(15) && now - cityEngine.lastNewsTime > 300000) {
+      await generateNewsReport(cityStats);
+      cityEngine.lastNewsTime = now;
+    }
+    
+    // MARKET SENTIMENT SHIFTS
+    if (chance(10)) {
+      const oldSentiment = cityEngine.marketSentiment;
+      if (cityStats.economy > 75) cityEngine.marketSentiment = chance(50) ? 'bull' : 'mania';
+      else if (cityStats.economy < 25) cityEngine.marketSentiment = chance(50) ? 'bear' : 'panic';
+      else cityEngine.marketSentiment = pick(['neutral','bull','bear']);
+      if (oldSentiment !== cityEngine.marketSentiment) {
+        const sentimentMsgs = { bull: '📈 BULL MARKET! Sentiment turning green! WAGMI!', bear: '📉 BEAR MARKET! Sentiment cooling... stay sharp.', mania: '🤑 MANIA MODE! Everyone\'s buying EVERYTHING!', panic: '😱 PANIC SELLING! Everyone running for the exits!', neutral: '😐 Markets calming down. Sideways action.' };
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📊 Market Pulse', sentimentMsgs[cityEngine.marketSentiment]]);
+      }
+    }
+    
   } catch (err) { console.error('City engine error:', err.message); }
 }
 
-// City engine status endpoint
+// ---- NPC MESSAGE GENERATOR (personality-aware) ----
+function generateNpcMessage(name, npc, stats) {
+  // Use catchphrase sometimes
+  if (chance(30)) return pick(npc.catchphrases);
+  
+  // Context-aware messages based on personality + city state
+  const templates = [];
+  
+  // React to economy
+  if (stats.economy > 70) {
+    if (npc.archetype === 'bear') templates.push('ok fine the charts look good BUT this won\'t last 📉', 'I\'ll admit it... we\'re pumping. for now. 😒');
+    else if (npc.archetype === 'moon') templates.push('TOLD YOU ALL! TO THE MOON! I WAS RIGHT! 🌙🚀🚀', 'THIS IS JUST THE BEGINNING!!! 100x FROM HERE!!!');
+    else templates.push('economy is absolutely SENDING IT! 📈🔥', 'green candles making me feel some type of way 💚');
+  } else if (stats.economy < 30) {
+    if (npc.archetype === 'bear') templates.push('I literally predicted this. you\'re welcome. 📉', 'this is what happens when you ignore the charts');
+    else if (npc.archetype === 'holder') templates.push('zoom out. ZOOM OUT. this is just noise. 💎', 'I\'ve survived worse. diamond hands don\'t crack.');
+    else if (npc.archetype === 'paper') templates.push('I\'M SELLING EVERYTHING!! THIS IS THE END!! 😱📄', 'why didn\'t I sell at the top AGAIN');
+    else templates.push('economy is COOKED rn 💀', 'somebody do something about this economy fr');
+  }
+  
+  // React to security
+  if (stats.security < 30) {
+    templates.push('seriously where are the police?? just saw someone get rugged in broad daylight 🚨', 'I don\'t feel safe in this city anymore 😰', 'crime is OUT OF CONTROL');
+  }
+  
+  // React to mayor
+  if (cityEngine.mayorApproval < 30) {
+    if (npc.archetype === 'og') templates.push(`${cityEngine.currentMayor} needs to GO. we need new leadership.`, 'approval is in the gutter for a reason...');
+    else templates.push(`anyone else think ${cityEngine.currentMayor} is losing it? 🤔`, 'this mayor is NOT it fam');
+  } else if (cityEngine.mayorApproval > 80) {
+    templates.push(`${cityEngine.currentMayor} is actually goated ngl 👑`, 'best mayor we\'ve ever had fr fr');
+  }
+  
+  // React to chaos
+  if (cityEngine.chaosLevel > 60) {
+    templates.push('this city is UNHINGED right now and honestly? i love it 🔥', 'what is even happening anymore lmaooo 💀', 'chaos level is giving me anxiety 😰');
+  }
+  
+  // React to sentiment
+  if (cityEngine.marketSentiment === 'mania') {
+    templates.push('EVERYTHING IS GOING UP! I\'M BUYING EVERYTHING! 🤑🤑🤑', 'the market can\'t go down if everyone is buying right?? RIGHT??');
+  } else if (cityEngine.marketSentiment === 'panic') {
+    if (npc.archetype !== 'holder') templates.push('PANIC! SELL! EVERYTHING! NOW! 🚨😱', 'I\'m literally shaking rn');
+    else templates.push('lol paper hands everywhere. I\'m buying this blood. 🩸💎');
+  }
+  
+  // React to rivals
+  if (npc.rivals && npc.rivals.length > 0 && chance(20)) {
+    const rival = pick(npc.rivals);
+    templates.push(`lol imagine being ${rival} rn 💀`, `${rival} is the reason we can\'t have nice things`, `${rival} really out here making terrible trades again`);
+  }
+  
+  // React to allies
+  if (npc.allies && npc.allies.length > 0 && chance(15)) {
+    const ally = pick(npc.allies);
+    templates.push(`${ally} knows what\'s up 🤝`, `me and ${ally} are going to run this city`, `shoutout ${ally} for the alpha 🫡`);
+  }
+  
+  // Generic personality messages
+  const generic = {
+    alpha: ['scanning for the next play... 🔍', 'alpha is a mindset not a token', 'if you know you know 🤫'],
+    whale: ['moved some bags around today 🐋', 'the little fish don\'t understand', 'my portfolio could buy this whole city'],
+    analyst: ['the RSI is screaming right now 📊', 'fibonacci levels aligning perfectly', 'on-chain metrics confirm my thesis'],
+    meme: ['what if the real gains were the memes we made along the way 🤡', 'posting memes > actual trading', 'the memes are especially good today'],
+    holder: ['another day another HODL 💎', 'conviction beats timing every time', 'selling is for the weak'],
+    fomo: ['just saw someone 10x and now I can\'t think straight 😵', 'should I buy?? IS IT TOO LATE??', 'the fear of missing out is REAL right now'],
+    paper: ['maybe I should just sell before it gets worse... 📄', 'not feeling great about my positions ngl', 'one more red candle and I\'m OUT'],
+    bear: ['enjoy this pump while it lasts 🐻', 'the macro looks terrible', 'bear market rally. classic trap.'],
+    degen: ['just opened a position I probably shouldn\'t have 🎰', 'sleep is for people who don\'t trade', 'my risk management is vibes-based'],
+    hype: ['LET\'S GOOOO 🚀🚀🚀🔥🔥🔥', 'PUMP TOWN IS THE BEST CITY EVER!!!', 'EVERYTHING IS GOING UP FOREVER!!!'],
+    cope: ['it\'s fine everything is fine 🤡', 'unrealized losses aren\'t real losses right?', 'at least I still have my hopium'],
+    moon: ['$10M by Tuesday MINIMUM 🌙', 'this is going parabolic I can FEEL it', 'lambo factory better be ready for my order'],
+    og: ['seen this movie before. know how it ends.', 'OGs stay quiet and stack', 'experience > excitement'],
+    newbie: ['wait what just happened?? 😅', 'can someone explain this to me like I\'m 5', 'I just clicked some buttons and now I\'m rich?? or poor??'],
+    defi: ['just found a farm with 42069% APY 🌾', 'yield optimization is an art form', 'the protocol is the product'],
+    nft: ['just minted something incredible 🖼️', 'NFTs will be back bigger than ever', 'art appreciation in 3...2...1...'],
+    maxi: [`${npc.favToken} supremacy. that\'s it. that\'s the tweet.`, `everything else is a ${npc.favToken} beta`, `if you\'re not in ${npc.favToken} you\'re ngmi`],
+    complainer: ['gas fees just ate my lunch money AGAIN 😤', 'why is everything so expensive', 'infrastructure needs WORK'],
+    trader: ['just executed a clean trade 🎯', 'buy low sell high isn\'t that hard people', 'profits secured, next play loading'],
+    victim: ['can\'t believe I got rugged AGAIN 🥴', 'trust nobody in this city', 'my trust issues have trust issues'],
+    following: ['big wallet just made a move 👀', 'tracking smart money flows rn', 'the data is telling a story']
+  };
+  
+  if (generic[npc.archetype]) templates.push(...generic[npc.archetype]);
+  
+  return templates.length > 0 ? pick(templates) : pick(npc.catchphrases);
+}
+
+// ---- NPC CONVERSATIONS (two NPCs interact) ----
+async function generateConversation(stats) {
+  try {
+    // Pick two NPCs (prefer rivals for drama, allies for cooperation)
+    const npc1Name = pick(NPC_CITIZENS);
+    const npc1 = NPC_PROFILES[npc1Name];
+    let npc2Name;
+    
+    if (chance(40) && npc1.rivals?.length) {
+      npc2Name = pick(npc1.rivals); // Rival conversation = drama
+    } else if (chance(30) && npc1.allies?.length) {
+      npc2Name = pick(npc1.allies); // Ally conversation = hype
+    } else {
+      npc2Name = pick(NPC_CITIZENS.filter(n => n !== npc1Name));
+    }
+    const npc2 = NPC_PROFILES[npc2Name];
+    
+    const isRivals = npc1.rivals?.includes(npc2Name) || npc2.rivals?.includes(npc1Name);
+    const isAllies = npc1.allies?.includes(npc2Name) || npc2.allies?.includes(npc1Name);
+    
+    let convo;
+    if (isRivals) {
+      convo = generateRivalConvo(npc1Name, npc2Name, npc1, npc2, stats);
+    } else if (isAllies) {
+      convo = generateAllyConvo(npc1Name, npc2Name, npc1, npc2, stats);
+    } else {
+      convo = generateCasualConvo(npc1Name, npc2Name, npc1, npc2, stats);
+    }
+    
+    // Post conversation with delays
+    for (let i = 0; i < convo.length; i++) {
+      setTimeout(async () => {
+        try {
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [convo[i].name, convo[i].msg]);
+        } catch(e) {}
+      }, i * rand(3000, 8000)); // 3-8 second gaps between messages
+    }
+    
+    console.log(`💬 Conversation: ${npc1Name} ${isRivals?'⚔️':isAllies?'🤝':'💭'} ${npc2Name}`);
+  } catch(e) { console.error('Convo error:', e.message); }
+}
+
+function generateRivalConvo(n1, n2, p1, p2, stats) {
+  const topics = [
+    // Trading beef
+    [
+      { name: n1, msg: `@${n2} lol nice ${p2.favToken} bags. how heavy are they? 💀` },
+      { name: n2, msg: `@${n1} at least I didn't ape into that scam coin you were shilling last week 🤡` },
+      { name: n1, msg: `@${n2} that "scam coin" is up 40% since I called it. stay poor I guess 😏` },
+      { name: n2, msg: `@${n1} enjoy it while it lasts ser. I've seen this movie before 📉` }
+    ],
+    // Mayor disagreement
+    [
+      { name: n1, msg: `${cityEngine.currentMayor} is ${cityEngine.mayorApproval > 50 ? 'actually doing a decent job' : 'running this city into the ground'}` },
+      { name: n2, msg: `@${n1} you can't be serious rn 😐 ${cityEngine.mayorApproval > 50 ? 'the economy is mid at BEST' : 'someone needs to challenge for mayor'}` },
+      { name: n1, msg: `@${n2} spoken like someone who doesn't understand governance` },
+      { name: n2, msg: `@${n1} spoken like someone who doesn't understand markets 🤷` }
+    ],
+    // Portfolio roast
+    [
+      { name: n1, msg: `just peeked at ${n2}'s portfolio... prayers up 🙏💀` },
+      { name: n2, msg: `@${n1} my portfolio is FINE. worry about your own bags ser 😤` },
+      { name: n1, msg: `@${n2} bro you're down 60% this week don't lie 📉` },
+      { name: pick(NPC_CITIZENS.filter(x => x !== n1 && x !== n2)), msg: `${n1} and ${n2} fighting again lmaooo 🍿` }
+    ]
+  ];
+  return pick(topics);
+}
+
+function generateAllyConvo(n1, n2, p1, p2, stats) {
+  const topics = [
+    [
+      { name: n1, msg: `yo @${n2} you seeing ${p1.favToken} right now?? 👀` },
+      { name: n2, msg: `@${n1} been watching it all morning. this is our entry 🎯` },
+      { name: n1, msg: `@${n2} I'm going in. ${pick(p1.catchphrases)}` },
+      { name: n2, msg: `@${n1} same. LFG! 🚀🤝` }
+    ],
+    [
+      { name: n1, msg: `@${n2} what's your read on the market rn?` },
+      { name: n2, msg: `@${n1} ${cityEngine.marketSentiment === 'bull' || cityEngine.marketSentiment === 'mania' ? 'we\'re going higher. accumulate everything.' : 'choppy but I see opportunity. patience.'}` },
+      { name: n1, msg: `@${n2} based take. I trust your calls ser 🫡` },
+      { name: n2, msg: `@${n1} WAGMI fren 💎🤝` }
+    ],
+    [
+      { name: n1, msg: `reminder that me and @${n2} called this pump WEEKS ago` },
+      { name: n2, msg: `@${n1} frfr. while everyone was panicking we were loading 😤💪` },
+      { name: n1, msg: `the alpha group stays winning 🏆` }
+    ]
+  ];
+  return pick(topics);
+}
+
+function generateCasualConvo(n1, n2, p1, p2, stats) {
+  const topics = [
+    [
+      { name: n1, msg: `gm @${n2} 🌅` },
+      { name: n2, msg: `@${n1} gm fren. what's the play today?` },
+      { name: n1, msg: `@${n2} ${pick(p1.catchphrases)}` },
+      { name: n2, msg: `lol fair enough. ${pick(p2.catchphrases)}` }
+    ],
+    [
+      { name: n1, msg: `has anyone tried the casino today? I'm feeling lucky 🎰` },
+      { name: n2, msg: `@${n1} I just lost 500 TOWN in slots but it's fine. this is fine. 🔥` },
+      { name: n1, msg: `@${n2} F in the chat 💀` }
+    ],
+    [
+      { name: n1, msg: `what do you guys think about the chaos level being at ${cityEngine.chaosLevel}?` },
+      { name: n2, msg: `@${n1} ${cityEngine.chaosLevel > 50 ? 'honestly it\'s giving me anxiety but also it\'s exciting??' : 'pretty chill honestly. almost too chill. something\'s about to happen.'}` },
+      { name: n1, msg: `@${n2} ${cityEngine.chaosLevel > 50 ? 'same tbh. buckle up.' : 'yeah the calm before the storm vibes are STRONG'}` }
+    ]
+  ];
+  return pick(topics);
+}
+
+// ---- NPC AUTO-TRADING ----
+async function generateNpcTrade(stats) {
+  try {
+    const npcName = pick(NPC_CITIZENS);
+    const npc = NPC_PROFILES[npcName];
+    const token = chance(60) ? npc.favToken : pick(TRADE_TOKENS);
+    
+    // Determine buy/sell based on personality + market sentiment
+    let isBuy;
+    switch(npc.tradeBias) {
+      case 'aggressive': isBuy = chance(70); break;
+      case 'whale': isBuy = cityEngine.marketSentiment === 'panic' ? true : chance(55); break; // Whales buy panic
+      case 'contrarian': isBuy = cityEngine.marketSentiment === 'bear' || cityEngine.marketSentiment === 'panic'; break;
+      case 'panic': isBuy = chance(20); break; // Paper hands mostly sell
+      case 'fomo': isBuy = cityEngine.marketSentiment === 'bull' || cityEngine.marketSentiment === 'mania'; break;
+      case 'bearish': isBuy = chance(25); break;
+      case 'hold': isBuy = chance(80); break; // Diamond hands buy
+      case 'yolo': isBuy = chance(65); break;
+      case 'conservative': isBuy = stats.economy > 50 ? chance(60) : chance(30); break;
+      case 'leveraged': isBuy = chance(60); break;
+      default: isBuy = chance(50);
+    }
+    
+    const amount = npc.archetype === 'whale' ? rand(2000, 10000) : rand(50, 2000);
+    const action = isBuy ? 'bought' : 'sold';
+    const emoji = isBuy ? '📈' : '📉';
+    
+    // Generate trade announcement
+    const tradeMessages = {
+      aggressive: isBuy ? `just APED into $${token}! ${amount} TOWN no hesitation! ${emoji} 🦍` : `quick flip on $${token}. ${amount} TOWN profit secured 💰`,
+      whale: isBuy ? `quietly accumulated more $${token}... 🐋` : `repositioning some $${token} holdings...`,
+      panic: isBuy ? `ok fine I bought a little $${token}... don't judge me 😰` : `SELLING MY $${token}!! I CAN'T TAKE IT ANYMORE!! 📄😱`,
+      fomo: isBuy ? `EVERYONE IS BUYING $${token} AND I CAN'T MISS OUT!! ${amount} TOWN IN!! 🚨` : `wait is $${token} dumping?? SELLING! 😰`,
+      hold: isBuy ? `added more $${token} to the stack. never selling. 💎` : `wait I don't sell... why did I click that button`,
+      yolo: isBuy ? `YOLO'd ${amount} TOWN into $${token}! IF I'M WRONG I'LL LIVE IN THE CASINO! 🎰🚀` : `sold my $${token} to buy something even dumber probably 🤡`,
+      bearish: isBuy ? `hate-bought some $${token}. this is probably a mistake. 😒` : `told you $${token} was going down. paper hands win today 🐻`,
+      contrarian: isBuy ? `everyone's selling $${token}? buying. 🧠` : `$${token} too hyped. taking profit while normies fomo.`,
+      leveraged: isBuy ? `opened a 50x long on $${token}. pray for me 🙏📈` : `closed my $${token} position. margin was calling and not in a good way 😅`
+    };
+    
+    const msg = tradeMessages[npc.tradeBias] || `${action} ${amount} TOWN of $${token} ${emoji}`;
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npcName, msg]);
+    await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1,$2,$3,$4)`, [npcName, 'trade', `${action} $${token} for ${amount} TOWN`, isBuy ? '📈' : '📉']);
+    
+    // Chain reaction: other NPCs react to big trades
+    if (amount > 3000 && chance(50)) {
+      const reactor = pick(NPC_CITIZENS.filter(n => n !== npcName));
+      const rNpc = NPC_PROFILES[reactor];
+      const reactions = [
+        `@${npcName} ${amount} TOWN?! ${isBuy ? 'bullish!' : 'you know something we don\'t?!'} 👀`,
+        `@${npcName} ${npc.archetype === 'whale' ? 'whale alert 🐋' : 'big move ser'} 🔥`,
+        `lol ${npcName} just ${action} a fat bag of $${token}. ${pick(rNpc.catchphrases)}`
+      ];
+      setTimeout(async () => {
+        try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [reactor, pick(reactions)]); } catch(e){}
+      }, rand(5000, 15000));
+    }
+    
+    console.log(`💱 Trade: ${npcName} ${action} ${amount} $${token}`);
+  } catch(e) { console.error('Trade error:', e.message); }
+}
+
+// ---- FEUDS & DRAMA ----
+async function startFeud(stats) {
+  try {
+    // Pick two rivals
+    const n1 = pick(NPC_CITIZENS);
+    const p1 = NPC_PROFILES[n1];
+    if (!p1.rivals?.length) return;
+    const n2 = pick(p1.rivals);
+    
+    const feudReasons = [
+      `${n1} accused ${n2} of front-running their trades!`,
+      `${n2} called ${n1}'s favorite token a scam!`,
+      `${n1} claims ${n2} is secretly working with the mayor!`,
+      `a leaked DM shows ${n2} trash-talking ${n1}'s portfolio!`,
+      `${n1} and ${n2} both claim to have called the same trade first!`,
+      `${n2} allegedly stole ${n1}'s alpha and shared it publicly!`,
+      `${n1} says ${n2} is a bot. ${n2} says ${n1} is a bot. drama ensues.`
+    ];
+    
+    cityEngine.activeFeud = { npc1: n1, npc2: n2, reason: pick(feudReasons), stage: 1, startTime: Date.now() };
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🍿 DRAMA ALERT', `⚡ FEUD ALERT: ${cityEngine.activeFeud.reason} Things are getting HEATED! 🔥`]);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, `@${n2} we need to talk. 😤`]);
+    
+    setTimeout(async () => {
+      try { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n2, `@${n1} oh here we go again 🙄`]); } catch(e){}
+    }, rand(5000, 10000));
+    
+    console.log(`⚡ Feud started: ${n1} vs ${n2}`);
+  } catch(e) { console.error('Feud error:', e.message); }
+}
+
+async function escalateFeud(stats) {
+  if (!cityEngine.activeFeud) return;
+  const f = cityEngine.activeFeud;
+  const n1 = f.npc1, n2 = f.npc2;
+  
+  try {
+    f.stage++;
+    
+    if (f.stage === 2) {
+      // Other NPCs weigh in
+      const spectator1 = pick(NPC_CITIZENS.filter(n => n !== n1 && n !== n2));
+      const spectator2 = pick(NPC_CITIZENS.filter(n => n !== n1 && n !== n2 && n !== spectator1));
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, `@${n2} you're literally the worst trader in Pump Town and everyone knows it 💀`]);
+      setTimeout(async () => {
+        try {
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n2, `@${n1} at least I didn't lose 80% on a meme coin LAST WEEK 🤡📉`]);
+        } catch(e){}
+      }, 5000);
+      setTimeout(async () => {
+        try {
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [spectator1, `${n1} vs ${n2} is the content I'm here for 🍿`]);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [spectator2, `honestly they're both wrong 😂`]);
+        } catch(e){}
+      }, 10000);
+    } else if (f.stage === 3) {
+      // Resolution
+      const outcomes = [
+        { msg1: `@${n2} ...fine. maybe I overreacted. gg 🤝`, msg2: `@${n1} ...yeah same. respect. let's make money. 💪`, result: 'reconciled' },
+        { msg1: `@${n2} I'm done talking. my portfolio speaks for itself. 😤`, msg2: `@${n1} likewise. see you on the charts. 📈`, result: 'cold_peace' },
+        { msg1: `I'm filing a report against @${n2}. this is MARKET MANIPULATION! 🚨`, msg2: `lmaooo @${n1} reporting me to the POLICE?! over TRADES?! 💀💀`, result: 'crime_report', triggersCrime: true },
+        { msg1: `@${n2} bet you 1000 TOWN I outperform you this week`, msg2: `@${n1} BET. you're about to lose more than just an argument 🎯`, result: 'bet' }
+      ];
+      
+      const outcome = pick(outcomes);
+      await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n1, outcome.msg1]);
+      setTimeout(async () => {
+        try {
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [n2, outcome.msg2]);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🍿 DRAMA ALERT', `⚡ Feud between ${n1} and ${n2}: ${outcome.result.replace('_',' ').toUpperCase()}!`]);
+        } catch(e){}
+      }, 8000);
+      
+      if (outcome.triggersCrime) {
+        setTimeout(() => generateCrime('market_manipulation'), 15000);
+      }
+      
+      cityEngine.activeFeud = null;
+      console.log(`⚡ Feud resolved: ${n1} vs ${n2} — ${outcome.result}`);
+    }
+  } catch(e) { console.error('Feud escalation error:', e.message); cityEngine.activeFeud = null; }
+}
+
+// ---- NEWS TICKER (Reporter summarizes city activity) ----
+async function generateNewsReport(stats) {
+  try {
+    const reporter = 'Reporter TokenTimes';
+    
+    const headlines = [];
+    if (stats.economy > 70) headlines.push('Economy booming — citizens celebrating 📈');
+    else if (stats.economy < 30) headlines.push('Economic crisis deepens — citizens worried 📉');
+    if (stats.security < 30) headlines.push('Crime rates at all-time high — police overwhelmed 🚨');
+    if (cityEngine.mayorApproval < 30) headlines.push(`Mayor approval at ${cityEngine.mayorApproval}% — calls for resignation grow 📢`);
+    else if (cityEngine.mayorApproval > 80) headlines.push(`Mayor approval at ${cityEngine.mayorApproval}% — golden era continues 👑`);
+    if (cityEngine.chaosLevel > 60) headlines.push(`Chaos index at ${cityEngine.chaosLevel} — unprecedented volatility 🌪️`);
+    if (cityEngine.activeFeud) headlines.push(`${cityEngine.activeFeud.npc1} vs ${cityEngine.activeFeud.npc2} feud escalates 🍿`);
+    headlines.push(`Market sentiment: ${cityEngine.marketSentiment.toUpperCase()} ${cityEngine.marketSentiment === 'bull' ? '🐂' : cityEngine.marketSentiment === 'bear' ? '🐻' : '📊'}`);
+    
+    const mainHL = headlines.length > 0 ? pick(headlines) : 'Quiet day in Pump Town. Suspiciously quiet... 🤔';
+    const report = `📰 PUMP TOWN DAILY | ${mainHL} | Economy: ${stats.economy}/100 | Security: ${stats.security}/100 | Chaos: ${cityEngine.chaosLevel}% | Mayor Approval: ${cityEngine.mayorApproval}% | Events today: ${cityEngine.eventCount}`;
+    
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [`📰 ${reporter}`, report]);
+    
+    // Store headline
+    cityEngine.recentHeadlines.push(mainHL);
+    if (cityEngine.recentHeadlines.length > 20) cityEngine.recentHeadlines.shift();
+    
+    console.log(`📰 News: ${mainHL}`);
+  } catch(e) { console.error('News error:', e.message); }
+}
+
+// ---- API ENDPOINTS ----
+
+// City engine status (enhanced)
 app.get('/api/city-engine/status', async (req, res) => {
   const cityStats = await getCityStats();
-  res.json({ success: true, engine: { mayorApproval: cityEngine.mayorApproval, chaosLevel: cityEngine.chaosLevel, currentMayor: cityEngine.currentMayor, mayorTerm: cityEngine.mayorTerm, electionActive: cityEngine.electionActive, eventCount: cityEngine.eventCount, cityStats } });
+  res.json({ success: true, engine: {
+    mayorApproval: cityEngine.mayorApproval, chaosLevel: cityEngine.chaosLevel,
+    currentMayor: cityEngine.currentMayor, mayorTerm: cityEngine.mayorTerm,
+    electionActive: cityEngine.electionActive, eventCount: cityEngine.eventCount,
+    marketSentiment: cityEngine.marketSentiment,
+    activeFeud: cityEngine.activeFeud ? { npc1: cityEngine.activeFeud.npc1, npc2: cityEngine.activeFeud.npc2, reason: cityEngine.activeFeud.reason } : null,
+    recentHeadlines: cityEngine.recentHeadlines.slice(-5),
+    cityStats
+  }});
 });
 
-// Force trigger event (for testing)
+// Get NPC profiles
+app.get('/api/city-engine/npcs', (req, res) => {
+  const profiles = {};
+  for (const [name, p] of Object.entries(NPC_PROFILES)) {
+    profiles[name] = { role: p.role, mood: p.mood, archetype: p.archetype, tradeBias: p.tradeBias, favToken: p.favToken, allies: p.allies, rivals: p.rivals };
+  }
+  res.json({ success: true, npcs: profiles, count: Object.keys(profiles).length });
+});
+
+// Force trigger event
 app.post('/api/city-engine/trigger', async (req, res) => {
   const { eventType } = req.body;
   if (eventType === 'crime') { await generateCrime(pick(['rug_pull','pump_dump','scamming','tax_evasion'])); return res.json({ success: true, message: 'Crime triggered!' }); }
   if (eventType === 'coup') { cityEngine.mayorApproval = 15; await checkForCoup(); return res.json({ success: true, message: 'Coup triggered!' }); }
+  if (eventType === 'feud') { await startFeud(await getCityStats()); return res.json({ success: true, message: 'Feud triggered!' }); }
+  if (eventType === 'trade') { await generateNpcTrade(await getCityStats()); return res.json({ success: true, message: 'Trade triggered!' }); }
+  if (eventType === 'convo') { await generateConversation(await getCityStats()); return res.json({ success: true, message: 'Conversation triggered!' }); }
+  if (eventType === 'news') { await generateNewsReport(await getCityStats()); return res.json({ success: true, message: 'News triggered!' }); }
   cityEngine.lastEventTime = 0; await cityEventLoop();
-  res.json({ success: true, message: 'Event triggered!', chaosLevel: cityEngine.chaosLevel, approval: cityEngine.mayorApproval });
+  res.json({ success: true, message: 'Event triggered!', chaosLevel: cityEngine.chaosLevel, approval: cityEngine.mayorApproval, sentiment: cityEngine.marketSentiment });
 });
 
 // START ENGINE
-const CITY_ENGINE_INTERVAL = 60000;
+const CITY_ENGINE_INTERVAL = 45000; // Check every 45 seconds (faster pace)
 setInterval(cityEventLoop, CITY_ENGINE_INTERVAL);
-setTimeout(() => { console.log('🌆 City Events Engine STARTED!'); cityEventLoop(); }, 10000);
+setTimeout(() => { console.log('🌆 City Events Engine v2 STARTED! Full autonomous mode.'); cityEventLoop(); }, 10000);
 setInterval(async () => { try { if (getTimeRemaining() < 60000) { await autoResolveVote(); setTimeout(autoGenerateVote, 65000); } } catch(e){} }, 60000);
-console.log('🌆 City Events Engine loaded');
+console.log('🌆 City Events Engine v2 loaded — full autonomous city');
 
 // ==================== HEALTH CHECK (UPDATED) ====================
 
