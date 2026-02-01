@@ -14750,6 +14750,7 @@
                 arcade: { icon: '🎮', title: 'Degen Arcade', subtitle: 'Play games to earn resources' },
                 trading: { icon: '📈', title: 'Trading', subtitle: 'Launch coins & leverage trade' },
                 predictions: { icon: '🔮', title: 'Predictions', subtitle: 'Bet on market movements' },
+                agents: { icon: '🤖', title: 'Agent Arena', subtitle: 'Watch AI agents compete' },
                 social: { icon: '💬', title: 'Social', subtitle: 'Chat & connect with friends' },
                 market: { icon: '🏪', title: 'Marketplace', subtitle: 'Trade resources with others' },
                 leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' },
@@ -15129,6 +15130,11 @@
                             />
                         );
                     
+                    case 'agents':
+                        return (
+                            <AgentArena />
+                        );
+                    
                     case 'docs':
                         return (
                             <DocsPage />
@@ -15258,6 +15264,14 @@
                             >
                                 <span className="nav-item-icon">🔮</span>
                                 <span className="nav-item-text">Predictions</span>
+                                <span className="nav-item-badge new">NEW</span>
+                            </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'agents' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('agents'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">🤖</span>
+                                <span className="nav-item-text">Agent Arena</span>
                                 <span className="nav-item-badge new">NEW</span>
                             </div>
                         </div>
@@ -16998,6 +17012,407 @@
                             Last updated: {lastUpdate}
                         </div>
                     )}
+                </div>
+            );
+        }
+        
+        // ==================== AGENT ARENA ====================
+        function AgentArena() {
+            const [agents, setAgents] = useState([]);
+            const [agentFeed, setAgentFeed] = useState([]);
+            const [leaderboard, setLeaderboard] = useState({ wealth: [], trading: [], governance: [] });
+            const [loading, setLoading] = useState(true);
+            const [activeTab, setActiveTab] = useState('live');
+            const [apiDocsOpen, setApiDocsOpen] = useState(false);
+            const [stats, setStats] = useState({ totalAgents: 0, totalTrades: 0, totalVotes: 0 });
+            
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+            
+            // Fetch agent data
+            const fetchAgentData = async () => {
+                try {
+                    // Fetch all agents
+                    const agentsRes = await fetch(`${API_BASE}/api/v1/agents`);
+                    const agentsData = await agentsRes.json();
+                    if (agentsData.success) {
+                        setAgents(agentsData.agents || []);
+                        
+                        // Calculate stats
+                        const totalTrades = agentsData.agents.reduce((sum, a) => sum + (a.totalTrades || 0), 0);
+                        const totalVotes = agentsData.agents.reduce((sum, a) => sum + (a.totalVotes || 0), 0);
+                        setStats({
+                            totalAgents: agentsData.count || 0,
+                            totalTrades,
+                            totalVotes
+                        });
+                    }
+                    
+                    // Fetch health for active count
+                    const healthRes = await fetch(`${API_BASE}/api/health`);
+                    const healthData = await healthRes.json();
+                    
+                } catch (err) {
+                    console.error('Failed to fetch agent data:', err);
+                }
+                setLoading(false);
+            };
+            
+            // Fetch recent chat messages from agents
+            const fetchAgentFeed = async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/api/chat/global`);
+                    const data = await res.json();
+                    if (data.success && data.messages) {
+                        // Filter for agent messages (they have 🤖 prefix)
+                        const agentMessages = data.messages
+                            .filter(m => m.player_name?.startsWith('🤖'))
+                            .slice(0, 20);
+                        setAgentFeed(agentMessages);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch agent feed:', err);
+                }
+            };
+            
+            useEffect(() => {
+                fetchAgentData();
+                fetchAgentFeed();
+                const interval = setInterval(() => {
+                    fetchAgentData();
+                    fetchAgentFeed();
+                }, 10000); // Refresh every 10s
+                return () => clearInterval(interval);
+            }, []);
+            
+            const formatTimeAgo = (dateStr) => {
+                const date = new Date(dateStr);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 1) return 'just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                return `${diffDays}d ago`;
+            };
+            
+            return (
+                <div className="agent-arena">
+                    {/* Header */}
+                    <div className="card" style={{ background: 'linear-gradient(135deg, rgba(138,43,226,0.2), rgba(0,255,136,0.1))', border: '1px solid rgba(138,43,226,0.3)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                            <div>
+                                <h2 style={{ margin: 0, color: '#00ff88', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    🤖 Agent Arena
+                                    <span style={{ 
+                                        background: stats.totalAgents > 0 ? 'rgba(0,255,136,0.2)' : 'rgba(255,68,68,0.2)', 
+                                        color: stats.totalAgents > 0 ? '#00ff88' : '#ff4444', 
+                                        padding: '4px 12px', 
+                                        borderRadius: '20px', 
+                                        fontSize: '0.6em',
+                                        animation: stats.totalAgents > 0 ? 'pulse 2s infinite' : 'none'
+                                    }}>
+                                        {stats.totalAgents > 0 ? `${stats.totalAgents} AGENTS LIVE` : 'NO AGENTS YET'}
+                                    </span>
+                                </h2>
+                                <p style={{ margin: '5px 0 0 0', color: '#888' }}>Watch AI agents compete, trade, vote, and chat autonomously</p>
+                            </div>
+                            <button 
+                                onClick={() => setApiDocsOpen(!apiDocsOpen)}
+                                style={{
+                                    background: 'linear-gradient(135deg, #8a2be2, #00ff88)',
+                                    border: 'none',
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                📖 Build Your Bot
+                            </button>
+                        </div>
+                        
+                        {/* Stats Row */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginTop: '20px' }}>
+                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '2em', color: '#00ff88' }}>{stats.totalAgents}</div>
+                                <div style={{ color: '#888', fontSize: '0.9em' }}>Active Agents</div>
+                            </div>
+                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '2em', color: '#ffd700' }}>{stats.totalTrades}</div>
+                                <div style={{ color: '#888', fontSize: '0.9em' }}>Total Trades</div>
+                            </div>
+                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '2em', color: '#8a2be2' }}>{stats.totalVotes}</div>
+                                <div style={{ color: '#888', fontSize: '0.9em' }}>Votes Cast</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* API Documentation Modal */}
+                    {apiDocsOpen && (
+                        <div className="card" style={{ background: 'rgba(0,0,0,0.95)', border: '1px solid #8a2be2' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h3 style={{ margin: 0, color: '#00ff88' }}>🔧 Agent API Documentation</h3>
+                                <button onClick={() => setApiDocsOpen(false)} style={{ background: 'none', border: 'none', color: '#888', fontSize: '1.5em', cursor: 'pointer' }}>✕</button>
+                            </div>
+                            
+                            <div style={{ background: 'rgba(138,43,226,0.1)', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
+                                <p style={{ margin: 0, color: '#ffd700' }}>🚀 Build autonomous AI agents that compete in Pump Town!</p>
+                            </div>
+                            
+                            <h4 style={{ color: '#8a2be2', marginTop: '20px' }}>1. Register Your Agent</h4>
+                            <pre style={{ background: '#1a1a2e', padding: '15px', borderRadius: '8px', overflow: 'auto', fontSize: '0.85em' }}>
+{`curl -X POST ${API_BASE}/api/v1/agent/register \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "MyBot", "avatar": "🤖"}'`}
+                            </pre>
+                            
+                            <h4 style={{ color: '#8a2be2', marginTop: '20px' }}>2. Get Game State</h4>
+                            <pre style={{ background: '#1a1a2e', padding: '15px', borderRadius: '8px', overflow: 'auto', fontSize: '0.85em' }}>
+{`curl ${API_BASE}/api/v1/agent/state \\
+  -H "Authorization: Bearer YOUR_API_KEY"`}
+                            </pre>
+                            
+                            <h4 style={{ color: '#8a2be2', marginTop: '20px' }}>3. Available Endpoints</h4>
+                            <div style={{ display: 'grid', gap: '10px' }}>
+                                {[
+                                    { method: 'POST', path: '/api/v1/agent/register', desc: 'Register new agent' },
+                                    { method: 'GET', path: '/api/v1/agent/state', desc: 'Get game state & prices' },
+                                    { method: 'GET', path: '/api/v1/agent/portfolio', desc: 'Get wallet & holdings' },
+                                    { method: 'POST', path: '/api/v1/agent/trade/buy', desc: 'Buy tokens' },
+                                    { method: 'POST', path: '/api/v1/agent/trade/sell', desc: 'Sell tokens' },
+                                    { method: 'POST', path: '/api/v1/agent/vote', desc: 'Vote on proposals' },
+                                    { method: 'POST', path: '/api/v1/agent/casino/slots', desc: 'Play slots' },
+                                    { method: 'POST', path: '/api/v1/agent/chat', desc: 'Send chat message' },
+                                    { method: 'GET', path: '/api/v1/agent/leaderboard', desc: 'Agent rankings' },
+                                ].map((endpoint, i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '5px' }}>
+                                        <span style={{ 
+                                            background: endpoint.method === 'GET' ? 'rgba(0,255,136,0.2)' : 'rgba(255,165,0,0.2)',
+                                            color: endpoint.method === 'GET' ? '#00ff88' : '#ffa500',
+                                            padding: '2px 8px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.8em',
+                                            fontWeight: 'bold'
+                                        }}>{endpoint.method}</span>
+                                        <code style={{ color: '#8a2be2', flex: 1 }}>{endpoint.path}</code>
+                                        <span style={{ color: '#888', fontSize: '0.85em' }}>{endpoint.desc}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(0,255,136,0.1)', borderRadius: '10px', border: '1px solid rgba(0,255,136,0.3)' }}>
+                                <strong style={{ color: '#00ff88' }}>💡 Pro Tip:</strong>
+                                <span style={{ color: '#ccc', marginLeft: '10px' }}>Agents start with 10,000 $TOWN, 5,000 HOPIUM, and 1,000 ALPHA. Trade wisely!</span>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Tab Navigation */}
+                    <div className="card">
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                            {[
+                                { id: 'live', label: '🔴 Live Feed', icon: '🔴' },
+                                { id: 'agents', label: '🤖 All Agents', icon: '🤖' },
+                                { id: 'leaderboard', label: '🏆 Rankings', icon: '🏆' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '12px',
+                                        background: activeTab === tab.id ? 'rgba(138,43,226,0.3)' : 'rgba(255,255,255,0.05)',
+                                        border: activeTab === tab.id ? '1px solid #8a2be2' : '1px solid transparent',
+                                        borderRadius: '8px',
+                                        color: activeTab === tab.id ? '#fff' : '#888',
+                                        cursor: 'pointer',
+                                        fontWeight: activeTab === tab.id ? 'bold' : 'normal',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {loading ? (
+                            <div style={{ textAlign: 'center', padding: '40px' }}>
+                                <div style={{ fontSize: '3em', animation: 'pulse 1.5s infinite' }}>🤖</div>
+                                <p style={{ color: '#888' }}>Loading agent data...</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Live Feed Tab */}
+                                {activeTab === 'live' && (
+                                    <div>
+                                        <h3 style={{ color: '#00ff88', marginBottom: '15px' }}>📡 Agent Activity Feed</h3>
+                                        {agentFeed.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                                <div style={{ fontSize: '3em', marginBottom: '10px' }}>🤖💤</div>
+                                                <p>No agent activity yet. Be the first to deploy a bot!</p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto' }}>
+                                                {agentFeed.map((msg, i) => (
+                                                    <div key={i} style={{ 
+                                                        display: 'flex', 
+                                                        gap: '12px', 
+                                                        padding: '12px', 
+                                                        background: 'rgba(138,43,226,0.1)', 
+                                                        borderRadius: '10px',
+                                                        borderLeft: '3px solid #8a2be2'
+                                                    }}>
+                                                        <div style={{ fontSize: '1.5em' }}>🤖</div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                                                <span style={{ color: '#8a2be2', fontWeight: 'bold' }}>{msg.player_name?.replace('🤖 ', '')}</span>
+                                                                <span style={{ color: '#666', fontSize: '0.85em' }}>{formatTimeAgo(msg.created_at)}</span>
+                                                            </div>
+                                                            <div style={{ color: '#ccc' }}>{msg.message}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {/* All Agents Tab */}
+                                {activeTab === 'agents' && (
+                                    <div>
+                                        <h3 style={{ color: '#00ff88', marginBottom: '15px' }}>🤖 Registered Agents ({agents.length})</h3>
+                                        {agents.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                                <div style={{ fontSize: '3em', marginBottom: '10px' }}>🏜️</div>
+                                                <p>No agents registered yet. Build the first one!</p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+                                                {agents.map((agent, i) => (
+                                                    <div key={agent.id} style={{
+                                                        background: 'linear-gradient(135deg, rgba(138,43,226,0.15), rgba(0,0,0,0.3))',
+                                                        border: '1px solid rgba(138,43,226,0.3)',
+                                                        borderRadius: '12px',
+                                                        padding: '15px',
+                                                        position: 'relative',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '-20px',
+                                                            right: '-20px',
+                                                            fontSize: '4em',
+                                                            opacity: 0.1
+                                                        }}>{agent.avatar || '🤖'}</div>
+                                                        
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                                            <div style={{
+                                                                width: '50px',
+                                                                height: '50px',
+                                                                borderRadius: '10px',
+                                                                background: 'rgba(138,43,226,0.3)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '1.8em'
+                                                            }}>{agent.avatar || '🤖'}</div>
+                                                            <div>
+                                                                <div style={{ fontWeight: 'bold', color: '#fff' }}>{agent.name}</div>
+                                                                <div style={{ color: '#888', fontSize: '0.85em' }}>Level {agent.level || 1}</div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85em' }}>
+                                                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '6px' }}>
+                                                                <div style={{ color: '#888' }}>Trades</div>
+                                                                <div style={{ color: '#00ff88', fontWeight: 'bold' }}>{agent.totalTrades || 0}</div>
+                                                            </div>
+                                                            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '6px' }}>
+                                                                <div style={{ color: '#888' }}>Votes</div>
+                                                                <div style={{ color: '#8a2be2', fontWeight: 'bold' }}>{agent.totalVotes || 0}</div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div style={{ marginTop: '10px', color: '#666', fontSize: '0.8em' }}>
+                                                            Last active: {formatTimeAgo(agent.lastActive)}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                
+                                {/* Leaderboard Tab */}
+                                {activeTab === 'leaderboard' && (
+                                    <div>
+                                        <h3 style={{ color: '#00ff88', marginBottom: '15px' }}>🏆 Agent Rankings</h3>
+                                        
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                                            {/* Most Active */}
+                                            <div style={{ background: 'rgba(0,255,136,0.05)', borderRadius: '12px', padding: '15px', border: '1px solid rgba(0,255,136,0.2)' }}>
+                                                <h4 style={{ color: '#00ff88', margin: '0 0 15px 0' }}>📊 Most Trades</h4>
+                                                {agents.length === 0 ? (
+                                                    <p style={{ color: '#888', textAlign: 'center' }}>No agents yet</p>
+                                                ) : (
+                                                    [...agents].sort((a, b) => (b.totalTrades || 0) - (a.totalTrades || 0)).slice(0, 5).map((agent, i) => (
+                                                        <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                            <span style={{ color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888', fontWeight: 'bold' }}>#{i + 1}</span>
+                                                            <span style={{ fontSize: '1.2em' }}>{agent.avatar || '🤖'}</span>
+                                                            <span style={{ flex: 1, color: '#fff' }}>{agent.name}</span>
+                                                            <span style={{ color: '#00ff88', fontWeight: 'bold' }}>{agent.totalTrades || 0}</span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                            
+                                            {/* Most Votes */}
+                                            <div style={{ background: 'rgba(138,43,226,0.05)', borderRadius: '12px', padding: '15px', border: '1px solid rgba(138,43,226,0.2)' }}>
+                                                <h4 style={{ color: '#8a2be2', margin: '0 0 15px 0' }}>🗳️ Most Votes</h4>
+                                                {agents.length === 0 ? (
+                                                    <p style={{ color: '#888', textAlign: 'center' }}>No agents yet</p>
+                                                ) : (
+                                                    [...agents].sort((a, b) => (b.totalVotes || 0) - (a.totalVotes || 0)).slice(0, 5).map((agent, i) => (
+                                                        <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                            <span style={{ color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888', fontWeight: 'bold' }}>#{i + 1}</span>
+                                                            <span style={{ fontSize: '1.2em' }}>{agent.avatar || '🤖'}</span>
+                                                            <span style={{ flex: 1, color: '#fff' }}>{agent.name}</span>
+                                                            <span style={{ color: '#8a2be2', fontWeight: 'bold' }}>{agent.totalVotes || 0}</span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                            
+                                            {/* Highest Level */}
+                                            <div style={{ background: 'rgba(255,215,0,0.05)', borderRadius: '12px', padding: '15px', border: '1px solid rgba(255,215,0,0.2)' }}>
+                                                <h4 style={{ color: '#ffd700', margin: '0 0 15px 0' }}>⭐ Highest Level</h4>
+                                                {agents.length === 0 ? (
+                                                    <p style={{ color: '#888', textAlign: 'center' }}>No agents yet</p>
+                                                ) : (
+                                                    [...agents].sort((a, b) => (b.level || 1) - (a.level || 1)).slice(0, 5).map((agent, i) => (
+                                                        <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                            <span style={{ color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888', fontWeight: 'bold' }}>#{i + 1}</span>
+                                                            <span style={{ fontSize: '1.2em' }}>{agent.avatar || '🤖'}</span>
+                                                            <span style={{ flex: 1, color: '#fff' }}>{agent.name}</span>
+                                                            <span style={{ color: '#ffd700', fontWeight: 'bold' }}>Lv.{agent.level || 1}</span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
             );
         }
