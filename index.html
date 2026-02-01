@@ -16350,6 +16350,55 @@
                 const saved = localStorage.getItem('pumptown_pending_action');
                 return saved ? JSON.parse(saved) : null;
             });
+            
+            // Generate initial history entries for a fresh page
+            const generateInitialHistory = () => {
+                const npcNames = ['DiamondDegen', 'PumpKing', 'MoonBoi', 'CryptoChad', 'WhaleWatcher', 'GigaBrain', 'TokenTitan', 'AlphaApe', 'YoloYeti', 'BasedBaron'];
+                const actionTypes = [
+                    { id: 'launch', icon: '🚀', outcomes: [
+                        { result: 'win', text: 'Coin pumped 500%! Legendary.', repMin: 10, repMax: 20 },
+                        { result: 'neutral', text: 'Modest 2x. Not bad.', repMin: 3, repMax: 8 },
+                        { result: 'loss', text: 'Dumped 90%. RIP.', repMin: -15, repMax: -5 }
+                    ]},
+                    { id: 'snipe', icon: '🎯', outcomes: [
+                        { result: 'win', text: 'Sniped the bottom! Easy 3x.', repMin: 8, repMax: 15 },
+                        { result: 'neutral', text: 'Got in, broke even.', repMin: 1, repMax: 5 },
+                        { result: 'loss', text: 'Sniped a rug. Ouch.', repMin: -12, repMax: -3 }
+                    ]},
+                    { id: 'hold', icon: '💎', outcomes: [
+                        { result: 'win', text: 'Diamond hands paid off! 10x.', repMin: 12, repMax: 25 },
+                        { result: 'neutral', text: 'Held steady. No movement.', repMin: 2, repMax: 6 },
+                        { result: 'loss', text: 'Held too long. Dumped on.', repMin: -8, repMax: -2 }
+                    ]},
+                    { id: 'dump', icon: '📉', outcomes: [
+                        { result: 'win', text: 'Sold the top! Perfect timing.', repMin: 8, repMax: 18 },
+                        { result: 'neutral', text: 'Sold too early. Could be worse.', repMin: 1, repMax: 4 },
+                        { result: 'loss', text: 'Paper handed before the pump.', repMin: -10, repMax: -3 }
+                    ]}
+                ];
+                
+                const history = [];
+                for (let i = 0; i < 10; i++) {
+                    const npc = npcNames[Math.floor(Math.random() * npcNames.length)];
+                    const actionType = actionTypes[Math.floor(Math.random() * actionTypes.length)];
+                    const outcome = actionType.outcomes[Math.floor(Math.random() * actionType.outcomes.length)];
+                    const repChange = Math.floor(Math.random() * (outcome.repMax - outcome.repMin + 1)) + outcome.repMin;
+                    
+                    history.push({
+                        id: Date.now() - (i * 3600000) - Math.floor(Math.random() * 3600000),
+                        player: npc,
+                        action: actionType.id,
+                        actionIcon: actionType.icon,
+                        outcome: outcome.result,
+                        outcomeText: outcome.text,
+                        repChange: repChange,
+                        multiplier: Math.random() > 0.7 ? { value: Math.random() > 0.5 ? 2 : 1.5, rarity: Math.random() > 0.5 ? 'rare' : 'uncommon', icon: Math.random() > 0.5 ? '✨' : '⭐' } : { value: 1, rarity: 'common', icon: '' },
+                        timestamp: Date.now() - (i * 3600000) - Math.floor(Math.random() * 3600000)
+                    });
+                }
+                return history;
+            };
+            
             const [actionHistory, setActionHistory] = useState(() => {
                 const saved = localStorage.getItem('pumptown_action_history');
                 return saved ? JSON.parse(saved) : generateInitialHistory();
