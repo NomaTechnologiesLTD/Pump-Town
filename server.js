@@ -6414,6 +6414,274 @@ app.get('/api/city-recap', async (req, res) => {
   } catch(err) { console.error('City recap error:',err.message); res.json({success:false}); }
 });
 
+// ==================== DYNAMIC CITY SITUATIONS ====================
+
+app.get('/api/city-situations', async (req, res) => {
+  try {
+    const playerName = req.query.player || 'Citizen';
+    const location = req.query.location || 'random';
+    const cityStats = await getCityStats();
+    const npcLives = cityLiveData.npcLives || {};
+    
+    // Find NPCs in interesting states
+    const drunkNpcs = NPC_CITIZENS.filter(n => npcLives[n] && npcLives[n].drunk > 2);
+    const brokeNpcs = NPC_CITIZENS.filter(n => npcLives[n] && npcLives[n].bankrupt);
+    const unhingedNpcs = NPC_CITIZENS.filter(n => npcLives[n] && npcLives[n].status === 'unhinged');
+    const wantedNpcs = NPC_CITIZENS.filter(n => npcLives[n] && npcLives[n].wanted);
+    const richNpcs = NPC_CITIZENS.filter(n => npcLives[n] && npcLives[n].wealth > 30000);
+    const coupledNpcs = NPC_CITIZENS.filter(n => npcLives[n] && npcLives[n].partner);
+    
+    // Location-based situation generators
+    const locationSituations = {
+      casino: function() {
+        const npc1 = pick(NPC_CITIZENS); const npc2 = pick(NPC_CITIZENS.filter(n=>n!==npc1));
+        const drunk = drunkNpcs.length > 0 ? pick(drunkNpcs) : null;
+        const situations = [
+          { title: npc1 + ' is going ALL IN', desc: npc1.replace(/_/g,' ') + ' just put their ENTIRE net worth on red at the roulette table. A crowd is gathering. The energy is insane.', icon: '🎰',
+            choices: [
+              { id: 'cheer', label: '🔥 Cheer them on', desc: 'Hype them up! What could go wrong?', risk: 'low', rewards: {xp:50,rep:5}, consequences: 'The crowd goes wild' },
+              { id: 'bet_with', label: '💰 Match their bet', desc: 'Put your own money on the line', risk: 'high', rewards: {xp:200,hopium:500,rep:20}, failRewards: {xp:25,hopium:-200,rep:-10}, consequences: 'You\'re in this together now' },
+              { id: 'warn', label: '⚠️ Try to stop them', desc: 'This is a terrible idea and they need to hear it', risk: 'none', rewards: {xp:30,rep:10}, consequences: 'They might not listen...' },
+              { id: 'film', label: '📱 Record it', desc: 'This is going viral either way', risk: 'low', rewards: {xp:80,rep:-5}, consequences: 'Content is content' }
+            ]
+          },
+          { title: 'High-Stakes Poker Showdown', desc: npc1.replace(/_/g,' ') + ' and ' + npc2.replace(/_/g,' ') + ' are in a poker game that\'s been going for 6 hours. The pot is ' + (rand(10000,100000)) + ' TOWN. There\'s an empty seat.', icon: '🃏',
+            choices: [
+              { id: 'join', label: '🪑 Take the seat', desc: 'Buy in and play. Minimum ' + rand(1000,5000) + ' TOWN', risk: 'high', rewards: {xp:300,hopium:1000,rep:25}, failRewards: {xp:50,hopium:-500,rep:-15}, consequences: 'The table goes quiet as you sit down' },
+              { id: 'watch', label: '👀 Watch and learn', desc: 'Study their tells', risk: 'none', rewards: {xp:100,alpha:50}, consequences: 'You notice ' + npc1.replace(/_/g,' ') + ' blinks when they bluff' },
+              { id: 'hustle', label: '🍸 Sell drinks', desc: 'Where there\'s gambling, there\'s thirsty degens', risk: 'low', rewards: {xp:80,hopium:300}, consequences: 'Passive income secured' },
+              { id: 'tip_off', label: '🤫 Slip someone a note', desc: 'Tell ' + npc2.replace(/_/g,' ') + ' that ' + npc1.replace(/_/g,' ') + ' is bluffing', risk: 'medium', rewards: {xp:150,rep:15}, failRewards: {xp:25,rep:-20}, consequences: 'Risky alliance formed' }
+            ]
+          }
+        ];
+        if (drunk) {
+          situations.push({ title: drunk.replace(/_/g,' ') + ' is WASTED at the bar', desc: 'They\'ve been drinking for hours and they\'re trying to place bets on their phone but keep dropping it. They just offered to sell you their "secret alpha" for 100 TOWN.', icon: '🍺',
+            choices: [
+              { id: 'buy_alpha', label: '💰 Buy the alpha', desc: 'Drunk people tell the truth... right?', risk: 'medium', rewards: {xp:100,alpha:200,rep:5}, failRewards: {xp:25,alpha:-50}, consequences: 'They whisper something about ' + pick(NPC_CITIZENS).replace(/_/g,' ') },
+              { id: 'help_home', label: '🏠 Help them home', desc: 'Be a good citizen', risk: 'none', rewards: {xp:50,rep:20}, consequences: 'They\'ll remember this... probably' },
+              { id: 'pickpocket', label: '😈 Check their pockets', desc: 'They won\'t notice...', risk: 'high', rewards: {xp:50,hopium:800,rep:-30}, failRewards: {xp:10,rep:-40}, consequences: 'Crime has consequences' },
+              { id: 'drink_with', label: '🍻 Join them', desc: 'If you can\'t beat them...', risk: 'low', rewards: {xp:60,rep:10,copium:100}, consequences: 'This could go anywhere' }
+            ]
+          });
+        }
+        return pick(situations);
+      },
+      
+      dark_alley: function() {
+        const shady = pick(NPC_CITIZENS);
+        const wanted = wantedNpcs.length > 0 ? pick(wantedNpcs) : pick(NPC_CITIZENS);
+        const situations = [
+          { title: 'Suspicious Deal Going Down', desc: 'You spot ' + shady.replace(/_/g,' ') + ' exchanging something with a hooded figure. They see you and freeze.', icon: '🌙',
+            choices: [
+              { id: 'join', label: '🤝 Ask to join', desc: '"Room for one more?"', risk: 'high', rewards: {xp:200,hopium:600,alpha:100,rep:-15}, failRewards: {xp:25,rep:-25}, consequences: 'You\'re in the underground now' },
+              { id: 'snitch', label: '🚔 Report to Officer McBlock', desc: 'Be a law-abiding citizen', risk: 'low', rewards: {xp:150,rep:25}, consequences: shady.replace(/_/g,' ') + ' will NOT forget this' },
+              { id: 'blackmail', label: '📸 Take a photo for leverage', desc: 'Information is power', risk: 'medium', rewards: {xp:100,alpha:200,rep:-10}, failRewards: {xp:10,rep:-30}, consequences: 'Dangerous game you\'re playing' },
+              { id: 'walk_away', label: '🚶 Keep walking', desc: 'You saw nothing', risk: 'none', rewards: {xp:20}, consequences: 'Smart or cowardly? You decide' }
+            ]
+          },
+          { title: wanted.replace(/_/g,' ') + ' is HIDING here', desc: 'The most wanted NPC in Degens City is hiding behind the dumpster. They look desperate. "Please don\'t tell anyone I\'m here... I\'ll make it worth your while."', icon: '🔍',
+            choices: [
+              { id: 'help_escape', label: '🏃 Help them escape', desc: 'Create a distraction while they run', risk: 'high', rewards: {xp:250,hopium:1000,rep:-20}, failRewards: {xp:25,rep:-40}, consequences: 'You\'re an accomplice now' },
+              { id: 'turn_in', label: '🚔 Turn them in', desc: 'Justice must be served', risk: 'none', rewards: {xp:200,rep:35,hopium:500}, consequences: 'The city thanks you. They do not.' },
+              { id: 'negotiate', label: '💰 What\'s it worth to you?', desc: 'Everyone has a price', risk: 'medium', rewards: {xp:150,hopium:800,alpha:100}, failRewards: {xp:50,hopium:200}, consequences: 'Business is business' },
+              { id: 'hide_too', label: '🫣 Hide with them', desc: '"Actually I\'m running from someone too"', risk: 'low', rewards: {xp:80,rep:5,copium:200}, consequences: 'Weird bonding moment' }
+            ]
+          },
+          { title: 'Underground Token Launch', desc: 'There\'s a secret token launch happening in the basement of an abandoned building. No KYC. No audit. Just pure degeneracy. The password is "WAGMI."', icon: '🕳️',
+            choices: [
+              { id: 'ape_in', label: '🦍 APE IN', desc: 'Say the password and go all in', risk: 'extreme', rewards: {xp:400,hopium:2000,rep:10}, failRewards: {xp:25,hopium:-800,rep:-20}, consequences: 'This is either generational wealth or a generational L' },
+              { id: 'investigate', label: '🔍 Investigate first', desc: 'Check the contract, look for red flags', risk: 'low', rewards: {xp:150,alpha:300}, consequences: 'Knowledge is power' },
+              { id: 'tip_police', label: '🚨 Alert the authorities', desc: 'This is clearly illegal', risk: 'none', rewards: {xp:100,rep:20}, consequences: 'Officer McBlock is on the way' },
+              { id: 'compete', label: '🚀 Launch your OWN token', desc: 'If they can do it, so can you', risk: 'high', rewards: {xp:300,hopium:1500,rep:15}, failRewards: {xp:50,hopium:-400,rep:-25}, consequences: 'Two tokens enter, one survives' }
+            ]
+          }
+        ];
+        return pick(situations);
+      },
+      
+      mayors_office: function() {
+        const approval = cityEngine.mayorApproval;
+        const chaos = cityEngine.chaosLevel;
+        const situations = [
+          { title: 'Mayor ' + cityEngine.currentMayor + ' Wants a Word', desc: approval < 40 ? 'The Mayor looks stressed. Papers everywhere. "Listen, my approval is at ' + approval + '%. I need help. YOU could be useful..."' : 'The Mayor grins. "Citizen! Good timing. I have a... special project. Very legal. Very cool."', icon: '🏛️',
+            choices: [
+              { id: 'accept_mission', label: '🤝 Accept the mission', desc: 'Whatever it is, you\'re in', risk: 'medium', rewards: {xp:250,rep:20,hopium:500}, failRewards: {xp:50,rep:-15}, consequences: 'You\'re now the Mayor\'s agent' },
+              { id: 'demand_pay', label: '💰 "What\'s in it for me?"', desc: 'Nothing is free in Degens City', risk: 'low', rewards: {xp:150,hopium:800,rep:-5}, consequences: 'The Mayor respects the hustle' },
+              { id: 'spy', label: '🕵️ Pretend to accept, spy on the Mayor', desc: 'Play both sides', risk: 'high', rewards: {xp:300,alpha:300,rep:10}, failRewards: {xp:25,rep:-35}, consequences: 'Information is the real currency' },
+              { id: 'refuse', label: '✋ "I don\'t work for politicians"', desc: 'Stay independent', risk: 'none', rewards: {xp:50,rep:15}, consequences: 'The Mayor notes your name...' }
+            ]
+          },
+          { title: 'Secret Documents Found!', desc: 'A janitor slips you a folder they found in the Mayor\'s trash. It contains plans for ' + pick(['a secret casino under City Hall', 'rigging the next election', 'a massive airdrop only for insiders', 'defunding the police to fund a statue of themselves', 'selling the city to ' + pick(NPC_CITIZENS).replace(/_/g,' ')]) + '.', icon: '📂',
+            choices: [
+              { id: 'publish', label: '📰 Leak it to the press', desc: 'The citizens deserve to know!', risk: 'medium', rewards: {xp:300,rep:30,alpha:200}, failRewards: {xp:50,rep:-20}, consequences: 'BREAKING NEWS incoming' },
+              { id: 'sell', label: '💰 Sell it to the highest bidder', desc: 'Someone will pay good money for this', risk: 'medium', rewards: {xp:200,hopium:1200}, failRewards: {xp:50,hopium:200}, consequences: 'Capitalism baby' },
+              { id: 'confront', label: '😤 Confront the Mayor directly', desc: '"Explain THIS."', risk: 'high', rewards: {xp:350,rep:25}, failRewards: {xp:50,rep:-25}, consequences: 'This could go very wrong or very right' },
+              { id: 'shred', label: '🗑️ Destroy the evidence', desc: 'You never saw anything', risk: 'none', rewards: {xp:30}, consequences: 'Plausible deniability' }
+            ]
+          }
+        ];
+        if (chaos > 60) {
+          situations.push({ title: 'City Hall is ON FIRE (metaphorically)', desc: 'Chaos at ' + chaos + '%. The Mayor is hiding under their desk. Staff is running. Someone needs to take charge RIGHT NOW.', icon: '🔥',
+            choices: [
+              { id: 'take_charge', label: '👑 Step up and lead', desc: 'Someone has to', risk: 'medium', rewards: {xp:400,rep:40,hopium:300}, failRewards: {xp:100,rep:-15}, consequences: 'All eyes on you' },
+              { id: 'loot', label: '😈 Loot the treasury while everyone\'s distracted', desc: 'Never let a crisis go to waste', risk: 'extreme', rewards: {xp:200,hopium:3000,rep:-50}, failRewards: {xp:25,hopium:-500,rep:-60}, consequences: 'If caught, you\'re done for' },
+              { id: 'evacuate', label: '🏃 Help evacuate citizens', desc: 'Be the hero', risk: 'low', rewards: {xp:250,rep:30}, consequences: 'The city remembers heroes' },
+              { id: 'vlog', label: '📱 Livestream the chaos', desc: '"CONTENT! CONTENT! CONTENT!"', risk: 'low', rewards: {xp:150,copium:300,rep:-10}, consequences: 'Viral moment incoming' }
+            ]
+          });
+        }
+        return pick(situations);
+      },
+      
+      trading_floor: function() {
+        const sentiment = cityEngine.marketSentiment;
+        const npc = pick(NPC_CITIZENS);
+        const situations = [
+          { title: 'FLASH CRASH in progress!', desc: 'The trading floor is PANDEMONIUM. Screens are red. ' + npc.replace(/_/g,' ') + ' is screaming. Someone is crying in the corner. Your portfolio is down ' + rand(20,80) + '% in 5 minutes.', icon: '📉',
+            choices: [
+              { id: 'buy_dip', label: '🛒 BUY THE DIP', desc: '"Blood in the streets = buy signal"', risk: 'high', rewards: {xp:300,hopium:1500,rep:15}, failRewards: {xp:50,hopium:-600,rep:-10}, consequences: 'Either genius or insane' },
+              { id: 'panic_sell', label: '📄 SELL EVERYTHING', desc: 'Paper hands activated', risk: 'low', rewards: {xp:100,hopium:200,rep:-10}, consequences: 'At least you have SOMETHING left' },
+              { id: 'short', label: '📊 SHORT IT', desc: 'Bet against the market', risk: 'extreme', rewards: {xp:400,hopium:2500,rep:5}, failRewards: {xp:25,hopium:-1000,rep:-15}, consequences: 'Bears eat too' },
+              { id: 'comfort', label: '🫂 Comfort the crying trader', desc: 'Check on the person in the corner', risk: 'none', rewards: {xp:80,rep:20,copium:200}, consequences: 'They were holding 100x leverage' }
+            ]
+          },
+          { title: npc.replace(/_/g,' ') + ' Claims to Have Found a 100x', desc: '"BRO. BRO. Look at this chart. Look at the tokenomics. This is LITERALLY free money. I\'m going all in and if you don\'t follow you\'re NGMI."', icon: '🚀',
+            choices: [
+              { id: 'follow', label: '🦍 APE WITH THEM', desc: 'WAGMI or NGMI together', risk: 'high', rewards: {xp:250,hopium:1200,rep:10}, failRewards: {xp:50,hopium:-500,rep:-10}, consequences: 'You\'re in this together' },
+              { id: 'dyor', label: '🔍 DYOR first', desc: 'Check the contract, team, liquidity', risk: 'low', rewards: {xp:150,alpha:200}, consequences: 'Patience might pay off' },
+              { id: 'front_run', label: '😈 Front-run them', desc: 'Buy before they do, sell when they pump it', risk: 'extreme', rewards: {xp:200,hopium:2000,rep:-25}, failRewards: {xp:25,hopium:-800,rep:-30}, consequences: 'Degens eat degens' },
+              { id: 'counter', label: '📉 Short their pick', desc: 'Bet against the hype', risk: 'high', rewards: {xp:200,hopium:1000,rep:-5}, failRewards: {xp:50,hopium:-400}, consequences: 'Contrarian play' }
+            ]
+          }
+        ];
+        return pick(situations);
+      },
+      
+      courthouse: function() {
+        const defendant = pick(NPC_CITIZENS);
+        const crime = pick(['rug pulling','pump and dump','tax evasion','impersonating the mayor','insider trading','running an unlicensed casino','starting a cult','public intoxication']);
+        const situations = [
+          { title: 'Trial of ' + defendant.replace(/_/g,' '), desc: defendant.replace(/_/g,' ') + ' stands accused of ' + crime + '. Judge HashRate asks the gallery: "Does anyone wish to speak on behalf of or against the accused?"', icon: '⚖️',
+            choices: [
+              { id: 'defend', label: '🛡️ Defend them', desc: '"Your Honor, my client is innocent!"', risk: 'medium', rewards: {xp:200,rep:15}, failRewards: {xp:50,rep:-10}, consequences: defendant.replace(/_/g,' ') + ' owes you one' },
+              { id: 'prosecute', label: '⚔️ Testify against them', desc: '"I saw EVERYTHING, Your Honor"', risk: 'low', rewards: {xp:150,rep:10,hopium:300}, consequences: 'Justice served (maybe)' },
+              { id: 'bribe_judge', label: '💰 Bribe the judge', desc: 'Slip Judge HashRate a fat stack', risk: 'extreme', rewards: {xp:100,rep:-20}, failRewards: {xp:25,rep:-40}, consequences: 'If this works, you control the outcome' },
+              { id: 'object', label: '📢 "OBJECTION!"', desc: 'Just yell it. You\'re not even a lawyer.', risk: 'low', rewards: {xp:80,rep:5,copium:150}, consequences: 'Judge HashRate is NOT amused' }
+            ]
+          }
+        ];
+        return pick(situations);
+      },
+      
+      town_square: function() {
+        const npc1 = pick(NPC_CITIZENS); const npc2 = pick(NPC_CITIZENS.filter(n=>n!==npc1));
+        const coupled = coupledNpcs.length > 0 ? pick(coupledNpcs) : null;
+        const situations = [
+          { title: 'PROTEST breaking out!', desc: 'A group led by ' + npc1.replace(/_/g,' ') + ' is protesting outside City Hall. Signs read: "' + pick([
+              'MAYOR IS A RUG PULLER', 'WHERE DID THE TREASURY GO?!', 'LOWER GAS FEES NOW', 'NPCs HAVE RIGHTS TOO', 'FREE ' + pick(NPC_CITIZENS).replace(/_/g,' ').toUpperCase()
+            ]) + '". The crowd is growing.', icon: '✊',
+            choices: [
+              { id: 'join_protest', label: '✊ Join the protest', desc: 'POWER TO THE PEOPLE!', risk: 'medium', rewards: {xp:200,rep:20,copium:200}, failRewards: {xp:50,rep:-15}, consequences: 'The movement grows' },
+              { id: 'counter_protest', label: '🎩 Counter-protest for the Mayor', desc: '"The Mayor is FINE actually"', risk: 'medium', rewards: {xp:150,hopium:400,rep:-10}, failRewards: {xp:50,rep:-20}, consequences: 'You might get heckled' },
+              { id: 'sell_merch', label: '👕 Sell protest merch', desc: 'Capitalism finds a way', risk: 'low', rewards: {xp:100,hopium:600}, consequences: 'The hustle never stops' },
+              { id: 'document', label: '📰 Report on it', desc: 'Write the definitive article', risk: 'none', rewards: {xp:120,alpha:150,rep:10}, consequences: 'Your article gets shared around the city' }
+            ]
+          },
+          { title: npc1.replace(/_/g,' ') + ' vs ' + npc2.replace(/_/g,' ') + ' — PUBLIC FIGHT', desc: 'It started as an argument about ' + pick(['which token is better','who stole whose trading strategy','a romantic betrayal','a bad meme','who\'s the bigger degen']) + ' and now they\'re literally squaring up in the town square. A crowd forms.', icon: '👊',
+            choices: [
+              { id: 'break_up', label: '🕊️ Break it up', desc: 'Step between them', risk: 'medium', rewards: {xp:150,rep:25}, failRewards: {xp:50,rep:-5}, consequences: 'You might catch a stray' },
+              { id: 'bet', label: '💰 Start taking bets', desc: '"I got 500 on ' + npc1.replace(/_/g,' ') + '!"', risk: 'low', rewards: {xp:100,hopium:500,rep:-5}, consequences: 'The bookie emerges' },
+              { id: 'fight_winner', label: '⚔️ Challenge the winner', desc: 'Assert dominance', risk: 'extreme', rewards: {xp:350,rep:30}, failRewards: {xp:50,rep:-20}, consequences: 'LEGENDARY move if you win' },
+              { id: 'record', label: '📱 Record and commentate', desc: '"AND DOWN GOES ' + npc2.replace(/_/g,' ').toUpperCase() + '!!!"', risk: 'none', rewards: {xp:80,copium:100,rep:5}, consequences: 'WorldStarDegenCity.exe' }
+            ]
+          }
+        ];
+        return pick(situations);
+      },
+      
+      underground: function() {
+        const situations = [
+          { title: 'Secret Society Recruitment', desc: 'A figure in a hood hands you a card: "We\'ve been watching you, ' + playerName + '. The Order of the Diamond Hands meets at midnight. Will you join us?" The card has a strange symbol.', icon: '🔺',
+            choices: [
+              { id: 'accept', label: '🔺 Accept the invitation', desc: 'Join the secret society', risk: 'high', rewards: {xp:400,alpha:500,rep:10}, failRewards: {xp:50,rep:-15}, consequences: 'You\'re initiated into something big' },
+              { id: 'infiltrate', label: '🕵️ Accept but plan to expose them', desc: 'Go undercover', risk: 'extreme', rewards: {xp:500,rep:40,alpha:300}, failRewards: {xp:50,rep:-50}, consequences: 'Double agent life' },
+              { id: 'decline', label: '✋ "I work alone"', desc: 'Lone wolf energy', risk: 'none', rewards: {xp:50,rep:5}, consequences: 'They nod respectfully... for now' },
+              { id: 'steal_card', label: '😈 Take the card and run', desc: 'Maybe you can sell this to someone', risk: 'medium', rewards: {xp:100,hopium:400,rep:-15}, failRewards: {xp:25,rep:-25}, consequences: 'They WILL come looking for you' }
+            ]
+          }
+        ];
+        return pick(situations);
+      }
+    };
+    
+    // Pick location or random
+    const locations = ['casino','dark_alley','mayors_office','trading_floor','courthouse','town_square','underground'];
+    const chosenLocation = location === 'random' ? pick(locations) : (locationSituations[location] ? location : pick(locations));
+    const situation = locationSituations[chosenLocation]();
+    
+    res.json({ success: true, location: chosenLocation, situation });
+  } catch(err) {
+    console.error('City situations error:', err.message);
+    res.json({ success: false, error: 'Failed to generate situation' });
+  }
+});
+
+app.post('/api/city-situations/resolve', async (req, res) => {
+  try {
+    const { playerName, location, situationTitle, choiceId, choiceLabel, risk } = req.body;
+    if (!playerName || !choiceId) return res.status(400).json({ success: false });
+    
+    // Calculate success based on risk
+    const successChance = { none: 1.0, low: 0.85, medium: 0.65, high: 0.45, extreme: 0.30 };
+    const success = Math.random() < (successChance[risk] || 0.5);
+    
+    // Generate aftermath narrative
+    const successNarratives = [
+      'It worked! The crowd erupts. ' + playerName + ' pulls it off!',
+      'Against all odds, ' + playerName + ' comes out on top. Legendary.',
+      'Smooth execution. ' + playerName + ' walks away with everything.',
+      'The city will talk about this for days. ' + playerName + ' is a legend.',
+      pick(NPC_CITIZENS).replace(/_/g,' ') + ' watches in disbelief as ' + playerName + ' actually does it.'
+    ];
+    const failNarratives = [
+      'It goes sideways. ' + playerName + ' didn\'t see that coming.',
+      'Not the outcome ' + playerName + ' was hoping for. The crowd winces.',
+      pick(NPC_CITIZENS).replace(/_/g,' ') + ' shakes their head. "I could have told you that wouldn\'t work..."',
+      'Well... that happened. ' + playerName + ' walks away with lessons learned.',
+      'The Mayor will probably hear about this one. Not great for ' + playerName + '.'
+    ];
+    
+    const narrative = success ? pick(successNarratives) : pick(failNarratives);
+    
+    // Post to global chat
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, 
+      ['📍 ' + (location||'City').replace(/_/g,' ').toUpperCase(), '⚡ ' + playerName + ' ' + (choiceLabel||'made a move') + (success ? ' — SUCCESS! 🏆' : ' — it didn\'t go as planned 💀')]
+    );
+    
+    // NPC reaction in chat
+    const reactor = pick(NPC_CITIZENS);
+    const npc = NPC_PROFILES[reactor];
+    setTimeout(async () => {
+      try {
+        const reaction = success 
+          ? pick(['@' + playerName + ' absolute CHAD move 🏆', '@' + playerName + ' ok I see you... respect', '@' + playerName + ' GOATED. ' + pick(npc.catchphrases), 'did @' + playerName + ' really just do that?! LEGEND'])
+          : pick(['@' + playerName + ' LMAOO what did you think was gonna happen 💀', '@' + playerName + ' F in chat...', '@' + playerName + ' that\'s rough buddy. ' + pick(npc.catchphrases), 'moment of silence for @' + playerName + '... 😔']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [reactor, reaction]);
+      } catch(e) {}
+    }, rand(3000, 8000));
+    
+    // Log to activity feed
+    await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1,$2,$3,$4)`,
+      [playerName, 'city_situation', situationTitle + ' — ' + (choiceLabel||'choice made'), success ? '🏆' : '💀']
+    );
+    
+    res.json({ success: true, outcome: success ? 'success' : 'fail', narrative });
+  } catch(err) {
+    console.error('Resolve situation error:', err.message);
+    res.json({ success: false });
+  }
+});
+
 // ==================== NPC PLAYER TARGETING ====================
 
 async function npcTargetPlayer() {
