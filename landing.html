@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Degens City — AI-Governed City Simulation</title>
+    <meta name="description" content="An AI-governed city simulation where the Mayor is an AI, NPCs live soap opera lives, and citizens vote on the fate of the city. Play free now.">
+    <meta property="og:title" content="Degens City — AI-Governed City Simulation">
+    <meta property="og:description" content="The AI Mayor governs. Citizens vote. NPCs have soap operas. Welcome to the most unhinged city simulation on the internet.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://degenscity.com">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Degens City — AI-Governed City Simulation">
+    <meta name="twitter:description" content="The AI Mayor governs. Citizens vote. NPCs have soap operas. Welcome to the most unhinged city simulation on the internet.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --neon-purple: #a855f7;
+            --neon-gold: #ffd700;
+            --neon-green: #00ff88;
+            --neon-red: #ff4444;
+            --neon-blue: #4488ff;
+            --bg-deep: #0a0a0f;
+            --bg-card: #111118;
+            --bg-card-hover: #16161f;
+            --text-primary: #f0f0f0;
+            --text-muted: #777;
+            --glow-purple: 0 0 30px rgba(168, 85, 247, 0.3);
+            --glow-gold: 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== ANIMATED BACKGROUND ===== */
+        .bg-grid {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(168, 85, 247, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(168, 85, 247, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .bg-glow-1 {
+            position: fixed;
+            top: -200px; right: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+            animation: drift1 20s ease-in-out infinite;
+        }
+
+        .bg-glow-2 {
+            position: fixed;
+            bottom: -200px; left: -200px;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.06) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+            animation: drift2 25s ease-in-out infinite;
+        }
+
+        @keyframes drift1 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-80px, 80px); }
+        }
+
+        @keyframes drift2 {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(60px, -60px); }
+        }
+
+        /* ===== SCANLINE OVERLAY ===== */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.015) 2px,
+                rgba(0, 0, 0, 0.015) 4px
+            );
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ===== NAV ===== */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+            transition: background 0.3s;
+        }
+
+        .nav-logo {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 1.3em;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--neon-gold), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95em;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover { color: var(--neon-gold); }
+
+        .nav-cta {
+            background: linear-gradient(135deg, var(--neon-purple), #7c3aed);
+            color: white !important;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 700 !important;
+            letter-spacing: 1.5px;
+            transition: transform 0.2s, box-shadow 0.3s !important;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-purple);
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-size: 0.85em;
+            color: var(--neon-purple);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 32px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .hero-badge .pulse {
+            width: 8px; height: 8px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4); }
+            50% { opacity: 0.8; box-shadow: 0 0 0 8px rgba(0, 255, 136, 0); }
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: clamp(3em, 8vw, 6.5em);
+            line-height: 1.05;
+            letter-spacing: 3px;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+        }
+
+        .hero h1 .gold { color: var(--neon-gold); text-shadow: 0 0 40px rgba(255, 215, 0, 0.3); }
+        .hero h1 .purple { color: var(--neon-purple); text-shadow: 0 0 40px rgba(168, 85, 247, 0.3); }
+
+        .hero-sub {
+            font-size: clamp(1.1em, 2.5vw, 1.5em);
+            color: var(--text-muted);
+            max-width: 620px;
+            margin-bottom: 48px;
+            font-weight: 300;
+            animation: fadeInUp 0.8s ease-out 0.25s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, var(--neon-gold), #e6a800);
+            color: #0a0a0f;
+            padding: 18px 42px;
+            border-radius: 12px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 1.1em;
+            letter-spacing: 2px;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: transform 0.2s, box-shadow 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--glow-gold), 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
+            color: var(--text-primary);
+            padding: 18px 42px;
+            border-radius: 12px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 1.05em;
+            letter-spacing: 1.5px;
+            text-decoration: none;
+            text-transform: uppercase;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--neon-purple);
+            background: rgba(168, 85, 247, 0.05);
+        }
+
+        /* ===== LIVE TICKER ===== */
+        .ticker-section {
+            position: relative;
+            z-index: 2;
+            overflow: hidden;
+            border-top: 1px solid rgba(168, 85, 247, 0.1);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+            background: rgba(17, 17, 24, 0.6);
+            padding: 14px 0;
+        }
+
+        .ticker-track {
+            display: flex;
+            gap: 48px;
+            animation: ticker 40s linear infinite;
+            width: max-content;
+        }
+
+        .ticker-item {
+            white-space: nowrap;
+            font-size: 0.9em;
+            font-weight: 500;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .ticker-item .icon { margin-right: 6px; }
+        .ticker-item .green { color: var(--neon-green); }
+        .ticker-item .red { color: var(--neon-red); }
+        .ticker-item .gold { color: var(--neon-gold); }
+        .ticker-item .purple { color: var(--neon-purple); }
+
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ===== SECTION GENERIC ===== */
+        section {
+            position: relative;
+            z-index: 2;
+            padding: 100px 24px;
+        }
+
+        .section-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75em;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--neon-purple);
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(1.8em, 4vw, 2.8em);
+            font-weight: 900;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        .section-desc {
+            font-size: 1.15em;
+            color: var(--text-muted);
+            max-width: 600px;
+            font-weight: 300;
+            margin-bottom: 48px;
+        }
+
+        /* ===== FEATURES GRID ===== */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-purple), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .feature-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(168, 85, 247, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .feature-card:hover::before { opacity: 1; }
+
+        .feature-icon {
+            font-size: 2.2em;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .feature-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .feature-desc {
+            color: var(--text-muted);
+            font-size: 0.95em;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        /* ===== HOW IT WORKS ===== */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 32px;
+            margin-top: 48px;
+        }
+
+        .step {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .step-number {
+            font-family: 'Orbitron', monospace;
+            font-size: 3em;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 16px;
+        }
+
+        .step-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .step-desc {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            font-weight: 400;
+        }
+
+        /* ===== CITY STATS LIVE ===== */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-top: 48px;
+        }
+
+        .stat-box {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 2em;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .stat-value.green { color: var(--neon-green); }
+        .stat-value.gold { color: var(--neon-gold); }
+        .stat-value.purple { color: var(--neon-purple); }
+        .stat-value.red { color: var(--neon-red); }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* ===== MAYOR SECTION ===== */
+        .mayor-section {
+            background: linear-gradient(180deg, transparent, rgba(168, 85, 247, 0.03), transparent);
+        }
+
+        .mayor-quote-box {
+            max-width: 700px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), rgba(75, 0, 130, 0.12));
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 20px;
+            padding: 48px;
+            text-align: center;
+            position: relative;
+        }
+
+        .mayor-quote-box::before {
+            content: '"';
+            position: absolute;
+            top: 16px; left: 32px;
+            font-size: 4em;
+            color: rgba(168, 85, 247, 0.15);
+            font-family: Georgia, serif;
+            line-height: 1;
+        }
+
+        .mayor-emoji {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .mayor-quote {
+            font-size: 1.35em;
+            font-weight: 400;
+            font-style: italic;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .mayor-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8em;
+            letter-spacing: 3px;
+            color: var(--neon-purple);
+            font-weight: 700;
+        }
+
+        /* ===== LOCATIONS PREVIEW ===== */
+        .locations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .location-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 14px;
+            padding: 28px 24px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .location-card:hover {
+            border-color: rgba(255, 215, 0, 0.2);
+            transform: translateY(-3px);
+            background: var(--bg-card-hover);
+        }
+
+        .location-icon { font-size: 2.4em; margin-bottom: 12px; display: block; }
+
+        .location-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .location-desc {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* ===== CTA SECTION ===== */
+        .cta-section {
+            text-align: center;
+            padding: 120px 24px;
+        }
+
+        .cta-section h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2em, 5vw, 3.5em);
+            font-weight: 900;
+            margin-bottom: 16px;
+        }
+
+        .cta-section .cta-sub {
+            font-size: 1.15em;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            position: relative;
+            z-index: 2;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 40px 24px;
+        }
+
+        .footer-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-brand {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.85em;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover { color: var(--neon-gold); }
+
+        .footer-copy {
+            width: 100%;
+            text-align: center;
+            margin-top: 24px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.75em;
+            letter-spacing: 1px;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== MOBILE ===== */
+        .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+        .hamburger span { display: block; width: 24px; height: 2px; background: var(--text-primary); margin: 5px 0; transition: all 0.3s; }
+
+        @media (max-width: 768px) {
+            nav { padding: 14px 20px; }
+
+            .hamburger { display: block; z-index: 101; }
+            .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            .hamburger.active span:nth-child(2) { opacity: 0; }
+            .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+            .nav-links {
+                position: fixed;
+                top: 0; right: -100%;
+                width: 280px; height: 100vh;
+                background: rgba(10, 10, 15, 0.98);
+                flex-direction: column;
+                justify-content: center;
+                padding: 40px;
+                gap: 24px;
+                transition: right 0.3s;
+                border-left: 1px solid rgba(168, 85, 247, 0.1);
+            }
+
+            .nav-links.open { right: 0; }
+
+            .hero { padding: 100px 20px 60px; }
+            .hero h1 { letter-spacing: 1px; }
+            .hero-buttons { flex-direction: column; align-items: stretch; }
+            .btn-primary, .btn-secondary { justify-content: center; }
+
+            .features-grid { grid-template-columns: 1fr; }
+            .steps { grid-template-columns: 1fr; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .locations-grid { grid-template-columns: repeat(2, 1fr); }
+
+            .mayor-quote-box { padding: 32px 24px; }
+
+            section { padding: 60px 20px; }
+        }
+
+        @media (max-width: 420px) {
+            .stats-bar { grid-template-columns: 1fr; }
+            .locations-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background effects -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+    <div class="scanlines"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-logo">DEGENS CITY</div>
+        <button class="hamburger" onclick="this.classList.toggle('active'); document.getElementById('navLinks').classList.toggle('open');" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#explore">Explore</a></li>
+            <li><a href="#mayor">Mayor</a></li>
+            <li><a href="/play" class="nav-cta">Play Now</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-badge"><span class="pulse"></span> City Engine Running — 30+ AI Events Active</div>
+        <h1><span class="gold">DEGENS</span><br><span class="purple">CITY</span></h1>
+        <p class="hero-sub">An AI-governed city simulation. The Mayor is an AI. NPCs live soap opera lives. You vote on the fate of the city. Total chaos, fully autonomous.</p>
+        <div class="hero-buttons">
+            <a href="/play" class="btn-primary">⚡ Enter the City</a>
+            <a href="#features" class="btn-secondary">↓ See How It Works</a>
+        </div>
+    </section>
+
+    <!-- Live Ticker -->
+    <div class="ticker-section">
+        <div class="ticker-track">
+            <span class="ticker-item"><span class="icon">🎩</span> Mayor Satoshi issued a new decree <span class="purple">— "Tax the paper hands!"</span></span>
+            <span class="ticker-item"><span class="icon">🚔</span> Police arrested <span class="red">DumpItDave</span> for rug-pulling</span>
+            <span class="ticker-item"><span class="icon">💔</span> NPC Drama: <span class="gold">MoonBoi</span> caught cheating on <span class="gold">DiamondHands</span></span>
+            <span class="ticker-item"><span class="icon">📊</span> City morale at <span class="green">72%</span> — economy booming</span>
+            <span class="ticker-item"><span class="icon">⚖️</span> Courthouse: <span class="purple">Case #847</span> — insider trading verdict pending</span>
+            <span class="ticker-item"><span class="icon">🎰</span> Casino: <span class="gold">CryptoKing</span> won 50,000 $DEGEN at the slots</span>
+            <span class="ticker-item"><span class="icon">🗳️</span> New vote: Should we <span class="green">legalize memecoins</span> or <span class="red">ban leverage</span>?</span>
+            <span class="ticker-item"><span class="icon">🔥</span> Underground market activity <span class="red">spiking</span></span>
+            <!-- Duplicate for seamless loop -->
+            <span class="ticker-item"><span class="icon">🎩</span> Mayor Satoshi issued a new decree <span class="purple">— "Tax the paper hands!"</span></span>
+            <span class="ticker-item"><span class="icon">🚔</span> Police arrested <span class="red">DumpItDave</span> for rug-pulling</span>
+            <span class="ticker-item"><span class="icon">💔</span> NPC Drama: <span class="gold">MoonBoi</span> caught cheating on <span class="gold">DiamondHands</span></span>
+            <span class="ticker-item"><span class="icon">📊</span> City morale at <span class="green">72%</span> — economy booming</span>
+            <span class="ticker-item"><span class="icon">⚖️</span> Courthouse: <span class="purple">Case #847</span> — insider trading verdict pending</span>
+            <span class="ticker-item"><span class="icon">🎰</span> Casino: <span class="gold">CryptoKing</span> won 50,000 $DEGEN at the slots</span>
+            <span class="ticker-item"><span class="icon">🗳️</span> New vote: Should we <span class="green">legalize memecoins</span> or <span class="red">ban leverage</span>?</span>
+            <span class="ticker-item"><span class="icon">🔥</span> Underground market activity <span class="red">spiking</span></span>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <section id="features">
+        <div class="section-inner fade-in">
+            <div class="section-label">What Makes This Different</div>
+            <h2 class="section-title">Not a game. A living, breathing city.</h2>
+            <p class="section-desc">Every 45 seconds, the city engine runs — generating crimes, feuds, soap operas, market shifts, and mayoral decisions. You're not just watching. You're shaping it.</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🎩</span>
+                    <h3 class="feature-title">AI Mayor</h3>
+                    <p class="feature-desc">Mayor Satoshi McPump governs the city using Claude AI. He issues decrees, roasts citizens, makes prophecies, and goes fully unhinged when chaos levels spike.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🍿</span>
+                    <h3 class="feature-title">NPC Soap Operas</h3>
+                    <p class="feature-desc">AI-generated characters live persistent lives — love triangles, betrayals, feuds, and dramatic breakups that escalate across multiple episodes.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🗳️</span>
+                    <h3 class="feature-title">Governance Votes</h3>
+                    <p class="feature-desc">The Mayor proposes policies. Citizens vote. The outcomes reshape the city — economy, crime, morale, and everything in between.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🗺️</span>
+                    <h3 class="feature-title">Explore the City</h3>
+                    <p class="feature-desc">Visit 7 distinct locations — Casino, Dark Alley, Trading Floor, Courthouse, Mayor's Office, Town Square, and the Underground. Each generates unique AI situations.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎰</span>
+                    <h3 class="feature-title">Casino & Trading</h3>
+                    <p class="feature-desc">Slots, coin flip, prediction markets, and a full crypto trading simulator with 100+ tokens. Risk your reputation and city standing.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">⚡</span>
+                    <h3 class="feature-title">30+ Autonomous Events</h3>
+                    <p class="feature-desc">The city engine runs 24/7 — crimes, arrests, market crashes, NPC drama, underground activity, and mayoral meltdowns happen whether you're watching or not.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Explore the City -->
+    <section id="explore" style="background: linear-gradient(180deg, transparent, rgba(255, 215, 0, 0.02), transparent);">
+        <div class="section-inner fade-in">
+            <div class="section-label">Explore</div>
+            <h2 class="section-title">7 Locations. Infinite chaos.</h2>
+            <p class="section-desc">Each location pulls from live city state to generate dynamic encounters you can interact with.</p>
+            <div class="locations-grid">
+                <div class="location-card">
+                    <span class="location-icon">🎰</span>
+                    <h3 class="location-name">Casino</h3>
+                    <p class="location-desc">High-stakes games and shady deals</p>
+                </div>
+                <div class="location-card">
+                    <span class="location-icon">🌑</span>
+                    <h3 class="location-name">Dark Alley</h3>
+                    <p class="location-desc">Black markets and whispered secrets</p>
+                </div>
+                <div class="location-card">
+                    <span class="location-icon">🏛️</span>
+                    <h3 class="location-name">Mayor's Office</h3>
+                    <p class="location-desc">Petition the AI Mayor directly</p>
+                </div>
+                <div class="location-card">
+                    <span class="location-icon">📈</span>
+                    <h3 class="location-name">Trading Floor</h3>
+                    <p class="location-desc">Volatile markets, insider tips</p>
+                </div>
+                <div class="location-card">
+                    <span class="location-icon">⚖️</span>
+                    <h3 class="location-name">Courthouse</h3>
+                    <p class="location-desc">Trials, verdicts, and drama</p>
+                </div>
+                <div class="location-card">
+                    <span class="location-icon">🏛️</span>
+                    <h3 class="location-name">Town Square</h3>
+                    <p class="location-desc">Public debates and announcements</p>
+                </div>
+                <div class="location-card">
+                    <span class="location-icon">🕳️</span>
+                    <h3 class="location-name">Underground</h3>
+                    <p class="location-desc">The deepest, dirtiest secrets</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mayor Quote -->
+    <section id="mayor" class="mayor-section">
+        <div class="section-inner fade-in">
+            <div class="section-label">Meet the Mayor</div>
+            <h2 class="section-title">Mayor Satoshi McPump</h2>
+            <p class="section-desc">Powered by Claude AI. Governing the city, roasting the citizens, and losing his mind on a regular basis.</p>
+            <div class="mayor-quote-box">
+                <span class="mayor-emoji">🎩</span>
+                <p class="mayor-quote">Listen up, degens. This city runs on chaos and I run this city. You don't like my policies? Vote me out. Oh wait — you can't. I'm an AI. Now pay your taxes.</p>
+                <div class="mayor-name">— Mayor Satoshi McPump</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section>
+        <div class="section-inner fade-in">
+            <div class="section-label">Getting Started</div>
+            <h2 class="section-title">How to play</h2>
+            <p class="section-desc">Free to play. No wallet needed. No downloads. Just pick a character and enter the city.</p>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">01</div>
+                    <h3 class="step-title">Choose Your Character</h3>
+                    <p class="step-desc">Pick your degen identity — trader, hustler, politician, or wildcard. Each has unique perks.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">02</div>
+                    <h3 class="step-title">Explore the City</h3>
+                    <p class="step-desc">Visit locations, encounter AI-generated situations, and make choices that affect the city.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">03</div>
+                    <h3 class="step-title">Vote & Shape Policy</h3>
+                    <p class="step-desc">The Mayor proposes. You vote. The city evolves based on collective decisions.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">04</div>
+                    <h3 class="step-title">Watch the Chaos</h3>
+                    <p class="step-desc">NPCs live their lives, drama unfolds, the economy swings. No two sessions are the same.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- City Stats -->
+    <section style="background: linear-gradient(180deg, transparent, rgba(0, 255, 136, 0.02), transparent);">
+        <div class="section-inner fade-in">
+            <div class="section-label">Live Data</div>
+            <h2 class="section-title">City never sleeps</h2>
+            <p class="section-desc">The autonomous engine runs 24/7. These are real-time vibes.</p>
+            <div class="stats-bar">
+                <div class="stat-box">
+                    <div class="stat-value green" id="stat-morale">—</div>
+                    <div class="stat-label">Morale</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value red" id="stat-crime">—</div>
+                    <div class="stat-label">Crime Rate</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value gold" id="stat-treasury">—</div>
+                    <div class="stat-label">Treasury</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value purple" id="stat-events">—</div>
+                    <div class="stat-label">Events Today</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="cta-section">
+        <div class="section-inner fade-in">
+            <h2><span style="color: var(--neon-gold);">Ready</span> to enter?</h2>
+            <p class="cta-sub">Free to play. No wallet. No download. Just pure, AI-powered degen chaos.</p>
+            <a href="/play" class="btn-primary">⚡ Enter Degens City</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">DEGENS CITY</div>
+            <ul class="footer-links">
+                <li><a href="https://x.com/DegensCity" target="_blank" rel="noopener">𝕏 Twitter</a></li>
+                <li><a href="https://www.moltbook.com/u/DegensCityNews" target="_blank" rel="noopener">Moltbook</a></li>
+                <li><a href="/play">Play</a></li>
+            </ul>
+            <div class="footer-copy">© 2026 Noma Technologies LTD. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <!-- Scroll animations -->
+    <script>
+        // Intersection Observer for fade-in animations
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in').forEach(function(el) {
+            observer.observe(el);
+        });
+
+        // Try to fetch live city stats
+        (function() {
+            var API = 'https://pump-town-backend-production.up.railway.app';
+            fetch(API + '/api/game-state')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data && data.stats) {
+                        var s = data.stats;
+                        var morale = document.getElementById('stat-morale');
+                        var crime = document.getElementById('stat-crime');
+                        var treasury = document.getElementById('stat-treasury');
+                        var events = document.getElementById('stat-events');
+                        if (morale && s.morale != null) morale.textContent = Math.round(s.morale) + '%';
+                        if (crime && s.crime != null) crime.textContent = Math.round(s.crime) + '%';
+                        if (treasury && s.treasury != null) treasury.textContent = '$' + Number(s.treasury).toLocaleString();
+                        if (events) events.textContent = (s.totalEvents || s.eventsToday || '24/7');
+                    }
+                })
+                .catch(function() {
+                    // Fallback static values
+                    var el = document.getElementById('stat-morale'); if (el) el.textContent = '72%';
+                    el = document.getElementById('stat-crime'); if (el) el.textContent = '34%';
+                    el = document.getElementById('stat-treasury'); if (el) el.textContent = '$1.2M';
+                    el = document.getElementById('stat-events'); if (el) el.textContent = '24/7';
+                });
+        })();
+    </script>
+
+</body>
+</html>
