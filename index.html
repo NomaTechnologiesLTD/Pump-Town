@@ -535,6 +535,493 @@
             }
         }
         
+        /* ==================== COMPREHENSIVE MOBILE FIXES ==================== */
+        
+        /* --- Hamburger / Ticker overlap fix (all mobile) --- */
+        @media (max-width: 1024px) {
+            .price-ticker {
+                padding-left: 70px !important; /* Clear the hamburger button */
+                font-size: 0.8em !important;
+            }
+            
+            .ticker-item {
+                padding: 3px 8px !important;
+                gap: 4px !important;
+                font-size: 0.8em !important;
+            }
+            
+            .ticker-item img {
+                width: 14px !important;
+                height: 14px !important;
+            }
+            
+            /* ActionsPage sections - tighten padding */
+            .actions-section {
+                padding: 20px !important;
+                margin-bottom: 20px !important;
+            }
+            
+            .mayor-section {
+                padding: 18px !important;
+                margin-bottom: 20px !important;
+            }
+            
+            .mayor-avatar {
+                width: 55px !important;
+                height: 55px !important;
+                font-size: 1.5em !important;
+            }
+            
+            .mayor-header {
+                gap: 12px !important;
+            }
+            
+            .mayor-message {
+                padding: 15px !important;
+            }
+            
+            /* Live feed mobile */
+            .live-feed-section {
+                padding: 12px !important;
+            }
+            
+            .live-feed-item {
+                padding: 6px 10px !important;
+                gap: 8px !important;
+                font-size: 0.85em !important;
+            }
+            
+            .feed-player {
+                max-width: 100px !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+            }
+            
+            /* Momentum meter mobile */
+            .momentum-meter-section {
+                padding: 12px 15px !important;
+            }
+            
+            /* Market update banner mobile */
+            .market-update-banner {
+                padding: 12px 15px !important;
+                gap: 10px !important;
+                flex-wrap: wrap !important;
+            }
+            
+            .update-dismiss {
+                position: absolute !important;
+                top: 8px !important;
+                right: 8px !important;
+            }
+            
+            /* Cycle timer mobile */
+            .cycle-timer-box {
+                padding: 15px !important;
+            }
+            
+            .cycle-timer-time {
+                font-size: 1.8em !important;
+            }
+            
+            /* Next update timer */
+            .next-update-timer {
+                font-size: 0.85em !important;
+            }
+            
+            /* Mayor chat mobile */
+            .mayor-chat {
+                padding: 12px !important;
+            }
+            
+            .mayor-chat-messages {
+                max-height: 200px !important;
+            }
+            
+            .mayor-chat-input {
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            
+            .mayor-chat-input input {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            
+            .mayor-chat-input button {
+                width: 100% !important;
+            }
+            
+            /* Prediction buttons mobile */
+            .prediction-buttons {
+                flex-wrap: wrap !important;
+            }
+            
+            .prediction-btn {
+                flex: 1 !important;
+                min-width: 80px !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .price-ticker {
+                padding-left: 65px !important;
+                padding-right: 10px !important;
+                font-size: 0.75em !important;
+            }
+            
+            .ticker-item {
+                padding: 2px 6px !important;
+                font-size: 0.75em !important;
+            }
+            
+            /* Action grid already goes to 2 cols at 768 - that's fine */
+            
+            /* Action cards tighter on tablet */
+            .action-card {
+                padding: 18px 12px !important;
+            }
+            
+            .action-icon {
+                font-size: 2em !important;
+            }
+            
+            .action-desc {
+                font-size: 0.75em !important;
+            }
+            
+            /* Mayor header stacks on smaller tablets */
+            .mayor-header {
+                flex-wrap: wrap !important;
+            }
+            
+            /* Inline grids: force 2-col for 4-col grids */
+            .agent-arena [style*="repeat(4"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            
+            /* Page header smaller */
+            .page-title {
+                font-size: 1.5em !important;
+                gap: 10px !important;
+            }
+            
+            .page-subtitle {
+                font-size: 0.85em !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .price-ticker {
+                padding-left: 60px !important;
+                font-size: 0.7em !important;
+            }
+            
+            .ticker-item {
+                padding: 2px 5px !important;
+                font-size: 0.7em !important;
+                gap: 3px !important;
+            }
+            
+            .ticker-item img {
+                width: 12px !important;
+                height: 12px !important;
+            }
+            
+            .ticker-change {
+                display: none !important; /* Hide change % on very small screens to save space */
+            }
+            
+            /* Action grid single column on phones */
+            .action-grid {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            
+            /* Action cards horizontal layout on single column */
+            .action-card {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                padding: 12px 15px !important;
+                gap: 12px !important;
+                text-align: left !important;
+            }
+            
+            .action-card .action-icon {
+                font-size: 1.8em !important;
+                margin-bottom: 0 !important;
+                flex-shrink: 0 !important;
+            }
+            
+            .action-card .action-name {
+                font-size: 1em !important;
+                margin-bottom: 2px !important;
+            }
+            
+            .action-card .action-risk {
+                margin-bottom: 2px !important;
+            }
+            
+            .action-card .action-desc {
+                font-size: 0.7em !important;
+                display: -webkit-box !important;
+                -webkit-line-clamp: 2 !important;
+                -webkit-box-orient: vertical !important;
+                overflow: hidden !important;
+            }
+            
+            /* Actions section tighter */
+            .actions-section {
+                padding: 15px !important;
+                border-radius: 12px !important;
+            }
+            
+            .actions-header h2 {
+                font-size: 1.1em !important;
+            }
+            
+            /* Mayor section compact */
+            .mayor-section {
+                padding: 12px !important;
+                border-radius: 12px !important;
+            }
+            
+            .mayor-avatar {
+                width: 45px !important;
+                height: 45px !important;
+                font-size: 1.3em !important;
+                border-width: 2px !important;
+            }
+            
+            .mayor-header {
+                gap: 10px !important;
+                margin-bottom: 12px !important;
+            }
+            
+            .mayor-info h3 {
+                font-size: 0.95em !important;
+            }
+            
+            .mayor-message {
+                padding: 10px 12px !important;
+            }
+            
+            .mayor-message p {
+                font-size: 0.85em !important;
+                line-height: 1.5 !important;
+            }
+            
+            /* Live feed compact */
+            .live-feed-section {
+                padding: 10px !important;
+                max-height: 160px !important;
+                border-radius: 12px !important;
+            }
+            
+            .live-feed-header h3 {
+                font-size: 0.85em !important;
+            }
+            
+            .live-feed-item {
+                padding: 5px 8px !important;
+                gap: 6px !important;
+                font-size: 0.8em !important;
+            }
+            
+            .feed-player {
+                max-width: 70px !important;
+                font-size: 0.8em !important;
+            }
+            
+            .feed-message {
+                font-size: 0.8em !important;
+            }
+            
+            .feed-time {
+                display: none !important; /* Save space */
+            }
+            
+            /* Momentum bars compact */
+            .momentum-meter-section {
+                padding: 10px 12px !important;
+                border-radius: 12px !important;
+            }
+            
+            .momentum-header h3 {
+                font-size: 0.85em !important;
+            }
+            
+            .momentum-label {
+                font-size: 0.75em !important;
+            }
+            
+            /* Cycle timer compact */
+            .cycle-timer-box {
+                padding: 12px !important;
+                border-radius: 12px !important;
+            }
+            
+            .cycle-timer-time {
+                font-size: 1.5em !important;
+            }
+            
+            .cycle-timer-label,
+            .cycle-timer-info {
+                font-size: 0.8em !important;
+            }
+            
+            /* Mayor chat compact */
+            .mayor-chat {
+                padding: 10px !important;
+                border-radius: 12px !important;
+            }
+            
+            .mayor-chat-header {
+                font-size: 0.9em !important;
+                padding: 8px 10px !important;
+            }
+            
+            .mayor-chat-messages {
+                max-height: 150px !important;
+                padding: 8px !important;
+            }
+            
+            .mayor-chat-message {
+                font-size: 0.85em !important;
+                padding: 6px 8px !important;
+            }
+            
+            /* Confirm action button full width */
+            .confirm-action-btn {
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            
+            /* Page header more compact */
+            .page-header {
+                margin-bottom: 15px !important;
+                padding-bottom: 10px !important;
+            }
+            
+            .page-title {
+                font-size: 1.2em !important;
+                gap: 8px !important;
+            }
+            
+            .page-subtitle {
+                font-size: 0.8em !important;
+            }
+            
+            /* Inline 4-col grids → 2-col on phone */
+            .agent-arena [style*="repeat(4"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+            
+            /* Inline 3-col grids → 1-col on phone */
+            .agent-arena [style*="repeat(3"] {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Prediction section compact */
+            .prediction-section {
+                padding: 10px !important;
+            }
+            
+            .prediction-buttons {
+                gap: 6px !important;
+            }
+            
+            .prediction-btn {
+                padding: 8px 12px !important;
+                font-size: 0.85em !important;
+            }
+            
+            /* Pending action box */
+            .pending-action-box {
+                padding: 15px !important;
+            }
+            
+            /* Market update banner compact */
+            .market-update-banner {
+                padding: 10px 12px !important;
+                font-size: 0.85em !important;
+                border-radius: 10px !important;
+            }
+            
+            .update-icon {
+                font-size: 1.3em !important;
+            }
+            
+            .update-title {
+                font-size: 0.9em !important;
+            }
+            
+            .update-message {
+                font-size: 0.8em !important;
+            }
+        }
+        
+        /* --- Prevent ALL inline-style grids from overflowing on mobile --- */
+        @media (max-width: 600px) {
+            /* Any div with inline grid of 4+ cols */
+            div[style*="repeat(4, 1fr)"],
+            div[style*="repeat(5, 1fr)"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            
+            div[style*="repeat(7, 1fr)"] {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+        
+        @media (max-width: 390px) {
+            /* iPhone SE / very small phones */
+            .price-ticker {
+                padding-left: 55px !important;
+                font-size: 0.65em !important;
+            }
+            
+            .sidebar-toggle {
+                top: 48px !important;
+                left: 8px !important;
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 1.1em !important;
+            }
+            
+            .main-content {
+                padding: 8px !important;
+                padding-top: 105px !important;
+            }
+            
+            /* Action cards even more compact */
+            .action-card {
+                padding: 10px 12px !important;
+            }
+            
+            .action-card .action-icon {
+                font-size: 1.5em !important;
+            }
+            
+            .action-card .action-desc {
+                display: none !important; /* Hide descriptions on tiny screens */
+            }
+            
+            /* 4-col inline grids → full stack */
+            div[style*="repeat(4, 1fr)"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 6px !important;
+            }
+            
+            /* 2-col inline grids → stack on tiny screens */
+            .app div[style*="1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        
         /* New class for arcade mini games grid */
         .arcade-mini-games {
             display: grid;
@@ -7223,6 +7710,7 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            box-sizing: border-box;
         }
 
         .ticker-content {
@@ -15162,6 +15650,23 @@
                     >
                         {sidebarOpen ? '✕' : '☰'}
                     </button>
+                    
+                    {/* Mobile sidebar overlay */}
+                    {sidebarOpen && (
+                        <div 
+                            style={{
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'rgba(0,0,0,0.6)',
+                                zIndex: 998,
+                                display: window.innerWidth <= 1024 ? 'block' : 'none'
+                            }}
+                            onClick={() => setSidebarOpen(false)}
+                        />
+                    )}
                     
                     {/* Sidebar */}
                     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
