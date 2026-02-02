@@ -1048,6 +1048,31 @@ Be dramatic, use crypto slang, mention any stats that are critically low (<30) o
 
 // ==================== AUTH ENDPOINTS ====================
 
+// Track guest signups - sends notification to admin
+async function trackGuestSignup(guestId) {
+  if (!process.env.RESEND_API_KEY) {
+    console.log('⚠️ RESEND_API_KEY not set - skipping guest tracking');
+    return;
+  }
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Degens City <mayor@degenscity.com>',
+        to: 'pumptownsol@gmail.com',
+        subject: '👻 New Guest Player',
+        html: `<div style="font-family:Arial;background:#1a1a2e;color:#fff;padding:20px;border-radius:10px;"><h2 style="color:#ffd700;">👻 New Guest Joined</h2><p><strong>Guest ID:</strong> ${guestId}</p><p><strong>Time:</strong> ${new Date().toISOString()}</p></div>`
+      })
+    });
+    if (response.ok) {
+      console.log('📊 Guest tracked:', guestId);
+    }
+  } catch (err) {
+    console.error('Guest tracking error:', err.message);
+  }
+}
+
 async function sendWelcomeEmail(email) {
   if (!process.env.RESEND_API_KEY) {
     console.log('⚠️ RESEND_API_KEY not set - skipping welcome email');
@@ -1133,6 +1158,7 @@ app.post('/api/guest-login', async (req, res) => {
     );
     
     console.log('👻 Guest login:', guestId);
+    trackGuestSignup(guestId); // Track guest creation
     res.json({ success: true, userId: result.rows[0].id, guestId, guestEmail });
   } catch (err) {
     console.error('Guest login error:', err);
