@@ -9,6 +9,8 @@ const crypto = require('crypto');
 const { Pool } = require('pg');
 const Anthropic = require('@anthropic-ai/sdk');
 
+const agentBrain = require('./agent-brain.js');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -486,6 +488,9 @@ async function initDatabase() {
     `);
     
     console.log('✅ Justice System tables initialized');
+
+    // ==================== AGENT BRAIN TABLES ====================
+    await agentBrain.initBrainTables(pool);
 
     console.log('✅ Database tables initialized');
   } catch (err) {
@@ -4037,6 +4042,12 @@ async function cityEventLoop() {
       cityLiveData.lastPlayerTargetTime = now;
     }
     
+    // === AGENT BRAIN - AUTONOMOUS AI DECISIONS ===
+    // NPCs use Claude to decide what to do next (sue, propose laws, challenge, etc.)
+    if (chance(35)) {
+      try { await agentBrain.tick(); } catch(e) { console.error('Agent brain err:', e.message); }
+    }
+    
     // === CITY ENGINE v6 - FULL CHAOS MODE ===
     
     // SOAP OPERA ENGINE (new arc every 8-15 min, escalate every 3-6 min)
@@ -4519,6 +4530,10 @@ function initNpcLives() {
   });
 }
 initNpcLives();
+
+// ---- INITIALIZE AGENT BRAIN ----
+agentBrain.init(pool, anthropic, cityEngine, cityLiveData, NPC_PROFILES, NPC_CITIZENS, getCityStats, updateCityStats);
+agentBrain.registerRoutes(app);
 
 // ---- NPC RELATIONSHIP DRAMA ----
 async function npcRelationshipEvent() {
@@ -6835,6 +6850,7 @@ app.listen(PORT, () => {
   console.log(`🤖 AI Mayor: ${anthropic ? 'ENABLED ✅' : 'DISABLED (set CLAUDE_API_KEY)'}`);
   console.log(`🤖 Agent API: ENABLED ✅`);
   console.log(`⚖️ Justice System: ENABLED ✅`);
+  console.log(`🧠 Agent Brain: ${anthropic ? 'ENABLED ✅ - NPCs think autonomously!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
   console.log(`🎬 Soap Opera Engine: ENABLED ✅`);
   console.log(`👑 Mayor Unhinged: ENABLED ✅`);
   console.log(`🔔 Chaos Notifications: ENABLED ✅`);

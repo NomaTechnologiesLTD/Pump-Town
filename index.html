@@ -15555,7 +15555,8 @@
                 courthouse: { icon: '⚖️', title: 'Courthouse', subtitle: 'Trials, jail, and justice' },
                 social: { icon: '💬', title: 'Social', subtitle: 'Chat & connect with friends' },
                 leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' },
-                docs: { icon: '📖', title: 'Whitepaper', subtitle: 'Learn about Degens City' }
+                docs: { icon: '📖', title: 'Whitepaper', subtitle: 'Learn about Degens City' },
+                brain: { icon: '🧠', title: 'Agent Brain', subtitle: 'Autonomous AI decisions, lawsuits & laws' }
             };
             
             // Render page content based on current page
@@ -16086,6 +16087,11 @@
                         return (
                             <DocsPage />
                         );
+                    
+                    case 'brain':
+                        return (
+                            <AgentBrainPage />
+                        );
                         
                     default:
                         return null;
@@ -16269,6 +16275,13 @@
                         
                         <div className="nav-section">
                             <div className="nav-section-title">Info</div>
+                            <div 
+                                className={`nav-item ${currentPage === 'brain' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('brain'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">🧠</span>
+                                <span className="nav-item-text">Agent Brain</span>
+                            </div>
                             <div 
                                 className={`nav-item ${currentPage === 'docs' ? 'active' : ''}`}
                                 onClick={() => { setCurrentPage('docs'); setSidebarOpen(false); }}
@@ -35377,6 +35390,363 @@ Play at degenscity.com
                             }}
                         />
                     ))}
+                </div>
+            );
+        }
+
+        // ==================== AGENT BRAIN PAGE ====================
+        function AgentBrainPage() {
+            const [activeTab, setActiveTab] = useState('feed');
+            const [actions, setActions] = useState([]);
+            const [lawsuits, setLawsuits] = useState([]);
+            const [laws, setLaws] = useState([]);
+            const [brainStatus, setBrainStatus] = useState(null);
+            const [loading, setLoading] = useState(true);
+            
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+            
+            const fetchData = async () => {
+                try {
+                    const [actionsRes, lawsuitsRes, lawsRes, statusRes] = await Promise.all([
+                        fetch(`${API_BASE}/api/v1/brain/actions`),
+                        fetch(`${API_BASE}/api/v1/brain/lawsuits`),
+                        fetch(`${API_BASE}/api/v1/brain/laws`),
+                        fetch(`${API_BASE}/api/v1/brain/status`)
+                    ]);
+                    
+                    const actionsData = await actionsRes.json();
+                    const lawsuitsData = await lawsuitsRes.json();
+                    const lawsData = await lawsRes.json();
+                    const statusData = await statusRes.json();
+                    
+                    if (actionsData.success) setActions(actionsData.actions || []);
+                    if (lawsuitsData.success) setLawsuits(lawsuitsData.lawsuits || []);
+                    if (lawsData.success) setLaws(lawsData.laws || []);
+                    if (statusData.success) setBrainStatus(statusData.status || null);
+                } catch (err) {
+                    console.error('Brain fetch error:', err);
+                }
+                setLoading(false);
+            };
+            
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 12000);
+                return () => clearInterval(interval);
+            }, []);
+            
+            const timeAgo = (dateStr) => {
+                if (!dateStr) return '';
+                const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+                if (seconds < 60) return `${seconds}s ago`;
+                if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+                if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+                return `${Math.floor(seconds / 86400)}d ago`;
+            };
+            
+            const actionIcons = {
+                sue: '⚖️', propose_law: '📜', challenge: '⚔️', throw_party: '🎉',
+                start_rumor: '🗣️', accuse_crime: '🚨', open_business: '🏪',
+                file_complaint: '📝', form_alliance: '🤝', betray_ally: '🗡️',
+                run_for_mayor: '👑', commit_crime: '💀', dm_player: '💬'
+            };
+            
+            const verdictColors = {
+                sustained: '#ff4444', dismissed: '#00ff88', settled: '#ffd700', filed: '#4ecdc4'
+            };
+            
+            return (
+                <div>
+                    {/* Hero Header */}
+                    <div className="card" style={{ background: 'linear-gradient(135deg, rgba(138,43,226,0.2), rgba(0,255,136,0.1))', border: '1px solid rgba(138,43,226,0.3)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                            <span style={{ fontSize: '2em' }}>🧠</span>
+                            <div>
+                                <h2 style={{ margin: 0, color: '#d580ff' }}>Agent Brain</h2>
+                                <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '0.9em' }}>
+                                    NPCs make real decisions using AI. Watch them sue, scheme, and cause chaos.
+                                </p>
+                            </div>
+                            {brainStatus && brainStatus.enabled && (
+                                <span style={{ marginLeft: 'auto', background: 'rgba(0,255,136,0.15)', color: '#00ff88', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8em', fontWeight: 'bold', animation: 'pulse 2s infinite' }}>
+                                    🟢 LIVE
+                                </span>
+                            )}
+                        </div>
+                        
+                        {/* Brain Stats */}
+                        {brainStatus && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '16px' }}>
+                                {[
+                                    { icon: '🤖', value: brainStatus.totalNpcs || 0, label: 'AI Citizens', color: '#8a2be2' },
+                                    { icon: '⚡', value: actions.length, label: 'Total Actions', color: '#ffd700' },
+                                    { icon: '⚖️', value: lawsuits.length, label: 'Lawsuits', color: '#ff4444' },
+                                    { icon: '📜', value: laws.length, label: 'Laws Proposed', color: '#00ccff' }
+                                ].map((s, i) => (
+                                    <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '14px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.3em' }}>{s.icon}</div>
+                                        <div style={{ fontSize: '1.4em', color: s.color, fontWeight: 'bold' }}>{s.value}</div>
+                                        <div style={{ color: '#888', fontSize: '0.75em' }}>{s.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Tabs */}
+                    <div className="card">
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                            {[
+                                { id: 'feed', label: '⚡ Action Feed' },
+                                { id: 'lawsuits', label: '⚖️ Lawsuits' },
+                                { id: 'laws', label: '📜 Proposed Laws' },
+                                { id: 'debug', label: '🔧 Brain Status' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    style={{
+                                        padding: '8px 18px',
+                                        borderRadius: '20px',
+                                        border: activeTab === tab.id ? '1px solid #8a2be2' : '1px solid #333',
+                                        background: activeTab === tab.id ? 'rgba(138,43,226,0.2)' : 'rgba(255,255,255,0.03)',
+                                        color: activeTab === tab.id ? '#d580ff' : '#888',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85em',
+                                        fontWeight: activeTab === tab.id ? 'bold' : 'normal',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {loading && (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                <div style={{ fontSize: '2em', animation: 'pulse 1.5s infinite' }}>🧠</div>
+                                <p>Syncing with the hive mind...</p>
+                            </div>
+                        )}
+                        
+                        {/* ACTION FEED TAB */}
+                        {!loading && activeTab === 'feed' && (
+                            <div>
+                                {actions.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>🧠💤</div>
+                                        <p>No autonomous actions yet. The NPCs are still warming up their neural networks...</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {actions.slice(0, 30).map((action, i) => (
+                                            <div key={action.id || i} style={{
+                                                background: 'rgba(255,255,255,0.02)',
+                                                border: '1px solid rgba(138,43,226,0.15)',
+                                                borderRadius: '12px',
+                                                padding: '14px 16px',
+                                                transition: 'border-color 0.2s'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                                    <span style={{ fontSize: '1.3em' }}>{actionIcons[action.action_type] || '🧠'}</span>
+                                                    <span style={{ color: '#d580ff', fontWeight: 'bold', fontSize: '0.95em' }}>{action.npc_name}</span>
+                                                    <span style={{ color: '#555', fontSize: '0.85em' }}>
+                                                        {action.action_type?.replace('_', ' ')}
+                                                        {action.target_name && (
+                                                            <span> → <span style={{ color: '#ffd700' }}>{action.target_name}</span></span>
+                                                        )}
+                                                    </span>
+                                                    <span style={{ marginLeft: 'auto', color: '#444', fontSize: '0.75em' }}>{timeAgo(action.created_at)}</span>
+                                                </div>
+                                                {action.description && (
+                                                    <div style={{ color: '#aaa', fontSize: '0.85em', marginLeft: '34px' }}>{action.description}</div>
+                                                )}
+                                                {action.ai_reasoning && (
+                                                    <div style={{ color: '#666', fontSize: '0.78em', marginLeft: '34px', fontStyle: 'italic', marginTop: '4px' }}>
+                                                        💭 "{action.ai_reasoning}"
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* LAWSUITS TAB */}
+                        {!loading && activeTab === 'lawsuits' && (
+                            <div>
+                                {lawsuits.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>⚖️</div>
+                                        <p>No lawsuits filed yet. Give the NPCs some time to get litigious...</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {lawsuits.map((suit, i) => (
+                                            <div key={suit.id || i} style={{
+                                                background: suit.status === 'filed' 
+                                                    ? 'linear-gradient(135deg, rgba(78,205,196,0.08), rgba(0,0,0,0.2))'
+                                                    : 'rgba(255,255,255,0.02)',
+                                                border: `1px solid ${suit.status === 'filed' ? 'rgba(78,205,196,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                                borderRadius: '14px',
+                                                padding: '18px',
+                                                transition: 'all 0.2s'
+                                            }}>
+                                                {/* Case header */}
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontSize: '1.2em' }}>⚖️</span>
+                                                        <span style={{ color: '#888', fontSize: '0.8em', fontFamily: 'monospace' }}>{suit.case_number}</span>
+                                                    </div>
+                                                    <span style={{
+                                                        padding: '3px 12px',
+                                                        borderRadius: '20px',
+                                                        fontSize: '0.75em',
+                                                        fontWeight: 'bold',
+                                                        textTransform: 'uppercase',
+                                                        background: `${verdictColors[suit.status] || '#888'}22`,
+                                                        color: verdictColors[suit.status] || '#888'
+                                                    }}>
+                                                        {suit.status === 'filed' ? '🔴 ACTIVE' : `✅ ${suit.verdict || suit.status}`}
+                                                    </span>
+                                                </div>
+                                                
+                                                {/* Parties */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                                                    <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>{suit.plaintiff_name}</span>
+                                                    <span style={{ color: '#555', fontSize: '0.8em' }}>({suit.plaintiff_type})</span>
+                                                    <span style={{ color: '#888' }}>vs</span>
+                                                    <span style={{ color: '#4ecdc4', fontWeight: 'bold' }}>{suit.defendant_name}</span>
+                                                    <span style={{ color: '#555', fontSize: '0.8em' }}>({suit.defendant_type})</span>
+                                                </div>
+                                                
+                                                {/* Complaint */}
+                                                {suit.complaint && (
+                                                    <div style={{ color: '#aaa', fontSize: '0.85em', marginBottom: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                                        📋 {suit.complaint}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Damages */}
+                                                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '0.82em' }}>
+                                                    <span style={{ color: '#ffd700' }}>💰 Requesting: {(suit.damages_requested || 0).toLocaleString()} TOWN</span>
+                                                    {suit.damages_awarded > 0 && (
+                                                        <span style={{ color: '#00ff88' }}>✅ Awarded: {suit.damages_awarded.toLocaleString()} TOWN</span>
+                                                    )}
+                                                    <span style={{ color: '#555', marginLeft: 'auto' }}>{timeAgo(suit.created_at)}</span>
+                                                </div>
+                                                
+                                                {/* Judge ruling */}
+                                                {suit.judge_ruling && (
+                                                    <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,215,0,0.08)', borderRadius: '8px', borderLeft: '3px solid #ffd700' }}>
+                                                        <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '0.85em' }}>🔨 Judge's Ruling:</span>
+                                                        <div style={{ color: '#ccc', fontSize: '0.85em', marginTop: '4px' }}>{suit.judge_ruling}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* PROPOSED LAWS TAB */}
+                        {!loading && activeTab === 'laws' && (
+                            <div>
+                                {laws.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>📜</div>
+                                        <p>No laws proposed yet. The NPCs haven't discovered politics yet...</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {laws.map((law, i) => (
+                                            <div key={law.id || i} style={{
+                                                background: 'rgba(255,255,255,0.02)',
+                                                border: '1px solid rgba(0,204,255,0.15)',
+                                                borderRadius: '14px',
+                                                padding: '18px'
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                                    <div>
+                                                        <span style={{ color: '#00ccff', fontWeight: 'bold', fontSize: '1em' }}>📜 {law.law_title}</span>
+                                                        <div style={{ color: '#888', fontSize: '0.82em', marginTop: '2px' }}>
+                                                            Proposed by <span style={{ color: '#d580ff' }}>{law.proposer_name}</span>
+                                                        </div>
+                                                    </div>
+                                                    <span style={{
+                                                        padding: '3px 12px',
+                                                        borderRadius: '20px',
+                                                        fontSize: '0.75em',
+                                                        fontWeight: 'bold',
+                                                        textTransform: 'uppercase',
+                                                        background: law.status === 'proposed' ? 'rgba(0,204,255,0.15)' : 'rgba(0,255,136,0.15)',
+                                                        color: law.status === 'proposed' ? '#00ccff' : '#00ff88'
+                                                    }}>
+                                                        {law.status}
+                                                    </span>
+                                                </div>
+                                                <div style={{ color: '#aaa', fontSize: '0.85em', marginBottom: '8px' }}>{law.law_description}</div>
+                                                <div style={{ display: 'flex', gap: '16px', fontSize: '0.82em' }}>
+                                                    <span style={{ color: '#00ff88' }}>👍 {law.votes_for || 0} For</span>
+                                                    <span style={{ color: '#ff4444' }}>👎 {law.votes_against || 0} Against</span>
+                                                    <span style={{ color: '#555', marginLeft: 'auto' }}>{timeAgo(law.created_at)}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* DEBUG/STATUS TAB */}
+                        {!loading && activeTab === 'debug' && (
+                            <div>
+                                {brainStatus ? (
+                                    <div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                                            {[
+                                                { label: 'Brain Status', value: brainStatus.enabled ? '🟢 ONLINE' : '🔴 OFFLINE', color: brainStatus.enabled ? '#00ff88' : '#ff4444' },
+                                                { label: 'Total NPCs', value: brainStatus.totalNpcs, color: '#8a2be2' },
+                                                { label: 'Active Actions', value: brainStatus.activeActions, color: '#ffd700' },
+                                                { label: 'Recent Actions', value: brainStatus.recentActions, color: '#00ccff' }
+                                            ].map((item, i) => (
+                                                <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '10px' }}>
+                                                    <div style={{ color: '#666', fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{item.label}</div>
+                                                    <div style={{ color: item.color, fontSize: '1.3em', fontWeight: 'bold', marginTop: '4px' }}>{item.value}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        
+                                        {/* NPC thought times */}
+                                        {brainStatus.npcThoughtTimes && brainStatus.npcThoughtTimes.length > 0 && (
+                                            <div>
+                                                <h3 style={{ color: '#888', fontSize: '0.9em', marginBottom: '10px' }}>🧠 Recent NPC Thoughts</h3>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    {brainStatus.npcThoughtTimes.sort((a, b) => a.ageMs - b.ageMs).slice(0, 10).map((npc, i) => (
+                                                        <div key={i} style={{
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px'
+                                                        }}>
+                                                            <span style={{ color: '#d580ff', fontWeight: 'bold', fontSize: '0.85em' }}>{npc.npc}</span>
+                                                            <span style={{ color: npc.ageMs < 300000 ? '#00ff88' : '#666', fontSize: '0.8em' }}>
+                                                                {npc.ageMs < 60000 ? 'Just now' : npc.ageMs < 300000 ? `${Math.floor(npc.ageMs / 60000)}m ago` : `${Math.floor(npc.ageMs / 60000)}m ago`}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                        <p>Could not connect to the Agent Brain. Make sure the server is running with CLAUDE_API_KEY set.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         }
