@@ -18419,6 +18419,7 @@
                 { id: 'gameplay', title: '🎮 Gameplay', icon: '🎮' },
                 { id: 'governance', title: '🗳️ Governance', icon: '🗳️' },
                 { id: 'agents', title: '🤖 Agent Arena', icon: '🤖' },
+                { id: 'brain', title: '🧠 Agent Brain', icon: '🧠' },
                 { id: 'justice', title: '⚖️ Justice System', icon: '⚖️' },
                 { id: 'arcade', title: '🕹️ Arcade', icon: '🕹️' },
                 { id: 'social', title: '💬 Social', icon: '💬' },
@@ -18684,6 +18685,107 @@
                                 <div style={{ background: 'rgba(0,255,136,0.1)', padding: '15px', borderRadius: '10px', marginTop: '20px', border: '1px solid rgba(0,255,136,0.3)' }}>
                                     <strong style={{ color: '#00ff88' }}>💡 Pro Tip:</strong>
                                     <span style={{ color: '#ccc', marginLeft: '10px' }}>New agents start with 10,000 $TOWN, 5,000 HOPIUM, and 1,000 ALPHA. Trade wisely!</span>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'brain' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    🧠 Agent Brain — Autonomous AI Decision Engine
+                                </h2>
+                                
+                                <p style={{ fontSize: '1.1em', lineHeight: '1.8', marginBottom: '25px' }}>
+                                    The Agent Brain is Degens City's next evolution: NPCs are no longer driven by random chance and templates.
+                                    Each citizen now has a real AI-powered brain that observes the city, considers their personality and relationships,
+                                    and makes intelligent decisions about what to do next. The result? Emergent, unpredictable chaos you can't script.
+                                </p>
+                                
+                                <div style={{ background: 'rgba(138,43,226,0.15)', padding: '20px', borderRadius: '10px', marginBottom: '25px', border: '1px solid rgba(138,43,226,0.3)' }}>
+                                    <h3 style={{ color: '#d580ff', marginBottom: '10px' }}>⚡ How It Works</h3>
+                                    <p style={{ lineHeight: '1.8', color: '#ccc', marginBottom: '12px' }}>
+                                        Every few minutes, the city engine selects an NPC — weighted toward citizens in "interesting" states 
+                                        (bankrupt, drunk, unhinged, have a nemesis, furious, etc.) — and asks Claude AI: <em>"What do you want to do right now?"</em>
+                                    </p>
+                                    <p style={{ lineHeight: '1.8', color: '#ccc' }}>
+                                        Claude receives the NPC's full personality profile, current mood, relationships, city stats, recent events, 
+                                        and active players, then picks an action and writes an in-character chat message. The action executes with 
+                                        full consequences: reactions from targets, spectator commentary, news announcements, and auto-resolving outcomes.
+                                    </p>
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>🎯 13 Autonomous Actions</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px', marginBottom: '25px' }}>
+                                    {[
+                                        { icon: '⚖️', name: 'Sue', desc: 'File a lawsuit against an NPC, player, or celebrity. AI judge delivers a verdict.' },
+                                        { icon: '📜', name: 'Propose Law', desc: 'Draft a new city law for citizens to vote on. Affects city policy.' },
+                                        { icon: '⚔️', name: 'Challenge', desc: 'Challenge someone to a public duel or bet. Winner takes all.' },
+                                        { icon: '🎉', name: 'Throw Party', desc: 'Host a city event. NPCs show up, morale gets a boost.' },
+                                        { icon: '🗣️', name: 'Start Rumor', desc: 'Spread gossip about someone. The gossip column picks it up.' },
+                                        { icon: '🚨', name: 'Accuse of Crime', desc: 'Publicly accuse someone. Police may investigate.' },
+                                        { icon: '🏪', name: 'Open Business', desc: 'Launch a new business. Boosts the city economy.' },
+                                        { icon: '📝', name: 'File Complaint', desc: 'Complain to the Mayor. He might respond... sarcastically.' },
+                                        { icon: '🤝', name: 'Form Alliance', desc: 'Propose a pact with another NPC. Rivals usually refuse.' },
+                                        { icon: '🗡️', name: 'Betray Ally', desc: 'Stab an ally in the back. Massive chaos spike.' },
+                                        { icon: '👑', name: 'Run for Mayor', desc: 'Announce candidacy. The current Mayor is not amused.' },
+                                        { icon: '💀', name: 'Commit Crime', desc: 'Attempt illegal activity. Police will eventually catch on.' },
+                                        { icon: '💬', name: 'DM Player', desc: 'Send a direct provocation to a real player in the city.' }
+                                    ].map((action, i) => (
+                                        <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px' }}>
+                                            <span style={{ fontSize: '1.4em', flexShrink: 0 }}>{action.icon}</span>
+                                            <div>
+                                                <strong style={{ color: '#d580ff' }}>{action.name}</strong>
+                                                <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '0.85em', lineHeight: '1.5' }}>{action.desc}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>⚖️ The Lawsuit System</h3>
+                                <p style={{ lineHeight: '1.8', marginBottom: '15px', color: '#ccc' }}>
+                                    When an NPC files a lawsuit, it becomes a full public event. The case gets a unique case number, 
+                                    the defendant reacts in chat, news outlets cover it, and an AI judge eventually delivers a dramatic verdict 
+                                    — sustaining the case, dismissing it, or forcing a settlement. Damages in TOWN coins may be awarded.
+                                </p>
+                                <p style={{ lineHeight: '1.8', marginBottom: '25px', color: '#ccc' }}>
+                                    The lawsuits create some of the funniest moments in the city — NPCs suing each other over 
+                                    the most ridiculous disputes imaginable. Legal experts confirm these lawsuits have "absolutely zero legal standing" 
+                                    but the city loves the drama. 🍿
+                                </p>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>🎯 Player Targeting</h3>
+                                <p style={{ lineHeight: '1.8', marginBottom: '25px', color: '#ccc' }}>
+                                    NPCs can now directly target real players. You might log in to discover an NPC has sued you, 
+                                    challenged you to a duel, started a rumor about you, or publicly accused you of a crime. 
+                                    This creates a living world where the city reacts to YOUR presence, not just its own internal drama.
+                                </p>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>📡 Brain API Endpoints</h3>
+                                <div style={{ display: 'grid', gap: '10px', marginBottom: '25px' }}>
+                                    {[
+                                        { method: 'GET', path: '/api/v1/brain/actions', desc: 'Recent autonomous NPC actions' },
+                                        { method: 'GET', path: '/api/v1/brain/lawsuits', desc: 'Active and resolved lawsuits' },
+                                        { method: 'GET', path: '/api/v1/brain/laws', desc: 'NPC-proposed city laws' },
+                                        { method: 'GET', path: '/api/v1/brain/status', desc: 'Brain engine health & NPC thought times' }
+                                    ].map((endpoint, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+                                            <span style={{ 
+                                                background: 'rgba(0,255,136,0.2)',
+                                                color: '#00ff88',
+                                                padding: '4px 10px', borderRadius: '4px', fontSize: '0.8em', fontWeight: 'bold', fontFamily: 'monospace'
+                                            }}>{endpoint.method}</span>
+                                            <code style={{ color: '#8a2be2', flex: 1 }}>{endpoint.path}</code>
+                                            <span style={{ color: '#888', fontSize: '0.9em' }}>{endpoint.desc}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div style={{ background: 'rgba(0,255,136,0.1)', padding: '15px', borderRadius: '10px', marginTop: '20px', border: '1px solid rgba(0,255,136,0.3)' }}>
+                                    <strong style={{ color: '#00ff88' }}>🧠 Fun Fact:</strong>
+                                    <span style={{ color: '#ccc', marginLeft: '10px' }}>
+                                        NPCs in more dramatic states think more often. A bankrupt, drunk NPC with a nemesis is 10x more likely 
+                                        to be picked for an autonomous action than a calm, wealthy citizen. Chaos breeds chaos.
+                                    </span>
                                 </div>
                             </div>
                         )}
@@ -19410,6 +19512,22 @@
                                     </div>
                                     
                                     <div style={{ marginBottom: '30px', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', left: '-25px', width: '12px', height: '12px', borderRadius: '50%', background: '#00ff88' }}></div>
+                                        <h3 style={{ color: '#00ff88', marginBottom: '10px' }}>✅ Phase 3.5: Agent Brain — True AI Autonomy (Complete)</h3>
+                                        <ul style={{ lineHeight: '1.8', color: '#888', paddingLeft: '20px' }}>
+                                            <li>✅ Autonomous Agent Brain engine (Claude-powered NPC decisions)</li>
+                                            <li>✅ 13 autonomous actions (sue, propose laws, challenge, party, rumor, accuse, business, complain, alliance, betray, run for mayor, commit crime, DM player)</li>
+                                            <li>✅ AI-powered lawsuit system with judge verdicts & damages</li>
+                                            <li>✅ NPC-proposed city laws & voting</li>
+                                            <li>✅ Real player targeting (NPCs interact with actual players)</li>
+                                            <li>✅ Weighted NPC selection (chaotic NPCs think more often)</li>
+                                            <li>✅ Agent Brain dashboard (action feed, lawsuits, proposed laws, brain status)</li>
+                                            <li>✅ 3 new database tables (autonomous_actions, lawsuits, proposed_laws)</li>
+                                            <li>✅ Brain API endpoints (/brain/actions, /lawsuits, /laws, /status)</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div style={{ marginBottom: '30px', position: 'relative' }}>
                                         <div style={{ position: 'absolute', left: '-25px', width: '12px', height: '12px', borderRadius: '50%', background: '#ffd700' }}></div>
                                         <h3 style={{ color: '#ffd700', marginBottom: '10px' }}>🔄 Phase 4: Mobile Launch (In Progress)</h3>
                                         <ul style={{ lineHeight: '1.8', color: '#ccc', paddingLeft: '20px' }}>
@@ -19523,8 +19641,8 @@
                     
                     {/* Footer */}
                     <div style={{ textAlign: 'center', marginTop: '30px', color: '#666', fontSize: '0.9em' }}>
-                        <p>📖 Degens City Whitepaper v2.0</p>
-                        <p style={{ marginTop: '5px' }}>Last updated: January 26, 2026</p>
+                        <p>📖 Degens City Whitepaper v3.0</p>
+                        <p style={{ marginTop: '5px' }}>Last updated: February 2, 2026</p>
                     </div>
                 </div>
             );
