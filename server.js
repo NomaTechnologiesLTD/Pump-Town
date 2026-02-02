@@ -1,5 +1,9 @@
-// Degens City - AI Mayor Backend Server
-// This server handles user auth, game state, and AI-powered governance
+// ============================================================================
+// Degens City — AI Mayor Backend Server
+// ============================================================================
+// Handles user auth, game state, AI-powered governance, autonomous NPC
+// simulation, justice system, agent API, and the City Events Engine.
+// ============================================================================
 
 const express = require('express');
 const cors = require('cors');
@@ -25,6 +29,20 @@ if (process.env.CLAUDE_API_KEY) {
     apiKey: process.env.CLAUDE_API_KEY
   });
   console.log('🤖 Claude AI initialized');
+}
+
+// Extract and parse JSON from Claude AI responses
+function parseAIJson(text) {
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  return JSON.parse(match[0]);
+}
+
+// Safely parse a value that might already be an object or might be a JSON string
+function safeParseJson(val, fallback = {}) {
+  if (!val) return fallback;
+  if (typeof val === 'object') return val;
+  try { return JSON.parse(val); } catch (e) { return fallback; }
 }
 
 // AI Mayor personality
@@ -179,28 +197,10 @@ async function initDatabase() {
     // Fix avatar column to allow longer strings (base64 images or JSON)
     await client.query(`ALTER TABLE player_stats ALTER COLUMN avatar TYPE TEXT`).catch(() => {});
     
-    // Seed leaderboard with fake players if empty
+    // Seed leaderboard with initial players if empty
     const playerCount = await client.query('SELECT COUNT(*) FROM player_stats');
     if (parseInt(playerCount.rows[0].count) < 5) {
-      const seedPlayers = [
-        { name: 'alpha_hunter', role: 'Degen', xp: 4250, level: 8, degen_score: 145, avatar: 'pepe' },
-        { name: 'ser_pump', role: 'Whale', xp: 3800, level: 7, degen_score: 120, avatar: 'doge' },
-        { name: 'moon_chaser', role: 'Chart Autist', xp: 3100, level: 6, degen_score: 98, avatar: 'shiba' },
-        { name: 'degen_mike', role: 'Meme Lord', xp: 2650, level: 5, degen_score: 85, avatar: 'floki' },
-        { name: 'diamond_dan', role: 'Ape Farmer', xp: 2200, level: 5, degen_score: 72, avatar: 'wif' },
-        { name: 'based_andy', role: 'Degen', xp: 1850, level: 4, degen_score: 63, avatar: 'popcat' },
-        { name: 'yield_farm3r', role: 'Chart Autist', xp: 1500, level: 4, degen_score: 55, avatar: 'pepe' },
-        { name: 'anon_whale', role: 'Whale', xp: 1200, level: 3, degen_score: 48, avatar: 'doge' },
-        { name: 'fomo_fred', role: 'Meme Lord', xp: 950, level: 3, degen_score: 42, avatar: 'shiba' },
-        { name: 'paper_pete', role: 'Ape Farmer', xp: 720, level: 3, degen_score: 35, avatar: 'floki' },
-        { name: 'early_ape', role: 'Degen', xp: 580, level: 2, degen_score: 28, avatar: 'wif' },
-        { name: 'bag_secured', role: 'Chart Autist', xp: 450, level: 2, degen_score: 22, avatar: 'popcat' },
-        { name: 'sol_maxi', role: 'Whale', xp: 320, level: 2, degen_score: 18, avatar: 'pepe' },
-        { name: 'eth_bull', role: 'Meme Lord', xp: 180, level: 1, degen_score: 12, avatar: 'doge' },
-        { name: 'swap_king99', role: 'Ape Farmer', xp: 95, level: 1, degen_score: 8, avatar: 'shiba' }
-      ];
-      
-      for (const player of seedPlayers) {
+      for (const player of SEED_PLAYERS) {
         await client.query(
           `INSERT INTO player_stats (name, role, xp, level, degen_score, avatar) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (name) DO NOTHING`,
           [player.name, player.role, player.xp, player.level, player.degen_score, player.avatar]
@@ -281,21 +281,8 @@ async function initDatabase() {
     // Seed activity feed if empty
     const activityCount = await client.query('SELECT COUNT(*) FROM activity_feed');
     if (parseInt(activityCount.rows[0].count) < 5) {
-      const seedActivities = [
-        { name: 'alpha_hunter', type: 'level_up', desc: 'reached Level 8!', icon: '🎉' },
-        { name: 'ser_pump', type: 'game_win', desc: 'won 500 Hopium in slots', icon: '🎰' },
-        { name: 'moon_chaser', type: 'vote', desc: 'voted on governance', icon: '🗳️' },
-        { name: 'degen_mike', type: 'action', desc: 'launched a new coin', icon: '🚀' },
-        { name: 'diamond_dan', type: 'daily_reward', desc: 'claimed Day 5 reward (5 day streak!)', icon: '🎁' },
-        { name: 'based_andy', type: 'game_win', desc: 'scored 850 in Token Sniper', icon: '🎯' },
-        { name: 'yield_farm3r', type: 'level_up', desc: 'reached Level 4!', icon: '🎉' },
-        { name: 'anon_whale', type: 'action', desc: 'sniped early on $PEPE2', icon: '🎯' },
-        { name: 'fomo_fred', type: 'game_win', desc: 'won the Chart Battle', icon: '📈' },
-        { name: 'early_ape', type: 'vote', desc: 'voted on governance', icon: '🗳️' }
-      ];
-      
-      for (let i = 0; i < seedActivities.length; i++) {
-        const activity = seedActivities[i];
+      for (let i = 0; i < SEED_ACTIVITIES.length; i++) {
+        const activity = SEED_ACTIVITIES[i];
         await client.query(
           `INSERT INTO activity_feed (player_name, activity_type, description, icon, created_at) VALUES ($1, $2, $3, $4, NOW() - INTERVAL '${i * 15} minutes')`,
           [activity.name, activity.type, activity.desc, activity.icon]
@@ -504,6 +491,38 @@ initDatabase();
 
 // ==================== GAME STATE MANAGEMENT ====================
 
+// Shared seed data used by initDatabase and /api/seed-leaderboard
+const SEED_PLAYERS = [
+  { name: 'alpha_hunter', role: 'Degen', xp: 4250, level: 8, degen_score: 145, avatar: 'pepe' },
+  { name: 'ser_pump', role: 'Whale', xp: 3800, level: 7, degen_score: 120, avatar: 'doge' },
+  { name: 'moon_chaser', role: 'Chart Autist', xp: 3100, level: 6, degen_score: 98, avatar: 'shiba' },
+  { name: 'degen_mike', role: 'Meme Lord', xp: 2650, level: 5, degen_score: 85, avatar: 'floki' },
+  { name: 'diamond_dan', role: 'Ape Farmer', xp: 2200, level: 5, degen_score: 72, avatar: 'wif' },
+  { name: 'based_andy', role: 'Degen', xp: 1850, level: 4, degen_score: 63, avatar: 'popcat' },
+  { name: 'yield_farm3r', role: 'Chart Autist', xp: 1500, level: 4, degen_score: 55, avatar: 'pepe' },
+  { name: 'anon_whale', role: 'Whale', xp: 1200, level: 3, degen_score: 48, avatar: 'doge' },
+  { name: 'fomo_fred', role: 'Meme Lord', xp: 950, level: 3, degen_score: 42, avatar: 'shiba' },
+  { name: 'paper_pete', role: 'Ape Farmer', xp: 720, level: 3, degen_score: 35, avatar: 'floki' },
+  { name: 'early_ape', role: 'Degen', xp: 580, level: 2, degen_score: 28, avatar: 'wif' },
+  { name: 'bag_secured', role: 'Chart Autist', xp: 450, level: 2, degen_score: 22, avatar: 'popcat' },
+  { name: 'sol_maxi', role: 'Whale', xp: 320, level: 2, degen_score: 18, avatar: 'pepe' },
+  { name: 'eth_bull', role: 'Meme Lord', xp: 180, level: 1, degen_score: 12, avatar: 'doge' },
+  { name: 'swap_king99', role: 'Ape Farmer', xp: 95, level: 1, degen_score: 8, avatar: 'shiba' }
+];
+
+const SEED_ACTIVITIES = [
+  { name: 'alpha_hunter', type: 'level_up', desc: 'reached Level 8!', icon: '🎉' },
+  { name: 'ser_pump', type: 'game_win', desc: 'won 500 Hopium in slots', icon: '🎰' },
+  { name: 'moon_chaser', type: 'vote', desc: 'voted on governance', icon: '🗳️' },
+  { name: 'degen_mike', type: 'action', desc: 'launched a new coin', icon: '🚀' },
+  { name: 'diamond_dan', type: 'daily_reward', desc: 'claimed Day 5 reward (5 day streak!)', icon: '🎁' },
+  { name: 'based_andy', type: 'game_win', desc: 'scored 850 in Token Sniper', icon: '🎯' },
+  { name: 'yield_farm3r', type: 'level_up', desc: 'reached Level 4!', icon: '🎉' },
+  { name: 'anon_whale', type: 'action', desc: 'sniped early on $PEPE2', icon: '🎯' },
+  { name: 'fomo_fred', type: 'game_win', desc: 'won the Chart Battle', icon: '📈' },
+  { name: 'early_ape', type: 'vote', desc: 'voted on governance', icon: '🗳️' }
+];
+
 const VOTE_CYCLE_MS = 2 * 60 * 60 * 1000; // 2 hours - faster chaos
 
 function getCurrentCycleStart() {
@@ -556,10 +575,10 @@ async function updateCityStats(changes) {
   try {
     const current = await getCityStats();
     const newStats = {
-      economy: Math.max(0, Math.min(100, (current.economy || 50) + (changes.economy || 0))),
-      security: Math.max(0, Math.min(100, (current.security || 50) + (changes.security || 0))),
-      culture: Math.max(0, Math.min(100, (current.culture || 50) + (changes.culture || 0))),
-      morale: Math.max(0, Math.min(100, (current.morale || 50) + (changes.morale || 0)))
+      economy: clamp((current.economy || 50) + (changes.economy || 0), 0, 100),
+      security: clamp((current.security || 50) + (changes.security || 0), 0, 100),
+      culture: clamp((current.culture || 50) + (changes.culture || 0), 0, 100),
+      morale: clamp((current.morale || 50) + (changes.morale || 0), 0, 100)
     };
     await pool.query(
       `INSERT INTO city_stats (economy, security, culture, morale) VALUES ($1, $2, $3, $4)`,
@@ -662,10 +681,9 @@ Rules:
     });
 
     const content = response.content[0].text;
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const voteData = parseAIJson(content);
     
-    if (jsonMatch) {
-      const voteData = JSON.parse(jsonMatch[0]);
+    if (voteData) {
       const voteId = getCurrentVoteId();
       
       // Cache in database
@@ -719,10 +737,10 @@ Generate JSON (pure JSON only):
     });
 
     const content = response.content[0].text;
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const reactionData = parseAIJson(content);
     
-    if (jsonMatch) {
-      res.json({ success: true, reaction: JSON.parse(jsonMatch[0]) });
+    if (reactionData) {
+      res.json({ success: true, reaction: reactionData });
     } else {
       throw new Error('Parse error');
     }
@@ -769,10 +787,9 @@ Make it dramatic and crypto-themed! If a stat is critical (below 30), maybe addr
     });
 
     const content = response.content[0].text;
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const eventData = parseAIJson(content);
     
-    if (jsonMatch) {
-      const eventData = JSON.parse(jsonMatch[0]);
+    if (eventData) {
       console.log('🤖 AI event:', eventData.title);
       res.json({ success: true, event: eventData });
     } else {
@@ -1008,10 +1025,9 @@ Be dramatic, use crypto slang, mention any stats that are critically low (<30) o
     });
 
     const content = response.content[0].text;
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const briefing = parseAIJson(content);
     
-    if (jsonMatch) {
-      const briefing = JSON.parse(jsonMatch[0]);
+    if (briefing) {
       console.log('🌅 Daily briefing for', playerName);
       res.json({ success: true, briefing });
     } else {
@@ -1172,7 +1188,7 @@ app.post('/api/forgot-password', async (req, res) => {
     const userResult = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
     if (userResult.rows.length === 0) return res.json({ success: true, message: 'If account exists, reset link sent.' });
     
-    const token = require('crypto').randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await pool.query('INSERT INTO password_reset_tokens (email, token, expires_at) VALUES ($1, $2, $3)', [email.toLowerCase(), token, expiresAt]);
     
@@ -1265,26 +1281,11 @@ app.post('/api/load-character', async (req, res) => {
     if (result.rows.length === 0) return res.json({ success: false, character: null });
     
     const c = result.rows[0];
-    let avatar = c.avatar;
-    if (typeof avatar === 'string' && avatar.startsWith('{')) {
-      try { avatar = JSON.parse(avatar); } catch(e) {}
-    }
-    
-    // Parse playerStats, resources, and seasonPass from database
-    let playerStats = c.player_stats || {};
-    let resources = c.resources || {};
-    let seasonPass = c.season_pass || {};
-    
-    // Handle if stored as string
-    if (typeof playerStats === 'string') {
-      try { playerStats = JSON.parse(playerStats); } catch(e) { playerStats = {}; }
-    }
-    if (typeof resources === 'string') {
-      try { resources = JSON.parse(resources); } catch(e) { resources = {}; }
-    }
-    if (typeof seasonPass === 'string') {
-      try { seasonPass = JSON.parse(seasonPass); } catch(e) { seasonPass = {}; }
-    }
+    // Parse JSONB columns from database
+    let avatar = safeParseJson(c.avatar, c.avatar);
+    let playerStats = safeParseJson(c.player_stats);
+    let resources = safeParseJson(c.resources);
+    let seasonPass = safeParseJson(c.season_pass);
     
     console.log('📂 Character loaded:', c.name, '| Level:', playerStats.level || c.level || 1, '| XP:', playerStats.xp || c.xp || 0, '| Season Pass Lv:', seasonPass.level || 1);
     
@@ -1584,7 +1585,7 @@ app.post('/api/chat/send', async (req, res) => {
               '@' + playerName + ' nobody knows anything here. we just pretend.',
               '@' + playerName + ' ' + pick(npc.catchphrases),
               '@' + playerName + ' good question. terrible timing though.',
-              '@' + playerName + ' I would answer but I\m too busy watching my bags bleed',
+              '@' + playerName + ' I would answer but I\'m too busy watching my bags bleed',
               '@' + playerName + ' ask the mayor, I just trade here'
             ];
             await pool.query('INSERT INTO chat_messages (channel, player_name, message) VALUES ($1,$2,$3)', ['global', helper, pick(replies)]);
@@ -1787,10 +1788,7 @@ app.post('/api/daily-reward/claim', async (req, res) => {
     const reward = DAILY_REWARDS[rewardDay - 1];
     
     // Update resources
-    let currentResources = player.resources || {};
-    if (typeof currentResources === 'string') {
-      currentResources = JSON.parse(currentResources);
-    }
+    let currentResources = safeParseJson(player.resources);
     
     const newResources = {
       hopium: (currentResources.hopium || 0) + reward.hopium,
@@ -1961,29 +1959,11 @@ app.get('/api/player/:name', async (req, res) => {
       timeAgo: getTimeAgoString(new Date(row.created_at))
     }));
     
-    // Parse avatar
-    let avatar = player.avatar;
-    if (typeof avatar === 'string') {
-      try { avatar = JSON.parse(avatar); } catch (e) { }
-    }
-    
-    // Parse badges
-    let badges = player.badges || [];
-    if (typeof badges === 'string') {
-      try { badges = JSON.parse(badges); } catch (e) { badges = []; }
-    }
-    
-    // Parse player_stats
-    let playerStats = player.player_stats || {};
-    if (typeof playerStats === 'string') {
-      try { playerStats = JSON.parse(playerStats); } catch (e) { playerStats = {}; }
-    }
-    
-    // Parse resources
-    let resources = player.resources || {};
-    if (typeof resources === 'string') {
-      try { resources = JSON.parse(resources); } catch (e) { resources = {}; }
-    }
+    // Parse JSONB columns
+    let avatar = safeParseJson(player.avatar, player.avatar);
+    let badges = safeParseJson(player.badges, []);
+    let playerStats = safeParseJson(player.player_stats);
+    let resources = safeParseJson(player.resources);
     
     // Calculate days since joined
     const joinedDate = new Date(player.joined_date);
@@ -2076,26 +2056,8 @@ app.get('/api/push/status/:email', async (req, res) => {
 
 app.post('/api/seed-leaderboard', async (req, res) => {
   try {
-    const seedPlayers = [
-      { name: 'alpha_hunter', role: 'Degen', xp: 4250, level: 8, degen_score: 145, avatar: 'pepe' },
-      { name: 'ser_pump', role: 'Whale', xp: 3800, level: 7, degen_score: 120, avatar: 'doge' },
-      { name: 'moon_chaser', role: 'Chart Autist', xp: 3100, level: 6, degen_score: 98, avatar: 'shiba' },
-      { name: 'degen_mike', role: 'Meme Lord', xp: 2650, level: 5, degen_score: 85, avatar: 'floki' },
-      { name: 'diamond_dan', role: 'Ape Farmer', xp: 2200, level: 5, degen_score: 72, avatar: 'wif' },
-      { name: 'based_andy', role: 'Degen', xp: 1850, level: 4, degen_score: 63, avatar: 'popcat' },
-      { name: 'yield_farm3r', role: 'Chart Autist', xp: 1500, level: 4, degen_score: 55, avatar: 'pepe' },
-      { name: 'anon_whale', role: 'Whale', xp: 1200, level: 3, degen_score: 48, avatar: 'doge' },
-      { name: 'fomo_fred', role: 'Meme Lord', xp: 950, level: 3, degen_score: 42, avatar: 'shiba' },
-      { name: 'paper_pete', role: 'Ape Farmer', xp: 720, level: 3, degen_score: 35, avatar: 'floki' },
-      { name: 'early_ape', role: 'Degen', xp: 580, level: 2, degen_score: 28, avatar: 'wif' },
-      { name: 'bag_secured', role: 'Chart Autist', xp: 450, level: 2, degen_score: 22, avatar: 'popcat' },
-      { name: 'sol_maxi', role: 'Whale', xp: 320, level: 2, degen_score: 18, avatar: 'pepe' },
-      { name: 'eth_bull', role: 'Meme Lord', xp: 180, level: 1, degen_score: 12, avatar: 'doge' },
-      { name: 'swap_king99', role: 'Ape Farmer', xp: 95, level: 1, degen_score: 8, avatar: 'shiba' }
-    ];
-    
     let added = 0;
-    for (const player of seedPlayers) {
+    for (const player of SEED_PLAYERS) {
       const result = await pool.query(
         `INSERT INTO player_stats (name, role, xp, level, degen_score, avatar) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (name) DO NOTHING RETURNING name`,
         [player.name, player.role, player.xp, player.level, player.degen_score, player.avatar]
@@ -2104,19 +2066,8 @@ app.post('/api/seed-leaderboard', async (req, res) => {
     }
     
     // Also seed activity feed
-    const seedActivities = [
-      { name: 'alpha_hunter', type: 'level_up', desc: 'reached Level 8!', icon: '🎉' },
-      { name: 'ser_pump', type: 'game_win', desc: 'won 500 Hopium in slots', icon: '🎰' },
-      { name: 'moon_chaser', type: 'vote', desc: 'voted on governance', icon: '🗳️' },
-      { name: 'degen_mike', type: 'action', desc: 'launched a new coin', icon: '🚀' },
-      { name: 'diamond_dan', type: 'daily_reward', desc: 'claimed Day 5 reward (5 day streak!)', icon: '🎁' },
-      { name: 'based_andy', type: 'game_win', desc: 'scored 850 in Token Sniper', icon: '🎯' },
-      { name: 'yield_farm3r', type: 'level_up', desc: 'reached Level 4!', icon: '🎉' },
-      { name: 'anon_whale', type: 'action', desc: 'sniped early on $PEPE2', icon: '🎯' }
-    ];
-    
-    for (let i = 0; i < seedActivities.length; i++) {
-      const activity = seedActivities[i];
+    for (let i = 0; i < SEED_ACTIVITIES.length; i++) {
+      const activity = SEED_ACTIVITIES[i];
       await pool.query(
         `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
         [activity.name, activity.type, activity.desc, activity.icon]
@@ -2133,8 +2084,15 @@ app.post('/api/seed-leaderboard', async (req, res) => {
 
 // ==================== HEALTH CHECK ====================
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 // ==================== AGENT API ====================
 // Enables AI agents to autonomously play Degens City
+
+// Default fallback prices — updated live in agent/state endpoint via CoinGecko
+const DEFAULT_MARKET_PRICES = { BTC: 98500, ETH: 3200, SOL: 145, DOGE: 0.35, ADA: 0.95, XRP: 2.20 };
 
 // Helper functions for agent API
 function generateApiKey() {
@@ -2296,8 +2254,8 @@ app.get('/api/v1/agent/state', authenticateAgent, agentRateLimit('read', 60, 600
       [req.agent.id, voteId]
     );
     
-    // Get market prices (simplified)
-    let marketPrices = { BTC: 98500, ETH: 3200, SOL: 145, DOGE: 0.35, ADA: 0.95, XRP: 2.20 };
+    // Get market prices (live from CoinGecko, with fallback defaults)
+    let marketPrices = { ...DEFAULT_MARKET_PRICES };
     try {
       const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,dogecoin,cardano,ripple&vs_currencies=usd');
       const priceData = await priceResponse.json();
@@ -2400,8 +2358,7 @@ app.post('/api/v1/agent/trade/buy', authenticateAgent, agentRateLimit('trade', 2
     }
     
     // Get current price
-    const prices = { BTC: 98500, ETH: 3200, SOL: 145, DOGE: 0.35, ADA: 0.95, XRP: 2.20 };
-    const price = prices[symbol.toUpperCase()];
+    const price = DEFAULT_MARKET_PRICES[symbol.toUpperCase()];
     
     if (!price) {
       return res.status(400).json({
@@ -2491,8 +2448,7 @@ app.post('/api/v1/agent/trade/sell', authenticateAgent, agentRateLimit('trade', 
       });
     }
     
-    const prices = { BTC: 98500, ETH: 3200, SOL: 145, DOGE: 0.35, ADA: 0.95, XRP: 2.20 };
-    const price = prices[symbol.toUpperCase()];
+    const price = DEFAULT_MARKET_PRICES[symbol.toUpperCase()];
     
     const grossAmount = amount * price;
     const fee = Math.floor(grossAmount * 0.005);
@@ -3497,9 +3453,12 @@ let cityEngine = {
   recentHeadlines: [], activeFeud: null, marketSentiment: 'neutral' // bull, bear, neutral, mania, panic
 };
 
+// ==================== UTILITY HELPERS ====================
+
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function chance(pct) { return Math.random() * 100 < pct; }
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 
 // ---- NPC PERSONALITIES ----
 // Each NPC has a unique personality that affects how they chat, trade, and react

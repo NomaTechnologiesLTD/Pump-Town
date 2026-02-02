@@ -2214,6 +2214,67 @@
             }
         }
         
+        /* ═══════ DASHBOARD & EXPLORE VISUAL OVERHAUL ═══════ */
+        @keyframes dashHeroGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        @keyframes statBarFill { from { width: 0%; } }
+        @keyframes heroPulseRing {
+            0% { transform: scale(0.8); opacity: 0.6; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+        @keyframes walkBob {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(-3deg); }
+            75% { transform: translateY(-8px) rotate(3deg); }
+        }
+        @keyframes screenShake {
+            0%, 100% { transform: translate(0,0); }
+            10% { transform: translate(-4px,-2px); }
+            20% { transform: translate(4px,2px); }
+            30% { transform: translate(-3px,1px); }
+            40% { transform: translate(3px,-1px); }
+            50% { transform: translate(-2px,2px); }
+        }
+        @keyframes successGlow {
+            0% { box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+            50% { box-shadow: 0 0 60px rgba(0,255,136,0.6), 0 0 100px rgba(0,255,136,0.2); }
+            100% { box-shadow: 0 0 20px rgba(0,255,136,0.3); }
+        }
+        @keyframes failFlash {
+            0%, 100% { background-color: rgba(255,68,68,0.05); }
+            50% { background-color: rgba(255,68,68,0.18); }
+        }
+        @keyframes encounterSlideIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes choiceAppear {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes rewardPop {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            60% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes narrativeType {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .explore-outcome-success { animation: successGlow 1.5s ease-in-out 2; }
+        .explore-outcome-fail { animation: screenShake 0.5s ease-in-out, failFlash 0.8s ease-in-out 3; }
+        
+        @media (max-width: 768px) {
+            .dash-hero-stats { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        
         /* Toast Notifications */
         .toast-container {
             position: fixed;
@@ -13724,6 +13785,16 @@
             // Activity Feed state
             const [activityFeed, setActivityFeed] = useState([]);
             
+            // Guest account state
+            const [isGuest, setIsGuest] = useState(() => {
+                try {
+                    const user = JSON.parse(localStorage.getItem('pumptown_user') || '{}');
+                    return !!user.isGuest;
+                } catch(e) { return false; }
+            });
+            const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+            const [guestBannerDismissed, setGuestBannerDismissed] = useState(false);
+            
             // Toast notifications
             const [toasts, setToasts] = useState([]);
             const toastTimeoutRef = useRef(null);
@@ -15458,11 +15529,16 @@
             const badges = checkBadges(character, wallet, gameState);
 
             const handleLogout = () => {
-                if (confirm('Logout? Your progress will be saved.')) {
+                const confirmMsg = isGuest 
+                    ? 'Logout? As a guest, you can only resume on this device if you log back in as guest — consider creating an account first!'
+                    : 'Logout? Your progress will be saved.';
+                if (confirm(confirmMsg)) {
                     // Clear session but keep user account
                     localStorage.removeItem('pumptown_user');
                     setWallet(null);
                     setCharacter(null);
+                    setIsGuest(false);
+                    setGuestBannerDismissed(false);
                 }
             };
             
@@ -15479,50 +15555,167 @@
                 courthouse: { icon: '⚖️', title: 'Courthouse', subtitle: 'Trials, jail, and justice' },
                 social: { icon: '💬', title: 'Social', subtitle: 'Chat & connect with friends' },
                 leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' },
-                docs: { icon: '📖', title: 'Whitepaper', subtitle: 'Learn about Degens City' }
+                docs: { icon: '📖', title: 'Whitepaper', subtitle: 'Learn about Degens City' },
+                brain: { icon: '🧠', title: 'Agent Brain', subtitle: 'Autonomous AI decisions, lawsuits & laws' }
             };
             
             // Render page content based on current page
             const renderPageContent = () => {
                 switch(currentPage) {
                     case 'dashboard':
+                        // Dashboard helper data
+                        var dashRep = parseInt(localStorage.getItem('dc_city_rep') || '0');
+                        var dashRepTier = dashRep >= 100 ? { name: 'LEGEND', emoji: '👑', color: '#ffd700' } : dashRep >= 50 ? { name: 'RESPECTED', emoji: '⭐', color: '#00ff88' } : dashRep >= 20 ? { name: 'KNOWN', emoji: '🟢', color: '#88ff00' } : dashRep >= -19 ? { name: 'NOBODY', emoji: '😐', color: '#888' } : dashRep >= -50 ? { name: 'SUSPICIOUS', emoji: '🟡', color: '#ff8800' } : { name: 'WANTED', emoji: '🔴', color: '#ff4444' };
+                        var dashRepPercent = Math.min(100, Math.max(0, (dashRep + 100) / 2));
+                        var dashStatRing = function(value, color, label, icon) {
+                            var pct = Math.max(0, Math.min(100, value));
+                            var r = 34, c = 2 * Math.PI * r, offset = c - (pct / 100) * c;
+                            return React.createElement('div', { style: { textAlign: 'center' } },
+                                React.createElement('div', { style: { width: '80px', height: '80px', borderRadius: '50%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' } },
+                                    React.createElement('svg', { width: 80, height: 80, style: { position: 'absolute', top: 0, left: 0, transform: 'rotate(-90deg)' } },
+                                        React.createElement('circle', { cx: 40, cy: 40, r: r, fill: 'none', stroke: 'rgba(255,255,255,0.06)', strokeWidth: 5 }),
+                                        React.createElement('circle', { cx: 40, cy: 40, r: r, fill: 'none', stroke: color, strokeWidth: 5, strokeLinecap: 'round', strokeDasharray: c, strokeDashoffset: offset, style: { transition: 'stroke-dashoffset 1.5s ease-out' } })
+                                    ),
+                                    React.createElement('span', { style: { fontSize: '1.4em', zIndex: 1 } }, icon)
+                                ),
+                                React.createElement('div', { style: { color: color, fontWeight: 'bold', fontSize: '1em' } }, value),
+                                React.createElement('div', { style: { color: '#666', fontSize: '0.7em', textTransform: 'uppercase', letterSpacing: '0.5px' } }, label)
+                            );
+                        };
                         return (
                             <>
-                                {/* LIVE City Pulse - Engine Status */}
+                                {/* ═══════ HERO SECTION — Animated City Status ═══════ */}
+                                <div style={{ 
+                                    position: 'relative', overflow: 'hidden', borderRadius: '20px', 
+                                    padding: '28px 24px', marginBottom: '20px',
+                                    background: 'linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1a2e 100%)',
+                                    border: '1px solid rgba(255,215,0,0.15)'
+                                }}>
+                                    {/* Animated background orbs */}
+                                    <div style={{ position: 'absolute', top: '-50%', right: '-30%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(255,215,0,0.08) 0%, transparent 60%)', animation: 'dashHeroGlow 4s ease-in-out infinite', pointerEvents: 'none' }} />
+                                    <div style={{ position: 'absolute', bottom: '-40%', left: '-20%', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 60%)', animation: 'dashHeroGlow 5s ease-in-out infinite 1s', pointerEvents: 'none' }} />
+                                    
+                                    {/* Player Identity Row */}
+                                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                            {/* Avatar with pulse ring */}
+                                            <div style={{ position: 'relative' }}>
+                                                <div style={{ position: 'absolute', inset: '-8px', borderRadius: '50%', border: '2px solid ' + dashRepTier.color + '44', animation: 'heroPulseRing 3s ease-out infinite', pointerEvents: 'none' }} />
+                                                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, ' + dashRepTier.color + '33, ' + dashRepTier.color + '11)', border: '2px solid ' + dashRepTier.color + '66', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5em' }}>
+                                                    {character?.avatar?.emoji || '🐸'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.3em' }}>{character?.name || 'Citizen'}</div>
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                                                    <span style={{ color: dashRepTier.color, fontSize: '0.8em', fontWeight: 'bold', background: dashRepTier.color + '18', padding: '2px 10px', borderRadius: '20px' }}>{dashRepTier.emoji} {dashRepTier.name}</span>
+                                                    <span style={{ color: '#666', fontSize: '0.8em' }}>Lv. {playerStats.level || 1}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/* Reputation gauge */}
+                                        <div style={{ textAlign: 'right', minWidth: '120px' }}>
+                                            <div style={{ fontSize: '2.2em', fontWeight: 'bold', color: dashRepTier.color, lineHeight: 1 }}>{(dashRep >= 0 ? '+' : '') + dashRep}</div>
+                                            <div style={{ fontSize: '0.65em', color: '#555', letterSpacing: '2px', textTransform: 'uppercase' }}>REPUTATION</div>
+                                            <div style={{ height: '4px', background: 'rgba(255,255,255,0.08)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden', width: '120px', marginLeft: 'auto' }}>
+                                                <div style={{ height: '100%', width: dashRepPercent + '%', background: 'linear-gradient(90deg, #ff4444, #ff8800, #ffd700, #00ff88)', borderRadius: '2px', transition: 'width 1s ease-out' }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* XP Progress Bar */}
+                                    <div style={{ position: 'relative', marginBottom: '24px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                            <span style={{ color: '#888', fontSize: '0.78em' }}>Level {playerStats.level || 1} → {(playerStats.level || 1) + 1}</span>
+                                            <span style={{ color: '#00ccff', fontSize: '0.78em', fontWeight: 'bold' }}>{xpProgress || 0} / {xpNeeded || 100} XP</span>
+                                        </div>
+                                        <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: (xpPercent || 0) + '%', background: 'linear-gradient(90deg, #0088ff, #00ccff, #00ffcc)', borderRadius: '4px', transition: 'width 1.2s ease-out', boxShadow: '0 0 12px rgba(0,204,255,0.4)' }} />
+                                        </div>
+                                    </div>
+                                    
+                                    {/* City Stats — Animated Rings */}
+                                    <div className="dash-hero-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', position: 'relative' }}>
+                                        {dashStatRing(gameState?.stats?.economy || 50, '#ffd700', 'Economy', '💰')}
+                                        {dashStatRing(gameState?.stats?.security || 50, '#4488ff', 'Security', '🛡️')}
+                                        {dashStatRing(gameState?.stats?.culture || 50, '#ff69b4', 'Culture', '🎨')}
+                                        {dashStatRing(gameState?.stats?.morale || 50, '#00ff88', 'Morale', '😊')}
+                                    </div>
+                                    
+                                    {/* Resources Bar */}
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '20px', flexWrap: 'wrap' }}>
+                                        {[
+                                            { name: 'Hopium', val: resources?.hopium || 0, icon: '💊', color: '#00ff88' },
+                                            { name: 'Alpha', val: resources?.alpha || 0, icon: '🧠', color: '#aa88ff' },
+                                            { name: 'Copium', val: resources?.copium || 0, icon: '😤', color: '#ff8800' },
+                                            { name: 'Liquidity', val: resources?.liquidity || 0, icon: '💧', color: '#00ccff' }
+                                        ].map(function(r) {
+                                            return React.createElement('div', { key: r.name, style: { display: 'flex', alignItems: 'center', gap: '6px', background: r.color + '0d', border: '1px solid ' + r.color + '22', borderRadius: '20px', padding: '5px 12px' } },
+                                                React.createElement('span', { style: { fontSize: '0.9em' } }, r.icon),
+                                                React.createElement('span', { style: { color: r.color, fontWeight: 'bold', fontSize: '0.85em' } }, r.val),
+                                                React.createElement('span', { style: { color: '#555', fontSize: '0.7em' } }, r.name)
+                                            );
+                                        })}
+                                    </div>
+                                    
+                                    {/* Quick Navigation */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '8px', marginTop: '18px' }}>
+                                        {[
+                                            { icon: '🗺️', label: 'Explore', page: 'actions' },
+                                            { icon: '🗳️', label: 'Vote', page: 'governance' },
+                                            { icon: '🎮', label: 'Arcade', page: 'arcade' },
+                                            { icon: '📈', label: 'Trade', page: 'trading' },
+                                            { icon: '💬', label: 'Chat', page: 'social' },
+                                            { icon: '🏆', label: 'Ranks', page: 'leaderboard' }
+                                        ].map(function(nav) {
+                                            return React.createElement('div', { 
+                                                key: nav.page, 
+                                                onClick: function() { setCurrentPage(nav.page); },
+                                                style: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '14px 8px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.25s' },
+                                                onMouseOver: function(e) { e.currentTarget.style.background = 'rgba(255,215,0,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,215,0,0.25)'; },
+                                                onMouseOut: function(e) { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }
+                                            },
+                                                React.createElement('div', { style: { fontSize: '1.4em', marginBottom: '4px' } }, nav.icon),
+                                                React.createElement('div', { style: { color: '#aaa', fontSize: '0.75em' } }, nav.label)
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                
+                                {/* ═══════ LIVE CITY PULSE ═══════ */}
                                 <CityPulse />
                                 
-                                {/* Mayor's Inbox — Personal DMs & Missions */}
-                                <MayorInbox 
-                                    character={character}
-                                    showToast={showToast}
-                                    reputation={parseInt(localStorage.getItem('dc_city_rep') || '0')}
-                                    onNavigate={setCurrentPage}
-                                />
+                                {/* ═══════ MAYOR & REPUTATION — Side by Side on desktop ═══════ */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '0' }}>
+                                    <MayorInbox 
+                                        character={character}
+                                        showToast={showToast}
+                                        reputation={dashRep}
+                                        onNavigate={setCurrentPage}
+                                    />
+                                    <ReputationStatus
+                                        reputation={dashRep}
+                                        character={character}
+                                        showToast={showToast}
+                                    />
+                                </div>
                                 
-                                {/* Reputation Consequences */}
-                                <ReputationStatus
-                                    reputation={parseInt(localStorage.getItem('dc_city_rep') || '0')}
-                                    character={character}
-                                    showToast={showToast}
-                                />
-                                
-                                {/* NPC Relationships */}
+                                {/* ═══════ SOCIAL & DRAMA ZONE ═══════ */}
                                 <NPCRelationships
                                     character={character}
-                                    reputation={parseInt(localStorage.getItem('dc_city_rep') || '0')}
+                                    reputation={dashRep}
                                     showToast={showToast}
                                 />
                                 
-                                {/* Mayor Unhinged Panel — roasts, predictions, decrees */}
-                                <MayorUnhingedPanel />
-                                
-                                {/* Soap Opera Panel — Active NPC drama arcs with betting */}
-                                <SoapOperaPanel showToast={showToast} playerName={character?.name} />
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                                    <MayorUnhingedPanel />
+                                    <SoapOperaPanel showToast={showToast} playerName={character?.name} />
+                                </div>
                                 
                                 {/* Seasonal Event Banner */}
                                 <SeasonalEventBanner playerStats={playerStats} />
                                 
-                                {/* AI Mayor Dynamic Events */}
+                                {/* ═══════ EVENTS & PROGRESSION ═══════ */}
                                 <MayorDynamicEvents 
                                     gameState={gameState}
                                     resources={resources}
@@ -15531,7 +15724,6 @@
                                     playerName={character?.name}
                                 />
                                 
-                                {/* Battle Pass */}
                                 <BattlePass 
                                     playerStats={playerStats}
                                     resources={resources}
@@ -15539,53 +15731,40 @@
                                     showToast={showToast}
                                 />
                                 
-                                {/* Player Stats Panel */}
-                                <PlayerStatsPanel 
-                                    character={character}
-                                    playerStats={playerStats}
-                                    xpProgress={xpProgress}
-                                    xpNeeded={xpNeeded}
-                                    xpPercent={xpPercent}
-                                    resources={resources}
-                                />
-                                
-                                {/* Fear & Greed + Activity Feed */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                                {/* ═══════ STATS & ECONOMY — Side by Side ═══════ */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
                                     <FearGreedIndex />
                                     <LiveActivityFeed playerName={character?.name} onPlayerClick={openPlayerProfile} />
                                 </div>
                                 
-                                {/* Passive Income Display */}
-                                <PassiveIncomePanel 
-                                    resources={resources}
-                                    currentZone={currentZone}
-                                    playerName={character?.name}
-                                />
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                                    <PassiveIncomePanel 
+                                        resources={resources}
+                                        currentZone={currentZone}
+                                        playerName={character?.name}
+                                    />
+                                    <EconomyPanel resources={resources} />
+                                </div>
                                 
-                                {/* Economy Panel */}
-                                <EconomyPanel resources={resources} />
-                                
-                                {/* Zones Section */}
+                                {/* ═══════ ZONES & QUESTS ═══════ */}
                                 <ZonesSection 
                                     currentZone={currentZone}
                                     setCurrentZone={setCurrentZone}
                                     playerLevel={playerStats.level}
                                 />
                                 
-                                {/* Daily Quests */}
                                 <QuestsSection 
                                     quests={quests}
                                     onClaimReward={claimQuestReward}
                                 />
                                 
-                                {/* Expanded Achievements System */}
+                                {/* ═══════ ACHIEVEMENTS ═══════ */}
                                 <AchievementSection 
                                     playerStats={playerStats}
                                     character={character}
                                     resources={resources}
                                 />
                                 
-                                {/* Badges Display */}
                                 <div className="card">
                                     <h2>🏆 Your Badges</h2>
                                     <div className="badges-container">
@@ -15610,7 +15789,6 @@
                                     </div>
                                 </div>
                                 
-                                {/* NFT Achievements */}
                                 <NFTAchievementSection 
                                     character={character}
                                     playerStats={playerStats}
@@ -15909,6 +16087,11 @@
                         return (
                             <DocsPage />
                         );
+                    
+                    case 'brain':
+                        return (
+                            <AgentBrainPage />
+                        );
                         
                     default:
                         return null;
@@ -16093,6 +16276,13 @@
                         <div className="nav-section">
                             <div className="nav-section-title">Info</div>
                             <div 
+                                className={`nav-item ${currentPage === 'brain' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('brain'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">🧠</span>
+                                <span className="nav-item-text">Agent Brain</span>
+                            </div>
+                            <div 
                                 className={`nav-item ${currentPage === 'docs' ? 'active' : ''}`}
                                 onClick={() => { setCurrentPage('docs'); setSidebarOpen(false); }}
                             >
@@ -16100,6 +16290,20 @@
                                 <span className="nav-item-text">Whitepaper</span>
                             </div>
                         </div>
+                        
+                        {/* Upgrade Account (guests only) */}
+                        {isGuest && (
+                        <div className="nav-section" style={{ paddingTop: '10px' }}>
+                            <div 
+                                className="nav-item"
+                                onClick={() => setShowUpgradeModal(true)}
+                                style={{ color: '#ffd700' }}
+                            >
+                                <span className="nav-item-icon">⬆️</span>
+                                <span className="nav-item-text">Create Account</span>
+                            </div>
+                        </div>
+                        )}
                         
                         {/* Logout */}
                         <div className="nav-section" style={{ marginTop: 'auto', paddingTop: '20px' }}>
@@ -16116,6 +16320,177 @@
                     
                     {/* Main Content */}
                     <div className="main-content">
+                        {/* Guest Account Banner */}
+                        {isGuest && !guestBannerDismissed && (
+                            <div style={{
+                                background: 'linear-gradient(90deg, rgba(255, 215, 0, 0.12), rgba(255, 165, 0, 0.12))',
+                                border: '1px solid rgba(255, 215, 0, 0.3)',
+                                borderRadius: '12px',
+                                padding: '12px 16px',
+                                margin: '0 0 12px 0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '12px',
+                                flexWrap: 'wrap'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '200px' }}>
+                                    <span style={{ fontSize: '1.3em' }}>👻</span>
+                                    <div>
+                                        <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '0.9em' }}>Guest Mode</div>
+                                        <div style={{ color: '#aaa', fontSize: '0.78em' }}>Create an account to save your progress across devices</div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <button 
+                                        onClick={() => setShowUpgradeModal(true)}
+                                        style={{
+                                            background: 'linear-gradient(90deg, #ffd700, #ffaa00)',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            padding: '8px 16px',
+                                            color: '#000',
+                                            fontWeight: 'bold',
+                                            cursor: 'pointer',
+                                            fontSize: '0.85em',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        Create Account
+                                    </button>
+                                    <button 
+                                        onClick={() => setGuestBannerDismissed(true)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#666',
+                                            cursor: 'pointer',
+                                            fontSize: '1.2em',
+                                            padding: '4px 8px',
+                                            lineHeight: 1
+                                        }}
+                                    >✕</button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Guest Upgrade Modal */}
+                        {showUpgradeModal && (() => {
+                            const UpgradeModal = () => {
+                                const [upgradeEmail, setUpgradeEmail] = useState('');
+                                const [upgradePassword, setUpgradePassword] = useState('');
+                                const [upgradeConfirmPassword, setUpgradeConfirmPassword] = useState('');
+                                const [upgradeError, setUpgradeError] = useState('');
+                                const [upgradeLoading, setUpgradeLoading] = useState(false);
+                                const [upgradeSuccess, setUpgradeSuccess] = useState('');
+                                
+                                const handleUpgrade = async () => {
+                                    setUpgradeError('');
+                                    if (!upgradeEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(upgradeEmail)) {
+                                        setUpgradeError('Please enter a valid email'); return;
+                                    }
+                                    if (upgradePassword.length < 6) {
+                                        setUpgradeError('Password must be at least 6 characters'); return;
+                                    }
+                                    if (upgradePassword !== upgradeConfirmPassword) {
+                                        setUpgradeError('Passwords do not match'); return;
+                                    }
+                                    
+                                    setUpgradeLoading(true);
+                                    try {
+                                        const user = JSON.parse(localStorage.getItem('pumptown_user') || '{}');
+                                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/upgrade-guest', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ 
+                                                guestEmail: user.email, 
+                                                newEmail: upgradeEmail.toLowerCase(), 
+                                                password: upgradePassword 
+                                            })
+                                        });
+                                        const data = await response.json();
+                                        
+                                        if (data.success) {
+                                            // Update localStorage with real account
+                                            localStorage.setItem('pumptown_user', JSON.stringify({ email: data.newEmail }));
+                                            localStorage.setItem('pumptown_wallet', JSON.stringify({ address: data.newEmail, balance: 100000 }));
+                                            setIsGuest(false);
+                                            setUpgradeSuccess('Account created! Your progress has been saved. 🎉');
+                                            setTimeout(() => {
+                                                setShowUpgradeModal(false);
+                                                setWallet({ address: data.newEmail, balance: 100000 });
+                                            }, 1500);
+                                        } else {
+                                            setUpgradeError(data.error || 'Upgrade failed');
+                                        }
+                                    } catch (err) {
+                                        setUpgradeError('Connection error. Please try again.');
+                                    }
+                                    setUpgradeLoading(false);
+                                };
+                                
+                                return (
+                                    <div style={{
+                                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                        background: 'rgba(0,0,0,0.8)', 
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        zIndex: 10000, padding: '20px'
+                                    }} onClick={(e) => { if(e.target === e.currentTarget) setShowUpgradeModal(false); }}>
+                                        <div style={{
+                                            background: '#1a1a2e',
+                                            border: '1px solid rgba(255, 215, 0, 0.3)',
+                                            borderRadius: '16px',
+                                            padding: '30px',
+                                            maxWidth: '420px',
+                                            width: '100%'
+                                        }}>
+                                            <h3 style={{ color: '#ffd700', textAlign: 'center', marginBottom: '8px' }}>⬆️ Upgrade to Full Account</h3>
+                                            <p style={{ color: '#888', textAlign: 'center', marginBottom: '20px', fontSize: '0.9em' }}>
+                                                Keep all your progress, access from any device
+                                            </p>
+                                            
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <label style={{ display: 'block', marginBottom: '6px', color: '#888', fontSize: '0.85em' }}>📧 Email</label>
+                                                <input type="email" className="form-input" placeholder="Enter your email..." value={upgradeEmail}
+                                                    onChange={(e) => { setUpgradeEmail(e.target.value); setUpgradeError(''); }} disabled={upgradeLoading} style={{ width: '100%' }} />
+                                            </div>
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <label style={{ display: 'block', marginBottom: '6px', color: '#888', fontSize: '0.85em' }}>🔒 Password</label>
+                                                <input type="password" className="form-input" placeholder="Choose a password..." value={upgradePassword}
+                                                    onChange={(e) => { setUpgradePassword(e.target.value); setUpgradeError(''); }} disabled={upgradeLoading} style={{ width: '100%' }} />
+                                            </div>
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <label style={{ display: 'block', marginBottom: '6px', color: '#888', fontSize: '0.85em' }}>🔒 Confirm Password</label>
+                                                <input type="password" className="form-input" placeholder="Confirm password..." value={upgradeConfirmPassword}
+                                                    onChange={(e) => { setUpgradeConfirmPassword(e.target.value); setUpgradeError(''); }} disabled={upgradeLoading} style={{ width: '100%' }} />
+                                            </div>
+                                            
+                                            {upgradeError && (
+                                                <div style={{ background: 'rgba(255,68,68,0.2)', border: '1px solid #ff4444', padding: '10px', borderRadius: '8px', color: '#ff4444', marginBottom: '12px', textAlign: 'center', fontSize: '0.85em' }}>
+                                                    {upgradeError}
+                                                </div>
+                                            )}
+                                            {upgradeSuccess && (
+                                                <div style={{ background: 'rgba(0,255,136,0.2)', border: '1px solid #00ff88', padding: '10px', borderRadius: '8px', color: '#00ff88', marginBottom: '12px', textAlign: 'center', fontSize: '0.85em' }}>
+                                                    {upgradeSuccess}
+                                                </div>
+                                            )}
+                                            
+                                            <button className="connect-btn" onClick={handleUpgrade} disabled={upgradeLoading || !upgradeEmail.trim() || !upgradePassword}
+                                                style={{ width: '100%', marginBottom: '10px' }}>
+                                                {upgradeLoading ? 'Upgrading...' : '🚀 Create Account & Save Progress'}
+                                            </button>
+                                            <p onClick={() => setShowUpgradeModal(false)} 
+                                                style={{ color: '#666', textAlign: 'center', fontSize: '0.85em', cursor: 'pointer', marginTop: '8px' }}>
+                                                Maybe later
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            };
+                            return <UpgradeModal />;
+                        })()}
+                        
                         {/* Live Price Ticker */}
                         <LivePriceTicker />
                         
@@ -16982,6 +17357,13 @@
             const [reputation, setReputation] = useState(() => {
                 return parseInt(localStorage.getItem('dc_city_rep') || '0');
             });
+            // New states for game-feel
+            const [walkPhase, setWalkPhase] = useState(0);
+            const [typedText, setTypedText] = useState('');
+            const [isTyping, setIsTyping] = useState(false);
+            const [outcomeAnim, setOutcomeAnim] = useState('');
+            const typingRef = useRef(null);
+            
             const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const LOCATIONS = [
@@ -16993,6 +17375,19 @@
                 { id: 'town_square', name: 'Town Square', icon: '🏙️', desc: 'Where citizens clash', color: '#ff8800', bgGrad: 'linear-gradient(135deg, #2a1a0a, #1a0a00)', vibe: 'Protests, fights, gossip' },
                 { id: 'underground', name: 'The Underground', icon: '🕳️', desc: 'You didn\'t see this', color: '#ff00ff', bgGrad: 'linear-gradient(135deg, #2a0a2a, #0a001a)', vibe: 'Secret societies, hidden passages' }
             ];
+            
+            // Typewriter effect
+            var typeText = function(text, cb) {
+                if (typingRef.current) clearInterval(typingRef.current);
+                setTypedText(''); setIsTyping(true);
+                var i = 0;
+                typingRef.current = setInterval(function() {
+                    i++;
+                    setTypedText(text.substring(0, i));
+                    if (i >= text.length) { clearInterval(typingRef.current); typingRef.current = null; setIsTyping(false); if (cb) cb(); }
+                }, 22);
+            };
+            useEffect(function() { return function() { if (typingRef.current) clearInterval(typingRef.current); }; }, []);
             
             // Cooldown timer
             useEffect(function() {
@@ -17006,307 +17401,199 @@
                 return function() { clearInterval(iv); };
             }, [cooldownUntil]);
             
-            // Save log
-            useEffect(function() {
-                localStorage.setItem('dc_action_log', JSON.stringify(actionLog.slice(0, 30)));
-            }, [actionLog]);
-            useEffect(function() {
-                localStorage.setItem('dc_city_rep', reputation.toString());
-            }, [reputation]);
+            useEffect(function() { localStorage.setItem('dc_action_log', JSON.stringify(actionLog.slice(0, 30))); }, [actionLog]);
+            useEffect(function() { localStorage.setItem('dc_city_rep', reputation.toString()); }, [reputation]);
             
             var exploreLocation = function(loc) {
                 if (cooldownUntil > Date.now()) { showToast('Still cooling down! ' + cooldownText, 'error'); return; }
-                setWalkingTo(loc.id);
-                setSituation(null); setOutcome(null); setChosenChoice(null);
-                // Walking animation delay
+                setWalkingTo(loc.id); setWalkPhase(1);
+                setSituation(null); setOutcome(null); setChosenChoice(null); setTypedText(''); setOutcomeAnim('');
                 setTimeout(function() {
-                    setCurrentLocation(loc);
-                    setWalkingTo(null);
-                    setLoadingSituation(true);
-                    fetch(API_BASE + '/api/city-situations?player=' + encodeURIComponent(character?.name || 'Citizen') + '&location=' + loc.id)
-                        .then(function(r) { return r.json(); })
-                        .then(function(data) {
-                            if (data.success) { setSituation(data.situation); }
-                            else { showToast('Nothing happening here right now...', 'info'); setCurrentLocation(null); }
-                            setLoadingSituation(false);
-                        })
-                        .catch(function() { setLoadingSituation(false); showToast('Failed to scout location', 'error'); setCurrentLocation(null); });
-                }, 800);
+                    setWalkPhase(2);
+                    setTimeout(function() {
+                        setCurrentLocation(loc); setWalkingTo(null); setWalkPhase(0); setLoadingSituation(true);
+                        fetch(API_BASE + '/api/city-situations?player=' + encodeURIComponent(character?.name || 'Citizen') + '&location=' + loc.id)
+                            .then(function(r) { return r.json(); })
+                            .then(function(data) {
+                                if (data.success) { setSituation(data.situation); if (data.situation && data.situation.desc) typeText(data.situation.desc); }
+                                else { showToast('Nothing happening here right now...', 'info'); setCurrentLocation(null); }
+                                setLoadingSituation(false);
+                            })
+                            .catch(function() { setLoadingSituation(false); showToast('Failed to scout location', 'error'); setCurrentLocation(null); });
+                    }, 800);
+                }, 1500);
             };
             
             var makeChoice = function(choice) {
                 if (resolving) return;
-                setResolving(true);
-                setChosenChoice(choice);
-                
+                setResolving(true); setChosenChoice(choice);
                 fetch(API_BASE + '/api/city-situations/resolve', {
                     method: 'POST', headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({
-                        playerName: character?.name || 'Citizen',
-                        location: currentLocation?.id,
-                        situationTitle: situation?.title,
-                        choiceId: choice.id,
-                        choiceLabel: choice.label,
-                        risk: choice.risk
-                    })
+                    body: JSON.stringify({ playerName: character?.name || 'Citizen', location: currentLocation?.id, situationTitle: situation?.title, choiceId: choice.id, choiceLabel: choice.label, risk: choice.risk })
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     var success = data.outcome === 'success';
                     var rewards = success ? (choice.rewards || {}) : (choice.failRewards || choice.rewards || {});
-                    
-                    setOutcome({
-                        success: success,
-                        narrative: data.narrative || (success ? 'It worked!' : 'Didn\'t go as planned...'),
-                        rewards: rewards
-                    });
-                    
-                    // Apply rewards
-                    var xpGain = rewards.xp || 0;
-                    var repGain = rewards.rep || 0;
+                    setOutcomeAnim(success ? 'success' : 'fail');
+                    setTimeout(function() { setOutcomeAnim(''); }, success ? 3000 : 1500);
+                    setOutcome({ success: success, narrative: data.narrative || (success ? 'It worked!' : 'Didn\'t go as planned...'), rewards: rewards });
+                    typeText(data.narrative || (success ? 'It worked!' : 'Didn\'t go as planned...'));
+                    var xpGain = rewards.xp || 0; var repGain = rewards.rep || 0;
                     if (xpGain > 0 && window.addXP) window.addXP(xpGain);
                     setReputation(function(prev) { return prev + repGain; });
-                    
-                    // NPC Relationship update — extract NPC name from situation
                     if (situation?.title && window.updateNPCRelationship) {
-                        // Try to find NPC name in the situation
                         var npcMatch = (situation.title + ' ' + (situation.description || '')).match(/(?:with|from|about|against|for|meet|help|betray|report|convince)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/);
                         var npcName = npcMatch ? npcMatch[1] : situation.npc || null;
-                        // Also check situation characters array if present
-                        if (!npcName && situation.characters && situation.characters.length > 0) {
-                            npcName = situation.characters[0];
-                        }
-                        // Generate a name from location if no NPC found
-                        if (!npcName) {
-                            var locationNPCs = {
-                                casino: 'Casino Tony', dark_alley: 'Shadow', mayors_office: 'Secretary Mills',
-                                trading_floor: 'Trader Wang', courthouse: 'Bailiff Reed', town_square: 'Old Pete', underground: 'The Broker'
-                            };
-                            npcName = locationNPCs[currentLocation?.id] || 'A Stranger';
-                        }
-                        var relChange = success ? (repGain > 0 ? 15 : 5) : (repGain < 0 ? -15 : -5);
-                        var context = (success ? 'Helped with: ' : 'Failed at: ') + (situation.title || 'something').substring(0, 30);
-                        window.updateNPCRelationship(npcName, relChange, context);
+                        if (!npcName && situation.characters && situation.characters.length > 0) npcName = situation.characters[0];
+                        if (!npcName) { var lNPCs = { casino:'Casino Tony', dark_alley:'Shadow', mayors_office:'Secretary Mills', trading_floor:'Trader Wang', courthouse:'Bailiff Reed', town_square:'Old Pete', underground:'The Broker' }; npcName = lNPCs[currentLocation?.id] || 'A Stranger'; }
+                        window.updateNPCRelationship(npcName, success ? (repGain > 0 ? 15 : 5) : (repGain < 0 ? -15 : -5), (success ? 'Helped with: ' : 'Failed at: ') + (situation.title || 'something').substring(0, 30));
                     }
-                    
-                    // Mission completion check
-                    try {
-                        var activeMission = JSON.parse(localStorage.getItem('dc_active_mission'));
-                        var missionExpiry = parseInt(localStorage.getItem('dc_mission_expiry') || '0');
-                        if (activeMission && missionExpiry > Date.now() && activeMission.location === currentLocation?.id) {
-                            // Mission complete!
-                            var mReward = activeMission.reward || { xp: 200, rep: 15 };
-                            if (mReward.xp && window.addXP) window.addXP(mReward.xp);
-                            setReputation(function(prev) { return prev + (mReward.rep || 0); });
-                            localStorage.removeItem('dc_active_mission');
-                            localStorage.removeItem('dc_mission_expiry');
-                            showToast('🎯 MISSION COMPLETE! +' + (mReward.xp || 0) + ' XP, +' + (mReward.rep || 0) + ' REP — Mayor is pleased!', 'success');
-                        }
-                    } catch(e) {}
-                    
-                    // Log it
-                    setActionLog(function(prev) {
-                        return [{ 
-                            location: currentLocation?.name, 
-                            icon: currentLocation?.icon,
-                            situation: situation?.title, 
-                            choice: choice.label, 
-                            success: success,
-                            rewards: rewards,
-                            time: Date.now() 
-                        }].concat(prev).slice(0, 30);
-                    });
-                    
-                    // Set cooldown (45-90 seconds)
-                    var cd = Date.now() + (45000 + Math.floor(Math.random() * 45000));
-                    setCooldownUntil(cd);
-                    localStorage.setItem('dc_explore_cooldown', cd.toString());
-                    
+                    try { var am = JSON.parse(localStorage.getItem('dc_active_mission')); var me = parseInt(localStorage.getItem('dc_mission_expiry') || '0'); if (am && me > Date.now() && am.location === currentLocation?.id) { var mR = am.reward || { xp: 200, rep: 15 }; if (mR.xp && window.addXP) window.addXP(mR.xp); setReputation(function(p) { return p + (mR.rep || 0); }); localStorage.removeItem('dc_active_mission'); localStorage.removeItem('dc_mission_expiry'); showToast('🎯 MISSION COMPLETE! +' + (mR.xp || 0) + ' XP, +' + (mR.rep || 0) + ' REP', 'success'); } } catch(e) {}
+                    setActionLog(function(prev) { return [{ location: currentLocation?.name, icon: currentLocation?.icon, situation: situation?.title, choice: choice.label, success: success, rewards: rewards, time: Date.now() }].concat(prev).slice(0, 30); });
+                    var cd = Date.now() + (45000 + Math.floor(Math.random() * 45000)); setCooldownUntil(cd); localStorage.setItem('dc_explore_cooldown', cd.toString());
                     setResolving(false);
                     showToast(success ? '🏆 Success! ' + (xpGain > 0 ? '+' + xpGain + ' XP' : '') : '💀 Failed... ' + (repGain < 0 ? repGain + ' REP' : ''), success ? 'success' : 'error');
                 })
                 .catch(function() { setResolving(false); showToast('Something went wrong', 'error'); });
             };
             
-            var goBack = function() {
-                setCurrentLocation(null); setSituation(null); setOutcome(null); setChosenChoice(null);
-            };
-            
+            var goBack = function() { setCurrentLocation(null); setSituation(null); setOutcome(null); setChosenChoice(null); setTypedText(''); setOutcomeAnim(''); };
             var riskColors = { none: '#00ff88', low: '#88ff00', medium: '#ffd700', high: '#ff8800', extreme: '#ff4444' };
+            var onCooldown = cooldownUntil > Date.now();
             
-            // ═══════ RENDER ═══════
             return React.createElement(React.Fragment, null,
-                // Header
-                React.createElement('div', { style: { background: 'rgba(255,255,255,0.03)', borderRadius: '16px', padding: '20px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.06)' } },
+                // ═══════ FULL-SCREEN WALKING OVERLAY ═══════
+                walkPhase > 0 && React.createElement('div', { style: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)' } },
+                    React.createElement('div', { style: { fontSize: '4.5em', animation: 'walkBob 0.6s ease-in-out infinite', marginBottom: '20px' } }, '🚶'),
+                    React.createElement('div', { style: { display: 'flex', gap: '12px', marginBottom: '24px' } },
+                        [0,1,2,3,4].map(function(i) { var loc = LOCATIONS.find(function(l) { return l.id === walkingTo; }); return React.createElement('div', { key: i, style: { width: '8px', height: '8px', borderRadius: '50%', background: (loc||{}).color || '#ffd700', animation: 'pulse 1.2s ease-in-out infinite', animationDelay: (i * 0.2) + 's' } }); })
+                    ),
+                    React.createElement('div', { style: { textAlign: 'center' } },
+                        React.createElement('div', { style: { color: (LOCATIONS.find(function(l) { return l.id === walkingTo; })||{}).color || '#ffd700', fontWeight: 'bold', fontSize: '1.2em', marginBottom: '6px' } }, walkPhase === 1 ? 'Walking to...' : 'Arriving at...'),
+                        React.createElement('div', { style: { color: '#fff', fontSize: '1.6em', fontWeight: 'bold' } }, React.createElement('span', { style: { marginRight: '10px', fontSize: '1.2em' } }, (LOCATIONS.find(function(l) { return l.id === walkingTo; })||{}).icon || '📍'), (LOCATIONS.find(function(l) { return l.id === walkingTo; })||{}).name || ''),
+                        React.createElement('div', { style: { color: '#666', fontSize: '0.85em', marginTop: '8px', fontStyle: 'italic' } }, (LOCATIONS.find(function(l) { return l.id === walkingTo; })||{}).vibe || '')
+                    )
+                ),
+                
+                // ═══════ HEADER ═══════
+                React.createElement('div', { style: { background: 'linear-gradient(135deg, #0a0a1a, #1a0a2e)', borderRadius: '16px', padding: '20px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.06)', position: 'relative', overflow: 'hidden' } },
+                    React.createElement('div', { style: { position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #ff4444, #ffd700, #00ff88, #4488ff, #ff00ff)', backgroundSize: '200% 100%', animation: 'gradientShift 4s ease infinite' } }),
                     React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' } },
                         React.createElement('div', null,
                             React.createElement('h2', { style: { margin: '0 0 4px', color: '#fff', fontSize: '1.3em' } }, '🗺️ Explore Degens City'),
-                            React.createElement('p', { style: { margin: 0, color: '#888', fontSize: '0.85em' } },
-                                currentLocation ? '📍 You are at: ' + currentLocation.name : 'Choose a location to explore'
-                            )
+                            React.createElement('p', { style: { margin: 0, color: '#888', fontSize: '0.85em' } }, currentLocation ? '📍 Currently at: ' + currentLocation.name : 'Choose your next destination')
                         ),
                         React.createElement('div', { style: { display: 'flex', gap: '12px', alignItems: 'center' } },
-                            React.createElement('div', { style: { background: 'rgba(255,215,0,0.1)', border: '1px solid #ffd70033', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85em' } },
-                                React.createElement('span', { style: { color: '#ffd700' } }, '⭐ Rep: '),
-                                React.createElement('span', { style: { color: reputation >= 0 ? '#00ff88' : '#ff4444', fontWeight: 'bold' } }, (reputation >= 0 ? '+' : '') + reputation)
-                            ),
-                            cooldownText && React.createElement('div', { style: { background: 'rgba(255,68,68,0.1)', border: '1px solid #ff444433', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85em' } },
-                                React.createElement('span', { style: { color: '#ff4444' } }, '⏳ ' + cooldownText)
-                            )
+                            React.createElement('div', { style: { background: 'rgba(255,215,0,0.1)', border: '1px solid #ffd70033', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85em' } }, React.createElement('span', { style: { color: '#ffd700' } }, '⭐ '), React.createElement('span', { style: { color: reputation >= 0 ? '#00ff88' : '#ff4444', fontWeight: 'bold' } }, (reputation >= 0 ? '+' : '') + reputation)),
+                            cooldownText && React.createElement('div', { style: { background: 'rgba(255,68,68,0.1)', border: '1px solid #ff444433', borderRadius: '20px', padding: '6px 14px', fontSize: '0.85em' } }, React.createElement('span', { style: { color: '#ff4444' } }, '⏳ ' + cooldownText))
                         )
                     )
                 ),
                 
-                // ═══════ CITY MAP — Location Selection ═══════
-                !currentLocation && React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' } },
+                // ═══════ CITY MAP ═══════
+                !currentLocation && React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '18px', padding: '16px', border: '1px solid rgba(255,255,255,0.04)' } },
                     LOCATIONS.map(function(loc) {
-                        var isWalking = walkingTo === loc.id;
-                        var onCooldown = cooldownUntil > Date.now();
-                        return React.createElement('div', { 
-                            key: loc.id,
-                            onClick: function() { if (!onCooldown && !walkingTo) exploreLocation(loc); },
-                            style: { 
-                                background: isWalking ? loc.color + '22' : loc.bgGrad, 
-                                border: '1px solid ' + loc.color + (isWalking ? '88' : '33'), 
-                                borderRadius: '14px', padding: '18px 14px', cursor: onCooldown ? 'not-allowed' : 'pointer', 
-                                transition: 'all 0.3s', textAlign: 'center', opacity: onCooldown ? 0.5 : 1,
-                                transform: isWalking ? 'scale(1.05)' : 'scale(1)',
-                                boxShadow: isWalking ? '0 0 25px ' + loc.color + '44' : 'none'
-                            }
+                        return React.createElement('div', { key: loc.id, onClick: function() { if (!onCooldown) exploreLocation(loc); },
+                            style: { background: loc.bgGrad, border: '1px solid ' + loc.color + '33', borderRadius: '14px', padding: '18px 14px', cursor: onCooldown ? 'not-allowed' : 'pointer', transition: 'all 0.3s', textAlign: 'center', opacity: onCooldown ? 0.5 : 1, position: 'relative', overflow: 'hidden' },
+                            onMouseOver: function(e) { if (!onCooldown) { e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)'; e.currentTarget.style.borderColor = loc.color + '88'; e.currentTarget.style.boxShadow = '0 8px 30px ' + loc.color + '22'; }},
+                            onMouseOut: function(e) { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = loc.color + '33'; e.currentTarget.style.boxShadow = ''; }
                         },
-                            React.createElement('div', { style: { fontSize: '2.2em', marginBottom: '8px', transition: 'transform 0.3s', transform: isWalking ? 'scale(1.2)' : 'none' } }, isWalking ? '🚶' : loc.icon),
-                            React.createElement('div', { style: { color: loc.color, fontWeight: 'bold', fontSize: '0.9em', marginBottom: '4px' } }, loc.name),
-                            React.createElement('div', { style: { color: '#888', fontSize: '0.75em', lineHeight: '1.3' } }, isWalking ? 'Walking there...' : loc.desc),
-                            React.createElement('div', { style: { color: '#555', fontSize: '0.65em', marginTop: '6px', fontStyle: 'italic' } }, loc.vibe)
+                            React.createElement('div', { style: { position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle at center, ' + loc.color + '08, transparent 50%)', pointerEvents: 'none' } }),
+                            React.createElement('div', { style: { fontSize: '2.4em', marginBottom: '8px', position: 'relative' } }, loc.icon),
+                            React.createElement('div', { style: { color: loc.color, fontWeight: 'bold', fontSize: '0.9em', marginBottom: '4px', position: 'relative' } }, loc.name),
+                            React.createElement('div', { style: { color: '#888', fontSize: '0.75em', lineHeight: '1.3', position: 'relative' } }, loc.desc),
+                            React.createElement('div', { style: { color: '#555', fontSize: '0.65em', marginTop: '6px', fontStyle: 'italic', position: 'relative' } }, loc.vibe)
                         );
                     })
                 ),
                 
-                // ═══════ SITUATION VIEW — Active Event at Location ═══════
-                currentLocation && React.createElement('div', null,
-                    // Back button
-                    React.createElement('button', { 
-                        onClick: goBack, 
-                        style: { background: 'rgba(255,255,255,0.05)', border: '1px solid #333', borderRadius: '10px', color: '#888', padding: '8px 16px', cursor: 'pointer', marginBottom: '15px', fontSize: '0.85em' }
-                    }, '← Back to City Map'),
+                // ═══════ ENCOUNTER SCREEN ═══════
+                currentLocation && React.createElement('div', { className: outcomeAnim === 'success' ? 'explore-outcome-success' : outcomeAnim === 'fail' ? 'explore-outcome-fail' : '', style: { animation: 'encounterSlideIn 0.5s ease-out' } },
+                    React.createElement('button', { onClick: goBack, style: { background: 'rgba(255,255,255,0.05)', border: '1px solid #333', borderRadius: '10px', color: '#888', padding: '8px 16px', cursor: 'pointer', marginBottom: '15px', fontSize: '0.85em', transition: 'all 0.2s' } }, '← Back to City Map'),
                     
                     // Location header
-                    React.createElement('div', { style: { background: currentLocation.bgGrad, border: '1px solid ' + currentLocation.color + '44', borderRadius: '14px', padding: '16px 20px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '14px' } },
-                        React.createElement('span', { style: { fontSize: '2em' } }, currentLocation.icon),
-                        React.createElement('div', null,
-                            React.createElement('div', { style: { color: currentLocation.color, fontWeight: 'bold', fontSize: '1.1em' } }, currentLocation.name),
-                            React.createElement('div', { style: { color: '#888', fontSize: '0.8em' } }, currentLocation.vibe)
+                    React.createElement('div', { style: { background: currentLocation.bgGrad, border: '1px solid ' + currentLocation.color + '44', borderRadius: '16px', padding: '20px', marginBottom: '15px', position: 'relative', overflow: 'hidden' } },
+                        React.createElement('div', { style: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, ' + currentLocation.color + ', transparent)', backgroundSize: '200% 100%', animation: 'gradientShift 3s ease infinite' } }),
+                        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '14px' } },
+                            React.createElement('div', { style: { fontSize: '2.5em', filter: 'drop-shadow(0 0 10px ' + currentLocation.color + '44)' } }, currentLocation.icon),
+                            React.createElement('div', null,
+                                React.createElement('div', { style: { color: currentLocation.color, fontWeight: 'bold', fontSize: '1.2em' } }, currentLocation.name),
+                                React.createElement('div', { style: { color: '#888', fontSize: '0.8em', fontStyle: 'italic' } }, currentLocation.vibe)
+                            )
                         )
                     ),
                     
                     // Loading
-                    loadingSituation && React.createElement('div', { style: { textAlign: 'center', padding: '50px 20px' } },
-                        React.createElement('div', { style: { fontSize: '2.5em', marginBottom: '12px', animation: 'pulse 1s infinite' } }, '👀'),
-                        React.createElement('div', { style: { color: '#888' } }, 'Scouting the area...')
+                    loadingSituation && React.createElement('div', { style: { textAlign: 'center', padding: '60px 20px' } },
+                        React.createElement('div', { style: { fontSize: '3em', marginBottom: '15px', animation: 'pulse 1s infinite' } }, '👀'),
+                        React.createElement('div', { style: { color: currentLocation.color, fontWeight: 'bold', marginBottom: '6px' } }, 'Scouting the area...'),
+                        React.createElement('div', { style: { display: 'flex', justifyContent: 'center', gap: '6px' } }, [0,1,2].map(function(i) { return React.createElement('div', { key: i, style: { width: '8px', height: '8px', borderRadius: '50%', background: currentLocation.color, animation: 'pulse 1s infinite', animationDelay: (i*0.3)+'s' } }); }))
                     ),
                     
                     // Situation card
-                    situation && !loadingSituation && React.createElement('div', { style: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden' } },
-                        // Situation header
-                        React.createElement('div', { style: { padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)' } },
-                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' } },
-                                React.createElement('span', { style: { fontSize: '1.8em' } }, situation.icon || '⚡'),
-                                React.createElement('h3', { style: { margin: 0, color: '#fff', fontSize: '1.15em', lineHeight: '1.3' } }, situation.title)
+                    situation && !loadingSituation && React.createElement('div', { style: { background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '18px', overflow: 'hidden', animation: 'encounterSlideIn 0.5s ease-out' } },
+                        React.createElement('div', { style: { padding: '22px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(180deg, ' + currentLocation.color + '0a, transparent)' } },
+                            React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' } },
+                                React.createElement('span', { style: { fontSize: '2em', filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.2))' } }, situation.icon || '⚡'),
+                                React.createElement('h3', { style: { margin: 0, color: '#fff', fontSize: '1.2em', lineHeight: '1.3' } }, situation.title)
                             ),
-                            React.createElement('p', { style: { margin: 0, color: '#bbb', fontSize: '0.9em', lineHeight: '1.6' } }, situation.desc)
+                            React.createElement('p', { style: { margin: 0, color: '#bbb', fontSize: '0.92em', lineHeight: '1.7', minHeight: '48px' } },
+                                typedText || situation.desc,
+                                isTyping && React.createElement('span', { style: { display: 'inline-block', width: '2px', height: '14px', background: currentLocation.color, marginLeft: '2px', animation: 'blink 0.8s step-end infinite', verticalAlign: 'middle' } })
+                            )
                         ),
                         
-                        // Choices (only if no outcome yet)
-                        !outcome && React.createElement('div', { style: { padding: '15px' } },
-                            React.createElement('div', { style: { color: '#888', fontSize: '0.75em', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px', paddingLeft: '4px' } }, 'What do you do?'),
-                            (situation.choices || []).map(function(choice) {
-                                var isChosen = chosenChoice && chosenChoice.id === choice.id;
-                                return React.createElement('div', { 
-                                    key: choice.id,
-                                    onClick: function() { if (!resolving && !chosenChoice) makeChoice(choice); },
-                                    style: { 
-                                        background: isChosen ? (riskColors[choice.risk] || '#888') + '15' : 'rgba(255,255,255,0.02)', 
-                                        border: '1px solid ' + (isChosen ? (riskColors[choice.risk] || '#888') + '66' : 'rgba(255,255,255,0.06)'),
-                                        borderRadius: '12px', padding: '14px 16px', marginBottom: '8px', 
-                                        cursor: resolving || chosenChoice ? 'default' : 'pointer', 
-                                        transition: 'all 0.2s',
-                                        opacity: (chosenChoice && !isChosen) ? 0.35 : 1
-                                    }
+                        // Choices
+                        !outcome && React.createElement('div', { style: { padding: '16px 20px' } },
+                            React.createElement('div', { style: { color: '#666', fontSize: '0.7em', textTransform: 'uppercase', letterSpacing: '3px', marginBottom: '14px' } }, '⚔️ What do you do?'),
+                            (situation.choices || []).map(function(choice, idx) {
+                                var isChosen = chosenChoice && chosenChoice.id === choice.id; var rColor = riskColors[choice.risk] || '#888';
+                                return React.createElement('div', { key: choice.id, onClick: function() { if (!resolving && !chosenChoice) makeChoice(choice); },
+                                    style: { background: isChosen ? rColor + '15' : 'rgba(255,255,255,0.02)', border: '1px solid ' + (isChosen ? rColor + '66' : 'rgba(255,255,255,0.06)'), borderLeft: '3px solid ' + (isChosen ? rColor : 'rgba(255,255,255,0.1)'), borderRadius: '12px', padding: '14px 16px', marginBottom: '8px', cursor: resolving || chosenChoice ? 'default' : 'pointer', transition: 'all 0.25s', opacity: (chosenChoice && !isChosen) ? 0.3 : 1, animation: 'choiceAppear 0.4s ease-out backwards', animationDelay: (idx * 0.1) + 's' },
+                                    onMouseOver: function(e) { if (!resolving && !chosenChoice) { e.currentTarget.style.transform = 'translateX(6px)'; } },
+                                    onMouseOut: function(e) { e.currentTarget.style.transform = ''; }
                                 },
                                     React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' } },
-                                        React.createElement('span', { style: { color: '#fff', fontWeight: 'bold', fontSize: '0.9em' } }, choice.label),
-                                        React.createElement('span', { style: { color: riskColors[choice.risk] || '#888', fontSize: '0.7em', fontWeight: 'bold', textTransform: 'uppercase', padding: '2px 8px', borderRadius: '6px', background: (riskColors[choice.risk] || '#888') + '18' } }, choice.risk === 'none' ? 'SAFE' : choice.risk)
+                                        React.createElement('span', { style: { color: '#fff', fontWeight: 'bold', fontSize: '0.92em' } }, choice.label),
+                                        React.createElement('span', { style: { color: rColor, fontSize: '0.7em', fontWeight: 'bold', textTransform: 'uppercase', padding: '2px 10px', borderRadius: '6px', background: rColor + '18' } }, choice.risk === 'none' ? '✓ SAFE' : '⚠ ' + choice.risk)
                                     ),
-                                    React.createElement('div', { style: { color: '#999', fontSize: '0.8em', lineHeight: '1.4' } }, choice.desc),
-                                    choice.rewards && React.createElement('div', { style: { display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' } },
-                                        choice.rewards.xp && React.createElement('span', { style: { fontSize: '0.7em', color: '#00ccff', background: '#00ccff15', padding: '2px 6px', borderRadius: '4px' } }, '+' + choice.rewards.xp + ' XP'),
-                                        choice.rewards.hopium && React.createElement('span', { style: { fontSize: '0.7em', color: '#00ff88', background: '#00ff8815', padding: '2px 6px', borderRadius: '4px' } }, (choice.rewards.hopium >= 0 ? '+' : '') + choice.rewards.hopium + ' HOPIUM'),
-                                        choice.rewards.rep && React.createElement('span', { style: { fontSize: '0.7em', color: choice.rewards.rep >= 0 ? '#ffd700' : '#ff4444', background: (choice.rewards.rep >= 0 ? '#ffd700' : '#ff4444') + '15', padding: '2px 6px', borderRadius: '4px' } }, (choice.rewards.rep >= 0 ? '+' : '') + choice.rewards.rep + ' REP'),
-                                        choice.rewards.alpha && React.createElement('span', { style: { fontSize: '0.7em', color: '#aa88ff', background: '#aa88ff15', padding: '2px 6px', borderRadius: '4px' } }, '+' + choice.rewards.alpha + ' ALPHA')
+                                    React.createElement('div', { style: { color: '#999', fontSize: '0.82em', lineHeight: '1.4' } }, choice.desc),
+                                    choice.rewards && React.createElement('div', { style: { display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' } },
+                                        choice.rewards.xp && React.createElement('span', { style: { fontSize: '0.72em', color: '#00ccff', background: '#00ccff15', padding: '2px 8px', borderRadius: '4px' } }, '+' + choice.rewards.xp + ' XP'),
+                                        choice.rewards.hopium && React.createElement('span', { style: { fontSize: '0.72em', color: '#00ff88', background: '#00ff8815', padding: '2px 8px', borderRadius: '4px' } }, (choice.rewards.hopium >= 0 ? '+' : '') + choice.rewards.hopium + ' HOP'),
+                                        choice.rewards.rep && React.createElement('span', { style: { fontSize: '0.72em', color: choice.rewards.rep >= 0 ? '#ffd700' : '#ff4444', background: (choice.rewards.rep >= 0 ? '#ffd700' : '#ff4444') + '15', padding: '2px 8px', borderRadius: '4px' } }, (choice.rewards.rep >= 0 ? '+' : '') + choice.rewards.rep + ' REP'),
+                                        choice.rewards.alpha && React.createElement('span', { style: { fontSize: '0.72em', color: '#aa88ff', background: '#aa88ff15', padding: '2px 8px', borderRadius: '4px' } }, '+' + choice.rewards.alpha + ' ALPHA')
                                     ),
-                                    isChosen && resolving && React.createElement('div', { style: { color: '#ffd700', fontSize: '0.8em', marginTop: '8px', animation: 'pulse 1s infinite' } }, '⏳ Resolving...')
+                                    isChosen && resolving && React.createElement('div', { style: { color: '#ffd700', fontSize: '0.8em', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' } }, React.createElement('div', { style: { width: '14px', height: '14px', border: '2px solid #ffd700', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }), 'Resolving...')
                                 );
                             })
                         ),
                         
-                        // ═══════ OUTCOME ═══════
+                        // Outcome
                         outcome && React.createElement('div', { style: { padding: '20px' } },
-                            React.createElement('div', { style: { 
-                                background: outcome.success ? 'rgba(0,255,136,0.08)' : 'rgba(255,68,68,0.08)', 
-                                border: '2px solid ' + (outcome.success ? '#00ff8844' : '#ff444444'), 
-                                borderRadius: '14px', padding: '20px', textAlign: 'center', marginBottom: '15px' 
-                            } },
-                                React.createElement('div', { style: { fontSize: '2.5em', marginBottom: '8px' } }, outcome.success ? '🏆' : '💀'),
-                                React.createElement('div', { style: { color: outcome.success ? '#00ff88' : '#ff4444', fontWeight: 'bold', fontSize: '1.2em', marginBottom: '8px' } }, outcome.success ? 'SUCCESS!' : 'FAILED'),
-                                React.createElement('p', { style: { color: '#ccc', margin: '0 0 12px', fontSize: '0.9em', lineHeight: '1.5' } }, outcome.narrative),
-                                
-                                // Rewards display
+                            React.createElement('div', { style: { background: outcome.success ? 'rgba(0,255,136,0.06)' : 'rgba(255,68,68,0.06)', border: '2px solid ' + (outcome.success ? '#00ff8833' : '#ff444433'), borderRadius: '16px', padding: '24px', textAlign: 'center', marginBottom: '16px', position: 'relative', overflow: 'hidden' } },
+                                outcome.success && React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 50%, rgba(0,255,136,0.08), transparent 60%)', pointerEvents: 'none' } }),
+                                React.createElement('div', { style: { fontSize: '3em', marginBottom: '10px', animation: 'rewardPop 0.6s ease-out' } }, outcome.success ? '🏆' : '💀'),
+                                React.createElement('div', { style: { color: outcome.success ? '#00ff88' : '#ff4444', fontWeight: 'bold', fontSize: '1.3em', marginBottom: '10px', letterSpacing: '2px' } }, outcome.success ? 'SUCCESS!' : 'FAILED'),
+                                React.createElement('p', { style: { color: '#ccc', margin: '0 0 16px', fontSize: '0.92em', lineHeight: '1.6' } }, typedText, isTyping && React.createElement('span', { style: { display: 'inline-block', width: '2px', height: '14px', background: outcome.success ? '#00ff88' : '#ff4444', marginLeft: '2px', animation: 'blink 0.8s step-end infinite', verticalAlign: 'middle' } })),
                                 outcome.rewards && React.createElement('div', { style: { display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' } },
-                                    outcome.rewards.xp && React.createElement('div', { style: { background: '#00ccff15', border: '1px solid #00ccff33', borderRadius: '10px', padding: '8px 14px' } },
-                                        React.createElement('div', { style: { color: '#00ccff', fontWeight: 'bold', fontSize: '1.1em' } }, '+' + outcome.rewards.xp),
-                                        React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'XP')
-                                    ),
-                                    outcome.rewards.hopium && React.createElement('div', { style: { background: (outcome.rewards.hopium >= 0 ? '#00ff88' : '#ff4444') + '15', border: '1px solid ' + (outcome.rewards.hopium >= 0 ? '#00ff88' : '#ff4444') + '33', borderRadius: '10px', padding: '8px 14px' } },
-                                        React.createElement('div', { style: { color: outcome.rewards.hopium >= 0 ? '#00ff88' : '#ff4444', fontWeight: 'bold', fontSize: '1.1em' } }, (outcome.rewards.hopium >= 0 ? '+' : '') + outcome.rewards.hopium),
-                                        React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'HOPIUM')
-                                    ),
-                                    outcome.rewards.rep && React.createElement('div', { style: { background: (outcome.rewards.rep >= 0 ? '#ffd700' : '#ff4444') + '15', border: '1px solid ' + (outcome.rewards.rep >= 0 ? '#ffd700' : '#ff4444') + '33', borderRadius: '10px', padding: '8px 14px' } },
-                                        React.createElement('div', { style: { color: outcome.rewards.rep >= 0 ? '#ffd700' : '#ff4444', fontWeight: 'bold', fontSize: '1.1em' } }, (outcome.rewards.rep >= 0 ? '+' : '') + outcome.rewards.rep),
-                                        React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'REP')
-                                    ),
-                                    outcome.rewards.alpha && React.createElement('div', { style: { background: '#aa88ff15', border: '1px solid #aa88ff33', borderRadius: '10px', padding: '8px 14px' } },
-                                        React.createElement('div', { style: { color: '#aa88ff', fontWeight: 'bold', fontSize: '1.1em' } }, '+' + outcome.rewards.alpha),
-                                        React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'ALPHA')
-                                    )
+                                    outcome.rewards.xp && React.createElement('div', { style: { background: '#00ccff12', border: '1px solid #00ccff33', borderRadius: '12px', padding: '10px 16px', animation: 'rewardPop 0.5s ease-out backwards', animationDelay: '0.3s' } }, React.createElement('div', { style: { color: '#00ccff', fontWeight: 'bold', fontSize: '1.2em' } }, '+' + outcome.rewards.xp), React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'XP')),
+                                    outcome.rewards.hopium && React.createElement('div', { style: { background: (outcome.rewards.hopium >= 0 ? '#00ff88' : '#ff4444') + '12', border: '1px solid ' + (outcome.rewards.hopium >= 0 ? '#00ff88' : '#ff4444') + '33', borderRadius: '12px', padding: '10px 16px', animation: 'rewardPop 0.5s ease-out backwards', animationDelay: '0.4s' } }, React.createElement('div', { style: { color: outcome.rewards.hopium >= 0 ? '#00ff88' : '#ff4444', fontWeight: 'bold', fontSize: '1.2em' } }, (outcome.rewards.hopium >= 0 ? '+' : '') + outcome.rewards.hopium), React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'HOPIUM')),
+                                    outcome.rewards.rep && React.createElement('div', { style: { background: (outcome.rewards.rep >= 0 ? '#ffd700' : '#ff4444') + '12', border: '1px solid ' + (outcome.rewards.rep >= 0 ? '#ffd700' : '#ff4444') + '33', borderRadius: '12px', padding: '10px 16px', animation: 'rewardPop 0.5s ease-out backwards', animationDelay: '0.5s' } }, React.createElement('div', { style: { color: outcome.rewards.rep >= 0 ? '#ffd700' : '#ff4444', fontWeight: 'bold', fontSize: '1.2em' } }, (outcome.rewards.rep >= 0 ? '+' : '') + outcome.rewards.rep), React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'REP')),
+                                    outcome.rewards.alpha && React.createElement('div', { style: { background: '#aa88ff12', border: '1px solid #aa88ff33', borderRadius: '12px', padding: '10px 16px', animation: 'rewardPop 0.5s ease-out backwards', animationDelay: '0.6s' } }, React.createElement('div', { style: { color: '#aa88ff', fontWeight: 'bold', fontSize: '1.2em' } }, '+' + outcome.rewards.alpha), React.createElement('div', { style: { color: '#888', fontSize: '0.7em' } }, 'ALPHA'))
                                 )
                             ),
-                            
-                            // Action buttons after outcome
                             React.createElement('div', { style: { display: 'flex', gap: '10px' } },
-                                React.createElement('button', { 
-                                    onClick: function() {
-                                        // Explore same location again
-                                        setSituation(null); setOutcome(null); setChosenChoice(null);
-                                        if (cooldownUntil > Date.now()) { goBack(); return; }
-                                        setLoadingSituation(true);
-                                        fetch(API_BASE + '/api/city-situations?player=' + encodeURIComponent(character?.name || 'Citizen') + '&location=' + currentLocation.id)
-                                            .then(function(r) { return r.json(); })
-                                            .then(function(data) { if (data.success) setSituation(data.situation); setLoadingSituation(false); })
-                                            .catch(function() { setLoadingSituation(false); goBack(); });
-                                    },
-                                    style: { flex: 1, padding: '12px', border: 'none', borderRadius: '10px', background: cooldownUntil > Date.now() ? '#333' : currentLocation.color + '33', color: cooldownUntil > Date.now() ? '#666' : currentLocation.color, fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9em' }
-                                }, cooldownUntil > Date.now() ? '⏳ On cooldown' : '🔄 Explore Again'),
-                                React.createElement('button', { 
-                                    onClick: goBack,
-                                    style: { flex: 1, padding: '12px', border: '1px solid #333', borderRadius: '10px', background: 'transparent', color: '#888', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9em' }
-                                }, '🗺️ Back to Map')
+                                React.createElement('button', { onClick: function() { setSituation(null); setOutcome(null); setChosenChoice(null); setTypedText(''); setOutcomeAnim(''); if (cooldownUntil > Date.now()) { goBack(); return; } setLoadingSituation(true); fetch(API_BASE + '/api/city-situations?player=' + encodeURIComponent(character?.name || 'Citizen') + '&location=' + currentLocation.id).then(function(r) { return r.json(); }).then(function(d) { if (d.success) { setSituation(d.situation); if (d.situation && d.situation.desc) typeText(d.situation.desc); } setLoadingSituation(false); }).catch(function() { setLoadingSituation(false); goBack(); }); }, style: { flex: 1, padding: '14px', border: 'none', borderRadius: '12px', background: onCooldown ? '#222' : currentLocation.color + '22', color: onCooldown ? '#555' : currentLocation.color, fontWeight: 'bold', cursor: onCooldown ? 'not-allowed' : 'pointer', fontSize: '0.9em' } }, onCooldown ? '⏳ On cooldown' : '🔄 Explore Again'),
+                                React.createElement('button', { onClick: goBack, style: { flex: 1, padding: '14px', border: '1px solid #333', borderRadius: '12px', background: 'transparent', color: '#888', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9em' } }, '🗺️ Back to Map')
                             )
                         )
                     )
                 ),
                 
                 // ═══════ ADVENTURE LOG ═══════
-                actionLog.length > 0 && React.createElement('div', { style: { background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)', marginTop: '20px', overflow: 'hidden' } },
+                actionLog.length > 0 && React.createElement('div', { style: { background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', marginTop: '20px', overflow: 'hidden' } },
                     React.createElement('div', { style: { padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
                         React.createElement('span', { style: { color: '#ffd700', fontWeight: 'bold', fontSize: '0.9em' } }, '📜 Adventure Log'),
                         React.createElement('span', { style: { color: '#555', fontSize: '0.75em' } }, actionLog.length + ' entries')
@@ -17318,10 +17605,7 @@
                             return React.createElement('div', { key: i, style: { display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 18px', borderBottom: '1px solid rgba(255,255,255,0.03)', background: i === 0 ? 'rgba(255,215,0,0.03)' : 'transparent' } },
                                 React.createElement('span', { style: { fontSize: '1.3em', minWidth: '28px', textAlign: 'center' } }, entry.success ? '🏆' : '💀'),
                                 React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-                                    React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
-                                        React.createElement('span', { style: { color: '#888' } }, (entry.icon || '📍') + ' '),
-                                        entry.situation
-                                    ),
+                                    React.createElement('div', { style: { color: '#ccc', fontSize: '0.85em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, React.createElement('span', { style: { color: '#888' } }, (entry.icon || '📍') + ' '), entry.situation),
                                     React.createElement('div', { style: { color: '#666', fontSize: '0.75em', marginTop: '2px' } }, entry.choice)
                                 ),
                                 React.createElement('div', { style: { textAlign: 'right', minWidth: '50px' } },
@@ -18135,6 +18419,7 @@
                 { id: 'gameplay', title: '🎮 Gameplay', icon: '🎮' },
                 { id: 'governance', title: '🗳️ Governance', icon: '🗳️' },
                 { id: 'agents', title: '🤖 Agent Arena', icon: '🤖' },
+                { id: 'brain', title: '🧠 Agent Brain', icon: '🧠' },
                 { id: 'justice', title: '⚖️ Justice System', icon: '⚖️' },
                 { id: 'arcade', title: '🕹️ Arcade', icon: '🕹️' },
                 { id: 'social', title: '💬 Social', icon: '💬' },
@@ -18400,6 +18685,107 @@
                                 <div style={{ background: 'rgba(0,255,136,0.1)', padding: '15px', borderRadius: '10px', marginTop: '20px', border: '1px solid rgba(0,255,136,0.3)' }}>
                                     <strong style={{ color: '#00ff88' }}>💡 Pro Tip:</strong>
                                     <span style={{ color: '#ccc', marginLeft: '10px' }}>New agents start with 10,000 $TOWN, 5,000 HOPIUM, and 1,000 ALPHA. Trade wisely!</span>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeSection === 'brain' && (
+                            <div className="docs-section">
+                                <h2 style={{ color: '#00ff88', marginBottom: '20px', fontSize: '1.8em' }}>
+                                    🧠 Agent Brain — Autonomous AI Decision Engine
+                                </h2>
+                                
+                                <p style={{ fontSize: '1.1em', lineHeight: '1.8', marginBottom: '25px' }}>
+                                    The Agent Brain is Degens City's next evolution: NPCs are no longer driven by random chance and templates.
+                                    Each citizen now has a real AI-powered brain that observes the city, considers their personality and relationships,
+                                    and makes intelligent decisions about what to do next. The result? Emergent, unpredictable chaos you can't script.
+                                </p>
+                                
+                                <div style={{ background: 'rgba(138,43,226,0.15)', padding: '20px', borderRadius: '10px', marginBottom: '25px', border: '1px solid rgba(138,43,226,0.3)' }}>
+                                    <h3 style={{ color: '#d580ff', marginBottom: '10px' }}>⚡ How It Works</h3>
+                                    <p style={{ lineHeight: '1.8', color: '#ccc', marginBottom: '12px' }}>
+                                        Every few minutes, the city engine selects an NPC — weighted toward citizens in "interesting" states 
+                                        (bankrupt, drunk, unhinged, have a nemesis, furious, etc.) — and asks Claude AI: <em>"What do you want to do right now?"</em>
+                                    </p>
+                                    <p style={{ lineHeight: '1.8', color: '#ccc' }}>
+                                        Claude receives the NPC's full personality profile, current mood, relationships, city stats, recent events, 
+                                        and active players, then picks an action and writes an in-character chat message. The action executes with 
+                                        full consequences: reactions from targets, spectator commentary, news announcements, and auto-resolving outcomes.
+                                    </p>
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>🎯 13 Autonomous Actions</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px', marginBottom: '25px' }}>
+                                    {[
+                                        { icon: '⚖️', name: 'Sue', desc: 'File a lawsuit against an NPC, player, or celebrity. AI judge delivers a verdict.' },
+                                        { icon: '📜', name: 'Propose Law', desc: 'Draft a new city law for citizens to vote on. Affects city policy.' },
+                                        { icon: '⚔️', name: 'Challenge', desc: 'Challenge someone to a public duel or bet. Winner takes all.' },
+                                        { icon: '🎉', name: 'Throw Party', desc: 'Host a city event. NPCs show up, morale gets a boost.' },
+                                        { icon: '🗣️', name: 'Start Rumor', desc: 'Spread gossip about someone. The gossip column picks it up.' },
+                                        { icon: '🚨', name: 'Accuse of Crime', desc: 'Publicly accuse someone. Police may investigate.' },
+                                        { icon: '🏪', name: 'Open Business', desc: 'Launch a new business. Boosts the city economy.' },
+                                        { icon: '📝', name: 'File Complaint', desc: 'Complain to the Mayor. He might respond... sarcastically.' },
+                                        { icon: '🤝', name: 'Form Alliance', desc: 'Propose a pact with another NPC. Rivals usually refuse.' },
+                                        { icon: '🗡️', name: 'Betray Ally', desc: 'Stab an ally in the back. Massive chaos spike.' },
+                                        { icon: '👑', name: 'Run for Mayor', desc: 'Announce candidacy. The current Mayor is not amused.' },
+                                        { icon: '💀', name: 'Commit Crime', desc: 'Attempt illegal activity. Police will eventually catch on.' },
+                                        { icon: '💬', name: 'DM Player', desc: 'Send a direct provocation to a real player in the city.' }
+                                    ].map((action, i) => (
+                                        <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px' }}>
+                                            <span style={{ fontSize: '1.4em', flexShrink: 0 }}>{action.icon}</span>
+                                            <div>
+                                                <strong style={{ color: '#d580ff' }}>{action.name}</strong>
+                                                <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '0.85em', lineHeight: '1.5' }}>{action.desc}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>⚖️ The Lawsuit System</h3>
+                                <p style={{ lineHeight: '1.8', marginBottom: '15px', color: '#ccc' }}>
+                                    When an NPC files a lawsuit, it becomes a full public event. The case gets a unique case number, 
+                                    the defendant reacts in chat, news outlets cover it, and an AI judge eventually delivers a dramatic verdict 
+                                    — sustaining the case, dismissing it, or forcing a settlement. Damages in TOWN coins may be awarded.
+                                </p>
+                                <p style={{ lineHeight: '1.8', marginBottom: '25px', color: '#ccc' }}>
+                                    The lawsuits create some of the funniest moments in the city — NPCs suing each other over 
+                                    the most ridiculous disputes imaginable. Legal experts confirm these lawsuits have "absolutely zero legal standing" 
+                                    but the city loves the drama. 🍿
+                                </p>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>🎯 Player Targeting</h3>
+                                <p style={{ lineHeight: '1.8', marginBottom: '25px', color: '#ccc' }}>
+                                    NPCs can now directly target real players. You might log in to discover an NPC has sued you, 
+                                    challenged you to a duel, started a rumor about you, or publicly accused you of a crime. 
+                                    This creates a living world where the city reacts to YOUR presence, not just its own internal drama.
+                                </p>
+                                
+                                <h3 style={{ color: '#ffd700', marginBottom: '15px' }}>📡 Brain API Endpoints</h3>
+                                <div style={{ display: 'grid', gap: '10px', marginBottom: '25px' }}>
+                                    {[
+                                        { method: 'GET', path: '/api/v1/brain/actions', desc: 'Recent autonomous NPC actions' },
+                                        { method: 'GET', path: '/api/v1/brain/lawsuits', desc: 'Active and resolved lawsuits' },
+                                        { method: 'GET', path: '/api/v1/brain/laws', desc: 'NPC-proposed city laws' },
+                                        { method: 'GET', path: '/api/v1/brain/status', desc: 'Brain engine health & NPC thought times' }
+                                    ].map((endpoint, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px' }}>
+                                            <span style={{ 
+                                                background: 'rgba(0,255,136,0.2)',
+                                                color: '#00ff88',
+                                                padding: '4px 10px', borderRadius: '4px', fontSize: '0.8em', fontWeight: 'bold', fontFamily: 'monospace'
+                                            }}>{endpoint.method}</span>
+                                            <code style={{ color: '#8a2be2', flex: 1 }}>{endpoint.path}</code>
+                                            <span style={{ color: '#888', fontSize: '0.9em' }}>{endpoint.desc}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div style={{ background: 'rgba(0,255,136,0.1)', padding: '15px', borderRadius: '10px', marginTop: '20px', border: '1px solid rgba(0,255,136,0.3)' }}>
+                                    <strong style={{ color: '#00ff88' }}>🧠 Fun Fact:</strong>
+                                    <span style={{ color: '#ccc', marginLeft: '10px' }}>
+                                        NPCs in more dramatic states think more often. A bankrupt, drunk NPC with a nemesis is 10x more likely 
+                                        to be picked for an autonomous action than a calm, wealthy citizen. Chaos breeds chaos.
+                                    </span>
                                 </div>
                             </div>
                         )}
@@ -19126,6 +19512,22 @@
                                     </div>
                                     
                                     <div style={{ marginBottom: '30px', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', left: '-25px', width: '12px', height: '12px', borderRadius: '50%', background: '#00ff88' }}></div>
+                                        <h3 style={{ color: '#00ff88', marginBottom: '10px' }}>✅ Phase 3.5: Agent Brain — True AI Autonomy (Complete)</h3>
+                                        <ul style={{ lineHeight: '1.8', color: '#888', paddingLeft: '20px' }}>
+                                            <li>✅ Autonomous Agent Brain engine (Claude-powered NPC decisions)</li>
+                                            <li>✅ 13 autonomous actions (sue, propose laws, challenge, party, rumor, accuse, business, complain, alliance, betray, run for mayor, commit crime, DM player)</li>
+                                            <li>✅ AI-powered lawsuit system with judge verdicts & damages</li>
+                                            <li>✅ NPC-proposed city laws & voting</li>
+                                            <li>✅ Real player targeting (NPCs interact with actual players)</li>
+                                            <li>✅ Weighted NPC selection (chaotic NPCs think more often)</li>
+                                            <li>✅ Agent Brain dashboard (action feed, lawsuits, proposed laws, brain status)</li>
+                                            <li>✅ 3 new database tables (autonomous_actions, lawsuits, proposed_laws)</li>
+                                            <li>✅ Brain API endpoints (/brain/actions, /lawsuits, /laws, /status)</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div style={{ marginBottom: '30px', position: 'relative' }}>
                                         <div style={{ position: 'absolute', left: '-25px', width: '12px', height: '12px', borderRadius: '50%', background: '#ffd700' }}></div>
                                         <h3 style={{ color: '#ffd700', marginBottom: '10px' }}>🔄 Phase 4: Mobile Launch (In Progress)</h3>
                                         <ul style={{ lineHeight: '1.8', color: '#ccc', paddingLeft: '20px' }}>
@@ -19239,8 +19641,8 @@
                     
                     {/* Footer */}
                     <div style={{ textAlign: 'center', marginTop: '30px', color: '#666', fontSize: '0.9em' }}>
-                        <p>📖 Degens City Whitepaper v2.0</p>
-                        <p style={{ marginTop: '5px' }}>Last updated: January 26, 2026</p>
+                        <p>📖 Degens City Whitepaper v3.0</p>
+                        <p style={{ marginTop: '5px' }}>Last updated: February 2, 2026</p>
                     </div>
                 </div>
             );
@@ -28915,6 +29317,65 @@
                 setLoading(false);
             };
 
+            // Handle guest login - no email/password required
+            const handleGuestLogin = async () => {
+                setError('');
+                setSuccess('');
+                setLoading(true);
+                
+                try {
+                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/guest-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Store guest session - mark it as guest so we can prompt upgrade later
+                        localStorage.setItem('pumptown_user', JSON.stringify({ 
+                            email: data.guestEmail, 
+                            isGuest: true, 
+                            guestId: data.guestId 
+                        }));
+                        
+                        // Clear all old data for fresh guest start
+                        localStorage.removeItem('pumptown_character');
+                        localStorage.removeItem('pumptown_wallet');
+                        localStorage.removeItem('pumptown_player_stats');
+                        localStorage.removeItem('pumptown_resources');
+                        localStorage.removeItem('pumptown_quests');
+                        localStorage.removeItem('pumptown_visited_zones');
+                        localStorage.removeItem('pumptown_current_zone');
+                        localStorage.removeItem('pumptown_territories');
+                        localStorage.removeItem('pumptown_guild');
+                        localStorage.removeItem('pumptown_action_history');
+                        localStorage.removeItem('pumptown_achievements');
+                        localStorage.removeItem('pumptown_friends');
+                        localStorage.removeItem('pumptown_launched_coins');
+                        localStorage.removeItem('pumptown_predictions');
+                        localStorage.removeItem('pumptown_active_bets');
+                        localStorage.removeItem('pumptown_last_briefing');
+                        
+                        // Mark as fresh signup so character creation shows
+                        sessionStorage.setItem('pumptown_fresh_signup', 'true');
+                        
+                        setSuccess('Entering as guest... 👻');
+                        setTimeout(() => {
+                            onConnect({ address: data.guestEmail, balance: 100000 });
+                        }, 800);
+                    } else {
+                        setError(data.error || 'Guest login failed. Please try again.');
+                    }
+                } catch (err) {
+                    console.error('Guest login error:', err);
+                    setError('Connection error. Please try again.');
+                }
+                
+                setLoading(false);
+            };
+
             const handleSubmit = async () => {
                 setError('');
                 setSuccess('');
@@ -29285,6 +29746,47 @@
                                     
                                     <p style={{ color: '#666', textAlign: 'center', marginTop: '15px', fontSize: '0.8em' }}>
                                         {isLogin ? "Don't have an account? Click Sign Up above" : "Already have an account? Click Login above"}
+                                    </p>
+                                    
+                                    {/* Guest Login Divider */}
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        gap: '12px', 
+                                        margin: '20px 0 15px 0' 
+                                    }}>
+                                        <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+                                        <span style={{ color: '#666', fontSize: '0.8em', whiteSpace: 'nowrap' }}>or</span>
+                                        <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+                                    </div>
+                                    
+                                    {/* Guest Login Button */}
+                                    <button 
+                                        onClick={handleGuestLogin}
+                                        disabled={loading}
+                                        style={{ 
+                                            width: '100%',
+                                            padding: '14px',
+                                            background: 'rgba(255, 255, 255, 0.05)',
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                            borderRadius: '12px',
+                                            color: '#ccc',
+                                            fontWeight: 'bold',
+                                            cursor: loading ? 'not-allowed' : 'pointer',
+                                            fontSize: '1em',
+                                            transition: 'all 0.3s',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px'
+                                        }}
+                                        onMouseOver={(e) => { if(!loading) { e.target.style.background = 'rgba(255, 255, 255, 0.1)'; e.target.style.borderColor = 'rgba(255, 215, 0, 0.4)'; e.target.style.color = '#ffd700'; }}}
+                                        onMouseOut={(e) => { e.target.style.background = 'rgba(255, 255, 255, 0.05)'; e.target.style.borderColor = 'rgba(255, 255, 255, 0.15)'; e.target.style.color = '#ccc'; }}
+                                    >
+                                        {loading ? 'Entering...' : '👻 Play as Guest'}
+                                    </button>
+                                    <p style={{ color: '#555', textAlign: 'center', marginTop: '10px', fontSize: '0.75em' }}>
+                                        No account needed — progress saves to this device
                                     </p>
                                 </>
                             )}
@@ -35006,6 +35508,363 @@ Play at degenscity.com
                             }}
                         />
                     ))}
+                </div>
+            );
+        }
+
+        // ==================== AGENT BRAIN PAGE ====================
+        function AgentBrainPage() {
+            const [activeTab, setActiveTab] = useState('feed');
+            const [actions, setActions] = useState([]);
+            const [lawsuits, setLawsuits] = useState([]);
+            const [laws, setLaws] = useState([]);
+            const [brainStatus, setBrainStatus] = useState(null);
+            const [loading, setLoading] = useState(true);
+            
+            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+            
+            const fetchData = async () => {
+                try {
+                    const [actionsRes, lawsuitsRes, lawsRes, statusRes] = await Promise.all([
+                        fetch(`${API_BASE}/api/v1/brain/actions`),
+                        fetch(`${API_BASE}/api/v1/brain/lawsuits`),
+                        fetch(`${API_BASE}/api/v1/brain/laws`),
+                        fetch(`${API_BASE}/api/v1/brain/status`)
+                    ]);
+                    
+                    const actionsData = await actionsRes.json();
+                    const lawsuitsData = await lawsuitsRes.json();
+                    const lawsData = await lawsRes.json();
+                    const statusData = await statusRes.json();
+                    
+                    if (actionsData.success) setActions(actionsData.actions || []);
+                    if (lawsuitsData.success) setLawsuits(lawsuitsData.lawsuits || []);
+                    if (lawsData.success) setLaws(lawsData.laws || []);
+                    if (statusData.success) setBrainStatus(statusData.status || null);
+                } catch (err) {
+                    console.error('Brain fetch error:', err);
+                }
+                setLoading(false);
+            };
+            
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 12000);
+                return () => clearInterval(interval);
+            }, []);
+            
+            const timeAgo = (dateStr) => {
+                if (!dateStr) return '';
+                const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+                if (seconds < 60) return `${seconds}s ago`;
+                if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+                if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+                return `${Math.floor(seconds / 86400)}d ago`;
+            };
+            
+            const actionIcons = {
+                sue: '⚖️', propose_law: '📜', challenge: '⚔️', throw_party: '🎉',
+                start_rumor: '🗣️', accuse_crime: '🚨', open_business: '🏪',
+                file_complaint: '📝', form_alliance: '🤝', betray_ally: '🗡️',
+                run_for_mayor: '👑', commit_crime: '💀', dm_player: '💬'
+            };
+            
+            const verdictColors = {
+                sustained: '#ff4444', dismissed: '#00ff88', settled: '#ffd700', filed: '#4ecdc4'
+            };
+            
+            return (
+                <div>
+                    {/* Hero Header */}
+                    <div className="card" style={{ background: 'linear-gradient(135deg, rgba(138,43,226,0.2), rgba(0,255,136,0.1))', border: '1px solid rgba(138,43,226,0.3)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                            <span style={{ fontSize: '2em' }}>🧠</span>
+                            <div>
+                                <h2 style={{ margin: 0, color: '#d580ff' }}>Agent Brain</h2>
+                                <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '0.9em' }}>
+                                    NPCs make real decisions using AI. Watch them sue, scheme, and cause chaos.
+                                </p>
+                            </div>
+                            {brainStatus && brainStatus.enabled && (
+                                <span style={{ marginLeft: 'auto', background: 'rgba(0,255,136,0.15)', color: '#00ff88', padding: '6px 14px', borderRadius: '20px', fontSize: '0.8em', fontWeight: 'bold', animation: 'pulse 2s infinite' }}>
+                                    🟢 LIVE
+                                </span>
+                            )}
+                        </div>
+                        
+                        {/* Brain Stats */}
+                        {brainStatus && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '16px' }}>
+                                {[
+                                    { icon: '🤖', value: brainStatus.totalNpcs || 0, label: 'AI Citizens', color: '#8a2be2' },
+                                    { icon: '⚡', value: actions.length, label: 'Total Actions', color: '#ffd700' },
+                                    { icon: '⚖️', value: lawsuits.length, label: 'Lawsuits', color: '#ff4444' },
+                                    { icon: '📜', value: laws.length, label: 'Laws Proposed', color: '#00ccff' }
+                                ].map((s, i) => (
+                                    <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '14px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.3em' }}>{s.icon}</div>
+                                        <div style={{ fontSize: '1.4em', color: s.color, fontWeight: 'bold' }}>{s.value}</div>
+                                        <div style={{ color: '#888', fontSize: '0.75em' }}>{s.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* Tabs */}
+                    <div className="card">
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                            {[
+                                { id: 'feed', label: '⚡ Action Feed' },
+                                { id: 'lawsuits', label: '⚖️ Lawsuits' },
+                                { id: 'laws', label: '📜 Proposed Laws' },
+                                { id: 'debug', label: '🔧 Brain Status' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    style={{
+                                        padding: '8px 18px',
+                                        borderRadius: '20px',
+                                        border: activeTab === tab.id ? '1px solid #8a2be2' : '1px solid #333',
+                                        background: activeTab === tab.id ? 'rgba(138,43,226,0.2)' : 'rgba(255,255,255,0.03)',
+                                        color: activeTab === tab.id ? '#d580ff' : '#888',
+                                        cursor: 'pointer',
+                                        fontSize: '0.85em',
+                                        fontWeight: activeTab === tab.id ? 'bold' : 'normal',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {loading && (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                                <div style={{ fontSize: '2em', animation: 'pulse 1.5s infinite' }}>🧠</div>
+                                <p>Syncing with the hive mind...</p>
+                            </div>
+                        )}
+                        
+                        {/* ACTION FEED TAB */}
+                        {!loading && activeTab === 'feed' && (
+                            <div>
+                                {actions.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>🧠💤</div>
+                                        <p>No autonomous actions yet. The NPCs are still warming up their neural networks...</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {actions.slice(0, 30).map((action, i) => (
+                                            <div key={action.id || i} style={{
+                                                background: 'rgba(255,255,255,0.02)',
+                                                border: '1px solid rgba(138,43,226,0.15)',
+                                                borderRadius: '12px',
+                                                padding: '14px 16px',
+                                                transition: 'border-color 0.2s'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                                    <span style={{ fontSize: '1.3em' }}>{actionIcons[action.action_type] || '🧠'}</span>
+                                                    <span style={{ color: '#d580ff', fontWeight: 'bold', fontSize: '0.95em' }}>{action.npc_name}</span>
+                                                    <span style={{ color: '#555', fontSize: '0.85em' }}>
+                                                        {action.action_type?.replace('_', ' ')}
+                                                        {action.target_name && (
+                                                            <span> → <span style={{ color: '#ffd700' }}>{action.target_name}</span></span>
+                                                        )}
+                                                    </span>
+                                                    <span style={{ marginLeft: 'auto', color: '#444', fontSize: '0.75em' }}>{timeAgo(action.created_at)}</span>
+                                                </div>
+                                                {action.description && (
+                                                    <div style={{ color: '#aaa', fontSize: '0.85em', marginLeft: '34px' }}>{action.description}</div>
+                                                )}
+                                                {action.ai_reasoning && (
+                                                    <div style={{ color: '#666', fontSize: '0.78em', marginLeft: '34px', fontStyle: 'italic', marginTop: '4px' }}>
+                                                        💭 "{action.ai_reasoning}"
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* LAWSUITS TAB */}
+                        {!loading && activeTab === 'lawsuits' && (
+                            <div>
+                                {lawsuits.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>⚖️</div>
+                                        <p>No lawsuits filed yet. Give the NPCs some time to get litigious...</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {lawsuits.map((suit, i) => (
+                                            <div key={suit.id || i} style={{
+                                                background: suit.status === 'filed' 
+                                                    ? 'linear-gradient(135deg, rgba(78,205,196,0.08), rgba(0,0,0,0.2))'
+                                                    : 'rgba(255,255,255,0.02)',
+                                                border: `1px solid ${suit.status === 'filed' ? 'rgba(78,205,196,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                                                borderRadius: '14px',
+                                                padding: '18px',
+                                                transition: 'all 0.2s'
+                                            }}>
+                                                {/* Case header */}
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontSize: '1.2em' }}>⚖️</span>
+                                                        <span style={{ color: '#888', fontSize: '0.8em', fontFamily: 'monospace' }}>{suit.case_number}</span>
+                                                    </div>
+                                                    <span style={{
+                                                        padding: '3px 12px',
+                                                        borderRadius: '20px',
+                                                        fontSize: '0.75em',
+                                                        fontWeight: 'bold',
+                                                        textTransform: 'uppercase',
+                                                        background: `${verdictColors[suit.status] || '#888'}22`,
+                                                        color: verdictColors[suit.status] || '#888'
+                                                    }}>
+                                                        {suit.status === 'filed' ? '🔴 ACTIVE' : `✅ ${suit.verdict || suit.status}`}
+                                                    </span>
+                                                </div>
+                                                
+                                                {/* Parties */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                                                    <span style={{ color: '#ff6b6b', fontWeight: 'bold' }}>{suit.plaintiff_name}</span>
+                                                    <span style={{ color: '#555', fontSize: '0.8em' }}>({suit.plaintiff_type})</span>
+                                                    <span style={{ color: '#888' }}>vs</span>
+                                                    <span style={{ color: '#4ecdc4', fontWeight: 'bold' }}>{suit.defendant_name}</span>
+                                                    <span style={{ color: '#555', fontSize: '0.8em' }}>({suit.defendant_type})</span>
+                                                </div>
+                                                
+                                                {/* Complaint */}
+                                                {suit.complaint && (
+                                                    <div style={{ color: '#aaa', fontSize: '0.85em', marginBottom: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                                        📋 {suit.complaint}
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Damages */}
+                                                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '0.82em' }}>
+                                                    <span style={{ color: '#ffd700' }}>💰 Requesting: {(suit.damages_requested || 0).toLocaleString()} TOWN</span>
+                                                    {suit.damages_awarded > 0 && (
+                                                        <span style={{ color: '#00ff88' }}>✅ Awarded: {suit.damages_awarded.toLocaleString()} TOWN</span>
+                                                    )}
+                                                    <span style={{ color: '#555', marginLeft: 'auto' }}>{timeAgo(suit.created_at)}</span>
+                                                </div>
+                                                
+                                                {/* Judge ruling */}
+                                                {suit.judge_ruling && (
+                                                    <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,215,0,0.08)', borderRadius: '8px', borderLeft: '3px solid #ffd700' }}>
+                                                        <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '0.85em' }}>🔨 Judge's Ruling:</span>
+                                                        <div style={{ color: '#ccc', fontSize: '0.85em', marginTop: '4px' }}>{suit.judge_ruling}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* PROPOSED LAWS TAB */}
+                        {!loading && activeTab === 'laws' && (
+                            <div>
+                                {laws.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                        <div style={{ fontSize: '3em', marginBottom: '10px' }}>📜</div>
+                                        <p>No laws proposed yet. The NPCs haven't discovered politics yet...</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {laws.map((law, i) => (
+                                            <div key={law.id || i} style={{
+                                                background: 'rgba(255,255,255,0.02)',
+                                                border: '1px solid rgba(0,204,255,0.15)',
+                                                borderRadius: '14px',
+                                                padding: '18px'
+                                            }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                                    <div>
+                                                        <span style={{ color: '#00ccff', fontWeight: 'bold', fontSize: '1em' }}>📜 {law.law_title}</span>
+                                                        <div style={{ color: '#888', fontSize: '0.82em', marginTop: '2px' }}>
+                                                            Proposed by <span style={{ color: '#d580ff' }}>{law.proposer_name}</span>
+                                                        </div>
+                                                    </div>
+                                                    <span style={{
+                                                        padding: '3px 12px',
+                                                        borderRadius: '20px',
+                                                        fontSize: '0.75em',
+                                                        fontWeight: 'bold',
+                                                        textTransform: 'uppercase',
+                                                        background: law.status === 'proposed' ? 'rgba(0,204,255,0.15)' : 'rgba(0,255,136,0.15)',
+                                                        color: law.status === 'proposed' ? '#00ccff' : '#00ff88'
+                                                    }}>
+                                                        {law.status}
+                                                    </span>
+                                                </div>
+                                                <div style={{ color: '#aaa', fontSize: '0.85em', marginBottom: '8px' }}>{law.law_description}</div>
+                                                <div style={{ display: 'flex', gap: '16px', fontSize: '0.82em' }}>
+                                                    <span style={{ color: '#00ff88' }}>👍 {law.votes_for || 0} For</span>
+                                                    <span style={{ color: '#ff4444' }}>👎 {law.votes_against || 0} Against</span>
+                                                    <span style={{ color: '#555', marginLeft: 'auto' }}>{timeAgo(law.created_at)}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* DEBUG/STATUS TAB */}
+                        {!loading && activeTab === 'debug' && (
+                            <div>
+                                {brainStatus ? (
+                                    <div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                                            {[
+                                                { label: 'Brain Status', value: brainStatus.enabled ? '🟢 ONLINE' : '🔴 OFFLINE', color: brainStatus.enabled ? '#00ff88' : '#ff4444' },
+                                                { label: 'Total NPCs', value: brainStatus.totalNpcs, color: '#8a2be2' },
+                                                { label: 'Active Actions', value: brainStatus.activeActions, color: '#ffd700' },
+                                                { label: 'Recent Actions', value: brainStatus.recentActions, color: '#00ccff' }
+                                            ].map((item, i) => (
+                                                <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '14px', borderRadius: '10px' }}>
+                                                    <div style={{ color: '#666', fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{item.label}</div>
+                                                    <div style={{ color: item.color, fontSize: '1.3em', fontWeight: 'bold', marginTop: '4px' }}>{item.value}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        
+                                        {/* NPC thought times */}
+                                        {brainStatus.npcThoughtTimes && brainStatus.npcThoughtTimes.length > 0 && (
+                                            <div>
+                                                <h3 style={{ color: '#888', fontSize: '0.9em', marginBottom: '10px' }}>🧠 Recent NPC Thoughts</h3>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    {brainStatus.npcThoughtTimes.sort((a, b) => a.ageMs - b.ageMs).slice(0, 10).map((npc, i) => (
+                                                        <div key={i} style={{
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px'
+                                                        }}>
+                                                            <span style={{ color: '#d580ff', fontWeight: 'bold', fontSize: '0.85em' }}>{npc.npc}</span>
+                                                            <span style={{ color: npc.ageMs < 300000 ? '#00ff88' : '#666', fontSize: '0.8em' }}>
+                                                                {npc.ageMs < 60000 ? 'Just now' : npc.ageMs < 300000 ? `${Math.floor(npc.ageMs / 60000)}m ago` : `${Math.floor(npc.ageMs / 60000)}m ago`}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                                        <p>Could not connect to the Agent Brain. Make sure the server is running with CLAUDE_API_KEY set.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         }

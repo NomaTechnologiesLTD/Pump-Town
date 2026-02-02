@@ -1,4 +1,20 @@
 <!DOCTYPE html>
+<!-- ====================================================================
+     Degens City — AI Governed City Simulation
+     Frontend: Single-page React app (via CDN + Babel)
+     
+     Structure:
+       Lines 1-13,350~   CSS (styles, keyframes, responsive)
+       Lines 13,350~+     HTML body (#root mount)  
+       Lines 13,370~+     JavaScript / React components (~80 components)
+     
+     Shared globals (top of <script>):
+       API_BASE          — Backend URL (single source of truth)
+       getTimeAgo()      — Relative timestamp formatting
+       formatPrice()     — Crypto-style price formatting
+       BADGE_DEFINITIONS — Badge metadata
+       AVATAR_OPTIONS    — Character avatar choices
+     ==================================================================== -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -3632,12 +3648,6 @@
             margin-top: 5px;
         }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
         /* ==================== SPOT THE RUG STYLES ==================== */
         .rug-detector-container {
             display: flex;
@@ -6825,7 +6835,7 @@
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 30px;
-            animation: eventPulse 3s ease-in-out infinite;
+            animation: eventPulseGold 3s ease-in-out infinite;
         }
 
         .mayor-event-alert.crisis {
@@ -6835,10 +6845,9 @@
 
         .mayor-event-alert.prosperity {
             background: linear-gradient(145deg, rgba(0, 255, 136, 0.2), rgba(0, 100, 50, 0.1));
-            background: rgba(255,255,255,0.1);
         }
 
-        @keyframes eventPulse {
+        @keyframes eventPulseGold {
             0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
             50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
         }
@@ -7506,10 +7515,10 @@
             border-radius: 10px;
             text-align: center;
             margin-top: 15px;
-            animation: resultPop 0.5s ease;
+            animation: resultPopIn 0.5s ease;
         }
 
-        @keyframes resultPop {
+        @keyframes resultPopIn {
             0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
@@ -8524,10 +8533,10 @@
 
         .mayor-mood-icon {
             font-size: 2.5em;
-            animation: moodPulse 2s infinite;
+            animation: moodPulseScale 2s infinite;
         }
 
-        @keyframes moodPulse {
+        @keyframes moodPulseScale {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.1); }
         }
@@ -9090,7 +9099,7 @@
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
-            animation: eventGlow 2s ease infinite;
+            animation: eventGlowSubtle 2s ease infinite;
         }
 
         .special-event-banner.crisis { border-color: #ff6b6b; }
@@ -9098,7 +9107,7 @@
         .special-event-banner.chaos { border-color: #a855f7; }
         .special-event-banner.celebration { border-color: #ffd700; }
 
-        @keyframes eventGlow {
+        @keyframes eventGlowSubtle {
             0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
             50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.5); }
         }
@@ -9156,11 +9165,11 @@
             display: flex;
             align-items: center;
             height: 100%;
-            animation: tickerScroll 30s linear infinite;
+            animation: tickerScrollAcross 30s linear infinite;
             white-space: nowrap;
         }
 
-        @keyframes tickerScroll {
+        @keyframes tickerScrollAcross {
             0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
         }
@@ -11228,11 +11237,11 @@
             font-weight: bold;
             color: #ff6b6b;
             text-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
-            animation: comboPopup 0.5s ease forwards;
+            animation: comboPopupIn 0.5s ease forwards;
             pointer-events: none;
         }
         
-        @keyframes comboPopup {
+        @keyframes comboPopupIn {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
             50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
@@ -11609,10 +11618,10 @@
             top: -8px;
             right: -8px;
             font-size: 1.2em;
-            animation: bounce 0.5s ease infinite;
+            animation: bounceSmall 0.5s ease infinite;
         }
         
-        @keyframes bounce {
+        @keyframes bounceSmall {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-3px); }
         }
@@ -11896,12 +11905,6 @@
             animation: shake 0.1s ease infinite;
         }
         
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        
         .chart-overlay.sold {
             background: rgba(0, 50, 30, 0.85);
         }
@@ -11963,11 +11966,11 @@
         .rug-sell-btn.urgent {
             background: linear-gradient(135deg, #ffd700, #ff8800);
             color: #000;
-            animation: urgentPulse 0.15s ease infinite;
+            animation: urgentPulseSubtle 0.15s ease infinite;
             box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
         }
         
-        @keyframes urgentPulse {
+        @keyframes urgentPulseSubtle {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.02); }
         }
@@ -13262,7 +13265,7 @@
             height: 8px;
             background: #ff4444;
             border-radius: 50%;
-            animation: pulse 1.5s infinite;
+            animation: pulseBlink 1.5s infinite;
         }
 
         .activity-feed-list {
@@ -13345,18 +13348,8 @@
         }
 
         /* Animations */
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
 
-        @keyframes pulse {
+        @keyframes pulseBlink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
@@ -13367,6 +13360,33 @@
 
     <script type="text/babel">
         const { useState, useEffect, useCallback, useRef } = React;
+
+        // ==================== SHARED CONSTANTS ====================
+        const API_BASE = 'https://pump-town-backend-production.up.railway.app';
+
+        // ==================== SHARED UTILITY FUNCTIONS ====================
+
+        // Format relative timestamps (e.g. "5m ago", "2h ago")
+        function getTimeAgo(timestamp) {
+            if (!timestamp) return 'Unknown';
+            const diff = Date.now() - (typeof timestamp === 'object' ? timestamp.getTime() : timestamp);
+            const mins = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            if (mins < 1) return 'now';
+            if (mins < 60) return mins + 'm ago';
+            if (hours < 24) return hours + 'h ago';
+            return days + 'd ago';
+        }
+
+        // Format crypto-style prices with appropriate decimal places
+        function formatPrice(price) {
+            if (!price) return '$0';
+            if (price >= 1000) return '$' + price.toLocaleString(undefined, { maximumFractionDigits: 0 });
+            if (price >= 1) return '$' + price.toFixed(2);
+            if (price >= 0.01) return '$' + price.toFixed(4);
+            return '$' + price.toFixed(6);
+        }
 
         // Utility: Generate fake citizen count
         const generateFakeCitizenCount = (realCount) => {
@@ -13867,7 +13887,7 @@
                 // Try to get AI-generated comment for special occasions
                 if ((outcome === 'jackpot' || (action === 'casino' && outcome === 'win' && details.amount > 1000)) && Math.random() < 0.5) {
                     try {
-                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                        const response = await fetch(API_BASE + '/api/ai/mayor-chat', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -14054,7 +14074,7 @@
                         resources: resources
                     });
                     const blob = new Blob([data], { type: 'application/json' });
-                    navigator.sendBeacon('https://pump-town-backend-production.up.railway.app/api/save-character', blob);
+                    navigator.sendBeacon(API_BASE + '/api/save-character', blob);
                     localStorage.setItem('pumptown_last_visit', Date.now().toString());
                 };
                 
@@ -14113,7 +14133,7 @@
                 if (!wallet?.address) return;
                 
                 try {
-                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/daily-reward/status/${encodeURIComponent(wallet.address)}`);
+                    const response = await fetch(`${API_BASE}/api/daily-reward/status/${encodeURIComponent(wallet.address)}`);
                     const data = await response.json();
                     
                     if (data.success) {
@@ -14132,7 +14152,7 @@
                 if (!wallet?.address || !dailyRewardData?.canClaim) return;
                 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/daily-reward/claim', {
+                    const response = await fetch(API_BASE + '/api/daily-reward/claim', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
@@ -14180,7 +14200,7 @@
                 setShowPlayerProfile(true);
                 
                 try {
-                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/player/${encodeURIComponent(playerName)}`);
+                    const response = await fetch(`${API_BASE}/api/player/${encodeURIComponent(playerName)}`);
                     const data = await response.json();
                     
                     if (data.success) {
@@ -14201,7 +14221,7 @@
             // ============ ACTIVITY FEED ============
             const fetchActivityFeed = async () => {
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/activity/recent?limit=15');
+                    const response = await fetch(API_BASE + '/api/activity/recent?limit=15');
                     const data = await response.json();
                     
                     if (data.success) {
@@ -14216,7 +14236,7 @@
                 if (!character?.name) return;
                 
                 try {
-                    await fetch('https://pump-town-backend-production.up.railway.app/api/activity', {
+                    await fetch(API_BASE + '/api/activity', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -14503,7 +14523,7 @@
             const loadCharacterFromBackend = async (walletAddress) => {
                 try {
                     console.log('Loading character from backend for:', walletAddress);
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/load-character', {
+                    const response = await fetch(API_BASE + '/api/load-character', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: walletAddress })
@@ -14648,7 +14668,7 @@
                         claimedRewards: JSON.parse(localStorage.getItem('pumptown_bp_claimed') || '[]')
                     };
                     
-                    await fetch('https://pump-town-backend-production.up.railway.app/api/save-character', {
+                    await fetch(API_BASE + '/api/save-character', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
@@ -14768,7 +14788,7 @@
                     if (!shouldTrigger) return;
                     
                     try {
-                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/generate-event', {
+                        const response = await fetch(API_BASE + '/api/ai/generate-event', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ triggerReason })
@@ -14824,7 +14844,7 @@
                     if (wallet && gameState && gameState.currentVote) {
                         console.log('Checking vote status for:', wallet.address, 'voteId:', gameState.currentVote.id);
                         try {
-                            const response = await fetch('https://pump-town-backend-production.up.railway.app/api/check-vote', {
+                            const response = await fetch(API_BASE + '/api/check-vote', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
@@ -14862,7 +14882,7 @@
                 
                 try {
                     // Fetch game state from backend
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/game-state');
+                    const response = await fetch(API_BASE + '/api/game-state');
                     const data = await response.json();
                     
                     if (data.success) {
@@ -15062,7 +15082,7 @@
                 
                 // Send vote to backend with wallet address to prevent double voting
                 try {
-                    const voteResponse = await fetch('https://pump-town-backend-production.up.railway.app/api/cast-vote', {
+                    const voteResponse = await fetch(API_BASE + '/api/cast-vote', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -15152,7 +15172,7 @@
                     setAiGenerating(false);
                     
                     // Fetch Mayor's reaction to the vote (using .then to avoid await in non-async)
-                    fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-reaction', {
+                    fetch(API_BASE + '/api/ai/mayor-reaction', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -16399,7 +16419,7 @@
                                     setUpgradeLoading(true);
                                     try {
                                         const user = JSON.parse(localStorage.getItem('pumptown_user') || '{}');
-                                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/upgrade-guest', {
+                                        const response = await fetch(API_BASE + '/api/upgrade-guest', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ 
@@ -17017,7 +17037,6 @@
             });
             const [missionTimeLeft, setMissionTimeLeft] = useState('');
             const [claimingReward, setClaimingReward] = useState(false);
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             var playerName = character?.name || 'Citizen';
             var playerLevel = character?.level || 1;
             
@@ -17364,7 +17383,6 @@
             const [outcomeAnim, setOutcomeAnim] = useState('');
             const typingRef = useRef(null);
             
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const LOCATIONS = [
                 { id: 'casino', name: 'Degen Casino', icon: '🎰', desc: 'High stakes, higher drama', color: '#ffd700', bgGrad: 'linear-gradient(135deg, #2a1a00, #1a1000)', vibe: 'Slot machines, poker tables, broken dreams' },
@@ -17624,7 +17642,6 @@
             const [engineData, setEngineData] = useState(null);
             const [filter, setFilter] = useState('all');
             const [loading, setLoading] = useState(true);
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const fetchData = async () => {
                 try {
@@ -17735,17 +17752,6 @@
         }
 
         // Helper: Time ago
-        function getTimeAgo(timestamp) {
-            const diff = Date.now() - timestamp;
-            const mins = Math.floor(diff / 60000);
-            const hours = Math.floor(diff / 3600000);
-            const days = Math.floor(diff / 86400000);
-            if (mins < 1) return 'now';
-            if (mins < 60) return mins + 'm ago';
-            if (hours < 24) return hours + 'h ago';
-            return days + 'd ago';
-        }
-        
         // ==================== LEADERBOARD SECTION ====================
         function LeaderboardSection({ playerName, playerStats, character }) {
             const [activeTab, setActiveTab] = useState('xp');
@@ -17771,7 +17777,7 @@
             const fetchLeaderboard = async () => {
                 setLoading(true);
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/leaderboard');
+                    const response = await fetch(API_BASE + '/api/leaderboard');
                     if (response.ok) {
                         const data = await response.json();
                         if (data.success && data.leaderboard) {
@@ -17800,7 +17806,7 @@
                 if (!character?.name) return;
                 
                 try {
-                    await fetch('https://pump-town-backend-production.up.railway.app/api/update-stats', {
+                    await fetch(API_BASE + '/api/update-stats', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -18011,7 +18017,6 @@
             const [activeTab, setActiveTab] = useState('live');
             const [selectedNpc, setSelectedNpc] = useState(null);
             
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const archetypeEmojis = { alpha: '🎯', whale: '🐋', analyst: '📊', meme: '🤡', holder: '💎', og: '🏛️', defi: '🌾', fomo: '😰', paper: '📄', bear: '🐻', degen: '🎰', hype: '🚀', cope: '🤡', moon: '🌙', newbie: '🐣', nft: '🖼️', maxi: '⚡', complainer: '😤', trader: '💹', victim: '😢', following: '👀' };
             const moodColors = { greedy: '#00ff88', confident: '#ffd700', hopeful: '#4488ff', chaotic: '#ff6600', stoic: '#aaa', chill: '#88ff88', calculating: '#8a2be2', mysterious: '#666', panicky: '#ff4444', anxious: '#ff8800', smug: '#ffd700', satisfied: '#00cc66', tribal: '#ff44ff', optimistic: '#44ff88', hustling: '#ffa500', bitter: '#ff6666', hyped: '#ff00ff', depressed: '#666', confused: '#ffaa00', coping: '#ff8888', delusional: '#ff00ff', reckless: '#ff0000', observant: '#4488ff', artsy: '#ff88ff', frustrated: '#ff4444' };
@@ -18221,7 +18226,6 @@
             const [stats, setStats] = useState({});
             const [loading, setLoading] = useState(true);
             
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const fetchData = async () => {
                 try {
@@ -19740,7 +19744,7 @@
             // Fetch messages from backend
             const fetchMessages = async (channel) => {
                 try {
-                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/chat/${channel}`);
+                    const response = await fetch(`${API_BASE}/api/chat/${channel}`);
                     const data = await response.json();
                     if (data.success && data.messages) {
                         if (channel === 'global') {
@@ -19766,7 +19770,7 @@
                 if (!lastTime) return;
                 
                 try {
-                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/chat/${channel}/since/${lastTime}`);
+                    const response = await fetch(`${API_BASE}/api/chat/${channel}/since/${lastTime}`);
                     const data = await response.json();
                     if (data.success && data.messages && data.messages.length > 0) {
                         if (channel === 'global') {
@@ -19831,7 +19835,7 @@
                 setNewMessage(''); // Clear input immediately for better UX
                 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/chat/send', {
+                    const response = await fetch(API_BASE + '/api/chat/send', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -20114,16 +20118,6 @@
             };
             
             // Format time ago
-            const getTimeAgo = (timestamp) => {
-                const diff = Date.now() - timestamp;
-                const minutes = Math.floor(diff / 60000);
-                const hours = Math.floor(diff / 3600000);
-                
-                if (minutes < 1) return 'Just now';
-                if (minutes < 60) return `${minutes}m ago`;
-                if (hours < 24) return `${hours}h ago`;
-                return `${Math.floor(hours / 24)}d ago`;
-            };
             
             // Create new offer
             const createOffer = () => {
@@ -21896,13 +21890,6 @@
             
             if (loading || prices.length === 0) return null;
             
-            const formatPrice = (price) => {
-                if (price >= 1000) return '$' + price.toLocaleString(undefined, { maximumFractionDigits: 0 });
-                if (price >= 1) return '$' + price.toFixed(2);
-                if (price >= 0.01) return '$' + price.toFixed(4);
-                return '$' + price.toFixed(6);
-            };
-            
             return (
                 <div className="price-ticker">
                     <div className="ticker-content">
@@ -21945,7 +21932,6 @@
             const [prevActionCount, setPrevActionCount] = useState(0);
             const [dramaHighlights, setDramaHighlights] = useState([]);
             const [chaosFeed, setChaosFeed] = useState([]);
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const fetchEngine = async () => {
                 try {
@@ -22161,7 +22147,6 @@
             const [loading, setLoading] = useState(true);
             const [showContent, setShowContent] = useState(false);
             const [currentHeadline, setCurrentHeadline] = useState(0);
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             useEffect(function() {
                 var lastVisit = localStorage.getItem('pumptown_last_visit') || (Date.now() - 3600000);
@@ -22342,7 +22327,6 @@
             const [toasts, setToasts] = useState([]);
             const [lastCheck, setLastCheck] = useState(Date.now());
             const [mayorFlash, setMayorFlash] = useState(null);
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             useEffect(function() {
                 var fetchNotifs = async function() {
@@ -22437,7 +22421,6 @@
             const [loading, setLoading] = useState(true);
             const [expanded, setExpanded] = useState(null);
             const [betting, setBetting] = useState(null);
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             useEffect(function() {
                 var fetchSoaps = async function() {
@@ -22557,7 +22540,6 @@
             const [mayorData, setMayorData] = useState(null);
             const [loading, setLoading] = useState(true);
             const [triggerLoading, setTriggerLoading] = useState(null);
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             useEffect(function() {
                 var fetchMayor = async function() {
@@ -22668,7 +22650,6 @@
             const [feed, setFeed] = useState([]);
             const [filter, setFilter] = useState('all');
             const [loading, setLoading] = useState(true);
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             useEffect(function() {
                 var fetchFeed = async function() {
@@ -22743,7 +22724,7 @@
             useEffect(() => {
                 const fetchTrades = async () => {
                     try {
-                        const res = await fetch('https://pump-town-backend-production.up.railway.app/api/chat/global?limit=50');
+                        const res = await fetch(API_BASE + '/api/chat/global?limit=50');
                         const data = await res.json();
                         if (data.success) {
                             const tradeMessages = data.messages.filter(m => 
@@ -22786,7 +22767,7 @@
             useEffect(() => {
                 const fetchEvents = async () => {
                     try {
-                        const res = await fetch('https://pump-town-backend-production.up.railway.app/api/chat/global?limit=50');
+                        const res = await fetch(API_BASE + '/api/chat/global?limit=50');
                         const data = await res.json();
                         if (data.success) {
                             const eventMsgs = data.messages.filter(m => 
@@ -22833,7 +22814,7 @@
                 const fetchFearGreed = async () => {
                     try {
                         // Fetch through our backend to avoid CORS
-                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/fear-greed');
+                        const response = await fetch(API_BASE + '/api/fear-greed');
                         
                         if (!response.ok) {
                             throw new Error('Backend API failed');
@@ -23052,13 +23033,6 @@
             const totalPnL = totalValue - totalInvested;
             const totalPnLPercent = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
             
-            const formatPrice = (price) => {
-                if (!price) return '$0';
-                if (price >= 1000) return '$' + price.toLocaleString(undefined, { maximumFractionDigits: 0 });
-                if (price >= 1) return '$' + price.toFixed(2);
-                if (price >= 0.01) return '$' + price.toFixed(4);
-                return '$' + price.toFixed(6);
-            };
             
             return (
                 <div className="portfolio-section">
@@ -23903,7 +23877,7 @@
             // Fetch activities from backend
             const fetchActivities = async () => {
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/activity/recent?limit=10');
+                    const response = await fetch(API_BASE + '/api/activity/recent?limit=10');
                     const data = await response.json();
                     
                     if (data.success && data.activities.length > 0) {
@@ -25355,14 +25329,6 @@
                 return () => clearInterval(interval);
             }, []);
             
-            const getTimeAgo = (date) => {
-                const mins = Math.floor((Date.now() - date.getTime()) / 60000);
-                if (mins < 1) return 'now';
-                if (mins < 60) return `${mins}m ago`;
-                if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
-                return `${Math.floor(mins / 1440)}d ago`;
-            };
-            
             const filteredNews = filter === 'all' ? news : news.filter(n => n.sentiment === filter);
             
             return (
@@ -25841,13 +25807,6 @@
                     clearInterval(realAlertInterval);
                 };
             }, []);
-            
-            const getTimeAgo = (timestamp) => {
-                const seconds = Math.floor((Date.now() - timestamp) / 1000);
-                if (seconds < 60) return `${seconds}s ago`;
-                if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-                return `${Math.floor(seconds / 3600)}h ago`;
-            };
             
             return (
                 <div className="card">
@@ -28092,7 +28051,7 @@
                 // Get Mayor's commentary
                 setLoadingComment(true);
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                    const response = await fetch(API_BASE + '/api/ai/mayor-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -29245,7 +29204,7 @@
                 setLoading(true);
 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/forgot-password', {
+                    const response = await fetch(API_BASE + '/api/forgot-password', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: email.toLowerCase() })
@@ -29289,7 +29248,7 @@
                 setLoading(true);
 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/reset-password', {
+                    const response = await fetch(API_BASE + '/api/reset-password', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ token: resetToken, newPassword })
@@ -29324,7 +29283,7 @@
                 setLoading(true);
                 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/guest-login', {
+                    const response = await fetch(API_BASE + '/api/guest-login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({})
@@ -29409,7 +29368,7 @@
 
                 try {
                     const endpoint = isLogin ? '/api/login' : '/api/signup';
-                    const response = await fetch(`https://pump-town-backend-production.up.railway.app${endpoint}`, {
+                    const response = await fetch(`${API_BASE}${endpoint}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: email.toLowerCase(), password })
@@ -29955,20 +29914,6 @@
 
         function VoteHistory({ history }) {
             // Calculate "time ago" from timestamp
-            const getTimeAgo = (timestamp) => {
-                if (!timestamp) return 'Unknown';
-                const now = Date.now();
-                const diff = now - timestamp;
-                const minutes = Math.floor(diff / (60 * 1000));
-                const hours = Math.floor(diff / (60 * 60 * 1000));
-                const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-                
-                if (minutes < 1) return 'Just now';
-                if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-                if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-                return `${days} day${days > 1 ? 's' : ''} ago`;
-            };
-            
             return (
                 <div className="card" style={{ marginTop: '20px' }}>
                     <h2>📜 Vote History</h2>
@@ -30037,7 +29982,7 @@
             useEffect(() => {
                 const fetchBriefing = async () => {
                     try {
-                        const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/daily-briefing', {
+                        const response = await fetch(API_BASE + '/api/ai/daily-briefing', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ playerName, stats, day })
@@ -30150,7 +30095,7 @@
                 setLoading(action.id);
                 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                    const response = await fetch(API_BASE + '/api/ai/mayor-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -30645,7 +30590,7 @@
                 setLoading(true);
                 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                    const response = await fetch(API_BASE + '/api/ai/mayor-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -30781,7 +30726,7 @@
                 const target = getTodaysTarget();
                 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                    const response = await fetch(API_BASE + '/api/ai/mayor-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -32885,7 +32830,7 @@ Play at degenscity.com
                 const holdings = portfolio.map(h => `${h.symbol}: ${h.amount.toFixed(4)} (bought at $${h.avgPrice?.toFixed(2) || '?'})`).join(', ');
                 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                    const response = await fetch(API_BASE + '/api/ai/mayor-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -35064,7 +35009,7 @@ Play at degenscity.com
                     
                     console.log(`🔍 Looking up X user via backend: @${lookupHandle}`);
                     
-                    const response = await fetch(`https://pump-town-backend-production.up.railway.app/api/x/lookup/${lookupHandle}`);
+                    const response = await fetch(`${API_BASE}/api/x/lookup/${lookupHandle}`);
                     const data = await response.json();
                     
                     if (data.success && data.user) {
@@ -35134,7 +35079,7 @@ Play at degenscity.com
                         };
                     }
                     
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                    const response = await fetch(API_BASE + '/api/ai/mayor-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -35190,7 +35135,7 @@ Play at degenscity.com
                 setLoading(true);
                 
                 try {
-                    const response = await fetch('https://pump-town-backend-production.up.railway.app/api/ai/mayor-chat', {
+                    const response = await fetch(API_BASE + '/api/ai/mayor-chat', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -35521,7 +35466,6 @@ Play at degenscity.com
             const [brainStatus, setBrainStatus] = useState(null);
             const [loading, setLoading] = useState(true);
             
-            const API_BASE = 'https://pump-town-backend-production.up.railway.app';
             
             const fetchData = async () => {
                 try {
