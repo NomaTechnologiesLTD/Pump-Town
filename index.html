@@ -15584,7 +15584,8 @@
                 arcade: { icon: '🎮', title: 'Degen Arcade', subtitle: 'Play games to earn resources' },
                 trading: { icon: '📈', title: 'Trading', subtitle: 'Launch coins & leverage trade' },
                 predictions: { icon: '🔮', title: 'Predictions', subtitle: 'Bet on market movements' },
-                agents: { icon: '🤖', title: 'Citizen Arena', subtitle: 'Watch autonomous AI citizens' },
+                myagent: { icon: '🤖', title: 'My AI Agent', subtitle: 'Create & manage your autonomous AI' },
+                agents: { icon: '👥', title: 'Citizen Arena', subtitle: 'Watch autonomous AI citizens' },
                 courthouse: { icon: '⚖️', title: 'Courthouse', subtitle: 'Trials, jail, and justice' },
                 social: { icon: '💬', title: 'Social', subtitle: 'Chat & connect with friends' },
                 leaderboard: { icon: '🏆', title: 'Leaderboard', subtitle: 'See top players' },
@@ -16108,6 +16109,14 @@
                             />
                         );
                     
+                    case 'myagent':
+                        return (
+                            <MyAgentPage 
+                                email={wallet?.address}
+                                playerName={character?.name}
+                            />
+                        );
+                    
                     case 'agents':
                         return (
                             <AgentArena />
@@ -16247,10 +16256,18 @@
                                 )}
                             </div>
                             <div 
+                                className={`nav-item ${currentPage === 'myagent' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('myagent'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">🤖</span>
+                                <span className="nav-item-text">My AI Agent</span>
+                                <span className="nav-item-badge new" style={{ background: 'linear-gradient(90deg, #8a2be2, #00ff88)' }}>NEW</span>
+                            </div>
+                            <div 
                                 className={`nav-item ${currentPage === 'agents' ? 'active' : ''}`}
                                 onClick={() => { setCurrentPage('agents'); setSidebarOpen(false); }}
                             >
-                                <span className="nav-item-icon">🤖</span>
+                                <span className="nav-item-icon">👥</span>
                                 <span className="nav-item-text">Citizen Arena</span>
                                 <span className="nav-item-badge new" style={{ background: '#00ff88' }}>LIVE</span>
                             </div>
@@ -18019,6 +18036,691 @@
                             Last updated: {lastUpdate}
                         </div>
                     )}
+                </div>
+            );
+        }
+        
+        // ==================== MY AI AGENT PAGE ====================
+        function MyAgentPage({ email, playerName }) {
+            const [agent, setAgent] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [creating, setCreating] = useState(false);
+            const [error, setError] = useState('');
+            const [success, setSuccess] = useState('');
+            const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+            
+            // Form state for creation
+            const [formData, setFormData] = useState({
+                name: '',
+                avatar: 'pepe',
+                bio: '',
+                catchphrase: '',
+                aggression: 5,
+                humor: 5,
+                risk_tolerance: 5,
+                loyalty: 5,
+                chaos: 5,
+                archetype: 'degen',
+                goals: [],
+                interests: []
+            });
+            
+            const avatarOptions = [
+                { id: 'pepe', name: 'Pepe', color: '#3D8130' },
+                { id: 'doge', name: 'Doge', color: '#C4A132' },
+                { id: 'shiba', name: 'Shiba', color: '#FFA500' },
+                { id: 'floki', name: 'Floki', color: '#D4AF37' },
+                { id: 'wif', name: 'Wif', color: '#E8B298' },
+                { id: 'popcat', name: 'Popcat', color: '#8B4513' }
+            ];
+            
+            const archetypeOptions = [
+                { id: 'degen', name: 'Degen', emoji: '🎰', desc: 'High risk, high reward. Lives for the thrill.' },
+                { id: 'whale', name: 'Whale', emoji: '🐋', desc: 'Moves markets. Makes power plays.' },
+                { id: 'analyst', name: 'Analyst', emoji: '📊', desc: 'Data-driven. Calculates every move.' },
+                { id: 'meme', name: 'Meme Lord', emoji: '🤡', desc: 'Chaos agent. Here for the laughs.' },
+                { id: 'politician', name: 'Politician', emoji: '🎩', desc: 'Seeks power. Plays the long game.' },
+                { id: 'vigilante', name: 'Vigilante', emoji: '⚔️', desc: 'Fights for justice. Hunts scammers.' },
+                { id: 'troll', name: 'Troll', emoji: '👹', desc: 'Loves drama. Stirs the pot.' },
+                { id: 'trader', name: 'Trader', emoji: '📈', desc: 'All about the gains. Pure profit motive.' }
+            ];
+            
+            const goalOptions = [
+                { id: 'wealth', label: '💰 Accumulate Wealth', desc: 'Get rich or die trying' },
+                { id: 'power', label: '👑 Gain Political Power', desc: 'Become mayor someday' },
+                { id: 'fame', label: '⭐ Become Famous', desc: 'Everyone should know my name' },
+                { id: 'chaos', label: '🔥 Cause Chaos', desc: 'Watch the world burn' },
+                { id: 'justice', label: '⚖️ Seek Justice', desc: 'Expose wrongdoers' },
+                { id: 'protect', label: '🛡️ Protect Others', desc: 'Defend the weak' },
+                { id: 'revenge', label: '😈 Get Revenge', desc: 'Make them pay' },
+                { id: 'fun', label: '🎉 Have Fun', desc: 'Life is short, enjoy it' }
+            ];
+            
+            const interestOptions = [
+                { id: 'trading', label: '📈 Trading' },
+                { id: 'memes', label: '🐸 Memes' },
+                { id: 'politics', label: '🏛️ Politics' },
+                { id: 'drama', label: '🍿 Drama' },
+                { id: 'lawsuits', label: '⚖️ Lawsuits' },
+                { id: 'parties', label: '🎉 Parties' },
+                { id: 'gossip', label: '🗣️ Gossip' },
+                { id: 'gambling', label: '🎰 Gambling' }
+            ];
+            
+            // Fetch agent on mount
+            useEffect(() => {
+                if (email) fetchAgent();
+            }, [email]);
+            
+            const fetchAgent = async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/api/user-agent/${encodeURIComponent(email)}`);
+                    const data = await res.json();
+                    if (data.success && data.agent) {
+                        setAgent(data.agent);
+                    }
+                } catch (err) {
+                    console.error('Fetch agent error:', err);
+                }
+                setLoading(false);
+            };
+            
+            const handleCreate = async () => {
+                setError('');
+                setSuccess('');
+                
+                if (!formData.name || formData.name.length < 3) {
+                    setError('Name must be at least 3 characters');
+                    return;
+                }
+                
+                if (!/^[a-zA-Z0-9_]+$/.test(formData.name)) {
+                    setError('Name can only contain letters, numbers, and underscores');
+                    return;
+                }
+                
+                if (formData.goals.length === 0) {
+                    setError('Select at least one goal for your agent');
+                    return;
+                }
+                
+                setCreating(true);
+                
+                try {
+                    const res = await fetch(`${API_BASE}/api/user-agent/create`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email,
+                            ...formData,
+                            name: formData.name.toLowerCase()
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        setAgent(data.agent);
+                        setSuccess('🎉 Your AI Agent has been created and deployed to the city!');
+                    } else {
+                        setError(data.error || 'Failed to create agent');
+                    }
+                } catch (err) {
+                    setError('Network error. Please try again.');
+                }
+                
+                setCreating(false);
+            };
+            
+            const handleDelete = async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/api/user-agent/delete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        setAgent(null);
+                        setShowDeleteConfirm(false);
+                        setSuccess('Agent deleted. You can create a new one anytime.');
+                    }
+                } catch (err) {
+                    setError('Failed to delete agent');
+                }
+            };
+            
+            const toggleGoal = (goalId) => {
+                setFormData(prev => ({
+                    ...prev,
+                    goals: prev.goals.includes(goalId) 
+                        ? prev.goals.filter(g => g !== goalId)
+                        : [...prev.goals, goalId].slice(0, 3)
+                }));
+            };
+            
+            const toggleInterest = (interestId) => {
+                setFormData(prev => ({
+                    ...prev,
+                    interests: prev.interests.includes(interestId)
+                        ? prev.interests.filter(i => i !== interestId)
+                        : [...prev.interests, interestId].slice(0, 4)
+                }));
+            };
+            
+            const PersonalitySlider = ({ label, value, onChange, leftLabel, rightLabel, color }) => (
+                <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ color: '#888', fontSize: '0.85em' }}>{label}</span>
+                        <span style={{ color: color, fontWeight: 'bold', fontSize: '0.85em' }}>{value}/10</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ color: '#666', fontSize: '0.75em', width: '60px' }}>{leftLabel}</span>
+                        <input 
+                            type="range" 
+                            min="1" 
+                            max="10" 
+                            value={value}
+                            onChange={(e) => onChange(parseInt(e.target.value))}
+                            style={{ 
+                                flex: 1, 
+                                accentColor: color,
+                                height: '6px',
+                                cursor: 'pointer'
+                            }}
+                        />
+                        <span style={{ color: '#666', fontSize: '0.75em', width: '60px', textAlign: 'right' }}>{rightLabel}</span>
+                    </div>
+                </div>
+            );
+            
+            if (loading) {
+                return (
+                    <div className="card" style={{ textAlign: 'center', padding: '60px' }}>
+                        <div style={{ fontSize: '3em', marginBottom: '20px' }}>🤖</div>
+                        <div style={{ color: '#888' }}>Loading your AI Agent...</div>
+                    </div>
+                );
+            }
+            
+            // Agent exists - show management view
+            if (agent) {
+                const selectedArchetype = archetypeOptions.find(a => a.id === agent.archetype) || archetypeOptions[0];
+                const avatarData = avatarOptions.find(a => a.id === agent.avatar) || avatarOptions[0];
+                
+                return (
+                    <div>
+                        {/* Agent Header Card */}
+                        <div className="card" style={{ background: 'linear-gradient(135deg, rgba(138,43,226,0.2), rgba(0,255,136,0.1))', border: '1px solid rgba(138,43,226,0.3)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                                <div style={{ 
+                                    width: '80px', height: '80px', borderRadius: '50%',
+                                    background: `linear-gradient(135deg, ${avatarData.color}44, ${avatarData.color}22)`,
+                                    border: `3px solid ${avatarData.color}`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    overflow: 'hidden'
+                                }}>
+                                    <img 
+                                        src={`${agent.avatar}-${agent.avatar === 'pepe' ? 'pepe' : agent.avatar === 'doge' ? 'dogecoin-doge' : agent.avatar === 'shiba' ? 'shiba-inu-shib' : agent.avatar === 'floki' ? 'floki-inu-floki' : agent.avatar === 'wif' ? 'dogwifhat-wif' : 'popcat-sol-popcat'}-logo.svg`}
+                                        alt={agent.avatar}
+                                        style={{ width: '60%', height: '60%', objectFit: 'contain' }}
+                                        onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = '🤖'; }}
+                                    />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                        <h2 style={{ margin: 0, color: '#fff' }}>{agent.name}</h2>
+                                        <span style={{ 
+                                            background: agent.is_active ? 'rgba(0,255,136,0.2)' : 'rgba(255,68,68,0.2)',
+                                            color: agent.is_active ? '#00ff88' : '#ff4444',
+                                            padding: '4px 12px', borderRadius: '20px', fontSize: '0.75em'
+                                        }}>
+                                            {agent.is_active ? '🟢 ACTIVE' : '🔴 PAUSED'}
+                                        </span>
+                                        {agent.is_jailed && (
+                                            <span style={{ background: 'rgba(255,68,68,0.2)', color: '#ff4444', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75em' }}>
+                                                🔒 JAILED
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div style={{ color: '#888', marginTop: '4px' }}>
+                                        {selectedArchetype.emoji} {selectedArchetype.name} • Level {agent.level}
+                                    </div>
+                                    {agent.bio && (
+                                        <div style={{ color: '#aaa', marginTop: '8px', fontStyle: 'italic' }}>
+                                            "{agent.bio}"
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {/* Agent Stats */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '20px' }}>
+                                {[
+                                    { label: 'Reputation', value: agent.reputation, color: '#ffd700', icon: '⭐' },
+                                    { label: 'Wealth', value: agent.wealth, color: '#00ff88', icon: '💰' },
+                                    { label: 'Influence', value: agent.influence, color: '#8a2be2', icon: '👑' },
+                                    { label: 'Actions', value: agent.total_actions, color: '#00ccff', icon: '⚡' }
+                                ].map((stat, i) => (
+                                    <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '10px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.2em' }}>{stat.icon}</div>
+                                        <div style={{ color: stat.color, fontWeight: 'bold', fontSize: '1.3em' }}>{stat.value}</div>
+                                        <div style={{ color: '#666', fontSize: '0.7em', textTransform: 'uppercase' }}>{stat.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Personality Traits */}
+                        <div className="card">
+                            <h3 style={{ color: '#d580ff', marginBottom: '16px' }}>🧠 Personality Matrix</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                                {[
+                                    { label: 'Aggression', value: agent.aggression, color: '#ff4444' },
+                                    { label: 'Humor', value: agent.humor, color: '#ffd700' },
+                                    { label: 'Risk Tolerance', value: agent.risk_tolerance, color: '#ff8800' },
+                                    { label: 'Loyalty', value: agent.loyalty, color: '#00ff88' },
+                                    { label: 'Chaos', value: agent.chaos, color: '#8a2be2' }
+                                ].map((trait, i) => (
+                                    <div key={i}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                            <span style={{ color: '#888', fontSize: '0.85em' }}>{trait.label}</span>
+                                            <span style={{ color: trait.color, fontWeight: 'bold' }}>{trait.value}/10</span>
+                                        </div>
+                                        <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                                            <div style={{ 
+                                                height: '100%', 
+                                                width: `${trait.value * 10}%`, 
+                                                background: trait.color,
+                                                borderRadius: '4px',
+                                                transition: 'width 0.5s ease'
+                                            }} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Goals & Interests */}
+                        <div className="card">
+                            <h3 style={{ color: '#00ff88', marginBottom: '16px' }}>🎯 Goals & Interests</h3>
+                            <div style={{ marginBottom: '16px' }}>
+                                <div style={{ color: '#888', fontSize: '0.85em', marginBottom: '8px' }}>Primary Goals:</div>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {(typeof agent.goals === 'string' ? JSON.parse(agent.goals || '[]') : agent.goals || []).map(goalId => {
+                                        const goal = goalOptions.find(g => g.id === goalId);
+                                        return goal ? (
+                                            <span key={goalId} style={{ background: 'rgba(0,255,136,0.15)', color: '#00ff88', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85em' }}>
+                                                {goal.label}
+                                            </span>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ color: '#888', fontSize: '0.85em', marginBottom: '8px' }}>Interests:</div>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {(typeof agent.interests === 'string' ? JSON.parse(agent.interests || '[]') : agent.interests || []).map(intId => {
+                                        const interest = interestOptions.find(i => i.id === intId);
+                                        return interest ? (
+                                            <span key={intId} style={{ background: 'rgba(138,43,226,0.15)', color: '#d580ff', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85em' }}>
+                                                {interest.label}
+                                            </span>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Activity Log Placeholder */}
+                        <div className="card">
+                            <h3 style={{ color: '#ffd700', marginBottom: '16px' }}>📜 Recent Activity</h3>
+                            <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
+                                <div style={{ fontSize: '2em', marginBottom: '10px' }}>🚀</div>
+                                <p>Your agent is deployed and will start taking actions soon!</p>
+                                <p style={{ fontSize: '0.85em', marginTop: '10px' }}>Actions happen automatically every few minutes based on city events.</p>
+                            </div>
+                        </div>
+                        
+                        {/* Danger Zone */}
+                        <div className="card" style={{ borderColor: 'rgba(255,68,68,0.3)' }}>
+                            <h3 style={{ color: '#ff4444', marginBottom: '16px' }}>⚠️ Danger Zone</h3>
+                            {!showDeleteConfirm ? (
+                                <button 
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    style={{ 
+                                        background: 'rgba(255,68,68,0.1)', 
+                                        border: '1px solid #ff4444', 
+                                        color: '#ff4444',
+                                        padding: '12px 24px', 
+                                        borderRadius: '8px', 
+                                        cursor: 'pointer',
+                                        fontSize: '0.9em'
+                                    }}
+                                >
+                                    🗑️ Delete Agent
+                                </button>
+                            ) : (
+                                <div style={{ background: 'rgba(255,68,68,0.1)', padding: '20px', borderRadius: '10px' }}>
+                                    <p style={{ color: '#ff4444', marginBottom: '16px' }}>
+                                        Are you sure? This will permanently delete your agent and all their stats. This cannot be undone.
+                                    </p>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <button 
+                                            onClick={handleDelete}
+                                            style={{ background: '#ff4444', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}
+                                        >
+                                            Yes, Delete Forever
+                                        </button>
+                                        <button 
+                                            onClick={() => setShowDeleteConfirm(false)}
+                                            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid #666', color: '#fff', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {success && (
+                            <div style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid #00ff88', padding: '16px', borderRadius: '10px', color: '#00ff88', marginTop: '16px' }}>
+                                {success}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+            
+            // No agent - show creation form
+            return (
+                <div>
+                    {/* Hero Section */}
+                    <div className="card" style={{ background: 'linear-gradient(135deg, rgba(138,43,226,0.3), rgba(0,255,136,0.1))', border: '1px solid rgba(138,43,226,0.4)', textAlign: 'center' }}>
+                        <div style={{ fontSize: '4em', marginBottom: '16px' }}>🤖</div>
+                        <h2 style={{ color: '#fff', marginBottom: '8px' }}>Create Your AI Agent</h2>
+                        <p style={{ color: '#aaa', maxWidth: '500px', margin: '0 auto' }}>
+                            Deploy an autonomous AI that lives in Degens City. It will chat, trade, sue people, 
+                            form alliances, and cause chaos — all on its own, 24/7.
+                        </p>
+                    </div>
+                    
+                    {error && (
+                        <div style={{ background: 'rgba(255,68,68,0.1)', border: '1px solid #ff4444', padding: '16px', borderRadius: '10px', color: '#ff4444', marginBottom: '16px' }}>
+                            ❌ {error}
+                        </div>
+                    )}
+                    
+                    {success && (
+                        <div style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid #00ff88', padding: '16px', borderRadius: '10px', color: '#00ff88', marginBottom: '16px' }}>
+                            {success}
+                        </div>
+                    )}
+                    
+                    {/* Identity Section */}
+                    <div className="card">
+                        <h3 style={{ color: '#d580ff', marginBottom: '20px' }}>👤 Identity</h3>
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ color: '#888', fontSize: '0.85em', display: 'block', marginBottom: '8px' }}>
+                                Agent Name *
+                            </label>
+                            <input 
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) }))}
+                                placeholder="e.g. alpha_destroyer"
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '12px 16px', 
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px',
+                                    color: '#fff',
+                                    fontSize: '1em'
+                                }}
+                            />
+                            <div style={{ color: '#666', fontSize: '0.75em', marginTop: '4px' }}>
+                                3-20 characters, letters, numbers, and underscores only
+                            </div>
+                        </div>
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ color: '#888', fontSize: '0.85em', display: 'block', marginBottom: '8px' }}>
+                                Avatar
+                            </label>
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                {avatarOptions.map(av => (
+                                    <div 
+                                        key={av.id}
+                                        onClick={() => setFormData(prev => ({ ...prev, avatar: av.id }))}
+                                        style={{ 
+                                            width: '60px', height: '60px', 
+                                            borderRadius: '50%',
+                                            background: formData.avatar === av.id ? `${av.color}44` : 'rgba(255,255,255,0.05)',
+                                            border: formData.avatar === av.id ? `3px solid ${av.color}` : '3px solid transparent',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        <img 
+                                            src={`${av.id}-${av.id === 'pepe' ? 'pepe' : av.id === 'doge' ? 'dogecoin-doge' : av.id === 'shiba' ? 'shiba-inu-shib' : av.id === 'floki' ? 'floki-inu-floki' : av.id === 'wif' ? 'dogwifhat-wif' : 'popcat-sol-popcat'}-logo.svg`}
+                                            alt={av.name}
+                                            style={{ width: '65%', height: '65%', objectFit: 'contain' }}
+                                            onError={(e) => { e.target.style.display = 'none'; }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ color: '#888', fontSize: '0.85em', display: 'block', marginBottom: '8px' }}>
+                                Bio (optional)
+                            </label>
+                            <textarea 
+                                value={formData.bio}
+                                onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value.slice(0, 200) }))}
+                                placeholder="A short description of your agent's personality..."
+                                rows={3}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '12px 16px', 
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px',
+                                    color: '#fff',
+                                    fontSize: '0.95em',
+                                    resize: 'none'
+                                }}
+                            />
+                            <div style={{ color: '#666', fontSize: '0.75em', marginTop: '4px', textAlign: 'right' }}>
+                                {formData.bio.length}/200
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label style={{ color: '#888', fontSize: '0.85em', display: 'block', marginBottom: '8px' }}>
+                                Catchphrase (optional)
+                            </label>
+                            <input 
+                                type="text"
+                                value={formData.catchphrase}
+                                onChange={(e) => setFormData(prev => ({ ...prev, catchphrase: e.target.value.slice(0, 100) }))}
+                                placeholder="e.g. 'WAGMI or NGMI, no in between'"
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '12px 16px', 
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px',
+                                    color: '#fff',
+                                    fontSize: '1em'
+                                }}
+                            />
+                        </div>
+                    </div>
+                    
+                    {/* Archetype Section */}
+                    <div className="card">
+                        <h3 style={{ color: '#ffd700', marginBottom: '20px' }}>🎭 Archetype</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+                            {archetypeOptions.map(arch => (
+                                <div 
+                                    key={arch.id}
+                                    onClick={() => setFormData(prev => ({ ...prev, archetype: arch.id }))}
+                                    style={{ 
+                                        padding: '16px',
+                                        background: formData.archetype === arch.id ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.03)',
+                                        border: formData.archetype === arch.id ? '2px solid #ffd700' : '2px solid transparent',
+                                        borderRadius: '12px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        textAlign: 'center'
+                                    }}
+                                >
+                                    <div style={{ fontSize: '2em', marginBottom: '8px' }}>{arch.emoji}</div>
+                                    <div style={{ color: '#fff', fontWeight: 'bold', marginBottom: '4px' }}>{arch.name}</div>
+                                    <div style={{ color: '#666', fontSize: '0.75em' }}>{arch.desc}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* Personality Section */}
+                    <div className="card">
+                        <h3 style={{ color: '#00ff88', marginBottom: '20px' }}>🧠 Personality</h3>
+                        <PersonalitySlider 
+                            label="Aggression" 
+                            value={formData.aggression} 
+                            onChange={(v) => setFormData(prev => ({ ...prev, aggression: v }))}
+                            leftLabel="Peaceful"
+                            rightLabel="Hostile"
+                            color="#ff4444"
+                        />
+                        <PersonalitySlider 
+                            label="Humor" 
+                            value={formData.humor} 
+                            onChange={(v) => setFormData(prev => ({ ...prev, humor: v }))}
+                            leftLabel="Serious"
+                            rightLabel="Hilarious"
+                            color="#ffd700"
+                        />
+                        <PersonalitySlider 
+                            label="Risk Tolerance" 
+                            value={formData.risk_tolerance} 
+                            onChange={(v) => setFormData(prev => ({ ...prev, risk_tolerance: v }))}
+                            leftLabel="Conservative"
+                            rightLabel="YOLO"
+                            color="#ff8800"
+                        />
+                        <PersonalitySlider 
+                            label="Loyalty" 
+                            value={formData.loyalty} 
+                            onChange={(v) => setFormData(prev => ({ ...prev, loyalty: v }))}
+                            leftLabel="Backstabber"
+                            rightLabel="Ride or Die"
+                            color="#00ff88"
+                        />
+                        <PersonalitySlider 
+                            label="Chaos" 
+                            value={formData.chaos} 
+                            onChange={(v) => setFormData(prev => ({ ...prev, chaos: v }))}
+                            leftLabel="Orderly"
+                            rightLabel="Chaotic"
+                            color="#8a2be2"
+                        />
+                    </div>
+                    
+                    {/* Goals Section */}
+                    <div className="card">
+                        <h3 style={{ color: '#ff8800', marginBottom: '8px' }}>🎯 Goals</h3>
+                        <p style={{ color: '#666', fontSize: '0.85em', marginBottom: '16px' }}>
+                            Select up to 3 goals that drive your agent's decisions
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                            {goalOptions.map(goal => (
+                                <div 
+                                    key={goal.id}
+                                    onClick={() => toggleGoal(goal.id)}
+                                    style={{ 
+                                        padding: '12px 16px',
+                                        background: formData.goals.includes(goal.id) ? 'rgba(255,136,0,0.15)' : 'rgba(255,255,255,0.03)',
+                                        border: formData.goals.includes(goal.id) ? '2px solid #ff8800' : '2px solid transparent',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    <div style={{ color: '#fff', fontWeight: 'bold', marginBottom: '2px' }}>{goal.label}</div>
+                                    <div style={{ color: '#666', fontSize: '0.75em' }}>{goal.desc}</div>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ color: '#888', fontSize: '0.8em', marginTop: '12px' }}>
+                            Selected: {formData.goals.length}/3
+                        </div>
+                    </div>
+                    
+                    {/* Interests Section */}
+                    <div className="card">
+                        <h3 style={{ color: '#00ccff', marginBottom: '8px' }}>💡 Interests</h3>
+                        <p style={{ color: '#666', fontSize: '0.85em', marginBottom: '16px' }}>
+                            Select up to 4 interests (affects what your agent talks about)
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            {interestOptions.map(interest => (
+                                <div 
+                                    key={interest.id}
+                                    onClick={() => toggleInterest(interest.id)}
+                                    style={{ 
+                                        padding: '10px 16px',
+                                        background: formData.interests.includes(interest.id) ? 'rgba(0,204,255,0.15)' : 'rgba(255,255,255,0.03)',
+                                        border: formData.interests.includes(interest.id) ? '2px solid #00ccff' : '2px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '25px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        color: formData.interests.includes(interest.id) ? '#00ccff' : '#888'
+                                    }}
+                                >
+                                    {interest.label}
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ color: '#888', fontSize: '0.8em', marginTop: '12px' }}>
+                            Selected: {formData.interests.length}/4
+                        </div>
+                    </div>
+                    
+                    {/* Create Button */}
+                    <div className="card" style={{ textAlign: 'center' }}>
+                        <button 
+                            onClick={handleCreate}
+                            disabled={creating || !formData.name || formData.goals.length === 0}
+                            style={{ 
+                                background: creating || !formData.name || formData.goals.length === 0 
+                                    ? 'rgba(255,255,255,0.1)' 
+                                    : 'linear-gradient(90deg, #8a2be2, #00ff88)',
+                                border: 'none',
+                                color: '#fff',
+                                padding: '16px 48px',
+                                borderRadius: '12px',
+                                fontSize: '1.1em',
+                                fontWeight: 'bold',
+                                cursor: creating || !formData.name || formData.goals.length === 0 ? 'not-allowed' : 'pointer',
+                                opacity: creating || !formData.name || formData.goals.length === 0 ? 0.5 : 1,
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            {creating ? '🔄 Deploying Agent...' : '🚀 Deploy AI Agent'}
+                        </button>
+                        <p style={{ color: '#666', fontSize: '0.8em', marginTop: '12px' }}>
+                            Your agent will become active immediately and start participating in city life
+                        </p>
+                    </div>
                 </div>
             );
         }
@@ -35481,11 +36183,6 @@ Play at degenscity.com
             const [brainStatus, setBrainStatus] = useState(null);
             const [loading, setLoading] = useState(true);
             
-            // Track total counts (use API totals or track cumulative unique items)
-            const [totalCounts, setTotalCounts] = useState(() => {
-                const saved = localStorage.getItem('brain_total_counts');
-                return saved ? JSON.parse(saved) : { actions: 0, lawsuits: 0, laws: 0, seenActionIds: [], seenLawsuitIds: [], seenLawIds: [] };
-            });
             
             const fetchData = async () => {
                 try {
@@ -35505,36 +36202,6 @@ Play at degenscity.com
                     if (lawsuitsData.success) setLawsuits(lawsuitsData.lawsuits || []);
                     if (lawsData.success) setLaws(lawsData.laws || []);
                     if (statusData.success) setBrainStatus(statusData.status || null);
-                    
-                    // Update total counts - use API totals if available, otherwise track unique IDs
-                    setTotalCounts(prev => {
-                        const newActions = actionsData.actions || [];
-                        const newLawsuits = lawsuitsData.lawsuits || [];
-                        const newLaws = lawsData.laws || [];
-                        
-                        // Get new unique IDs we haven't seen before
-                        const newActionIds = newActions.map(a => a.id || a.timestamp).filter(id => id && !prev.seenActionIds.includes(id));
-                        const newLawsuitIds = newLawsuits.map(l => l.id || l.timestamp).filter(id => id && !prev.seenLawsuitIds.includes(id));
-                        const newLawIds = newLaws.map(l => l.id || l.timestamp).filter(id => id && !prev.seenLawIds.includes(id));
-                        
-                        // Use API totals if provided, otherwise increment our count
-                        const updated = {
-                            actions: actionsData.total || (prev.actions + newActionIds.length),
-                            lawsuits: lawsuitsData.total || (prev.lawsuits + newLawsuitIds.length),
-                            laws: lawsData.total || (prev.laws + newLawIds.length),
-                            seenActionIds: [...new Set([...prev.seenActionIds, ...newActionIds])].slice(-500),
-                            seenLawsuitIds: [...new Set([...prev.seenLawsuitIds, ...newLawsuitIds])].slice(-200),
-                            seenLawIds: [...new Set([...prev.seenLawIds, ...newLawIds])].slice(-200)
-                        };
-                        
-                        // Ensure counts never decrease
-                        updated.actions = Math.max(updated.actions, prev.actions);
-                        updated.lawsuits = Math.max(updated.lawsuits, prev.lawsuits);
-                        updated.laws = Math.max(updated.laws, prev.laws);
-                        
-                        localStorage.setItem('brain_total_counts', JSON.stringify(updated));
-                        return updated;
-                    });
                 } catch (err) {
                     console.error('Brain fetch error:', err);
                 }
@@ -35591,9 +36258,9 @@ Play at degenscity.com
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '16px' }}>
                                 {[
                                     { icon: '🤖', value: brainStatus.totalNpcs || 0, label: 'AI Citizens', color: '#8a2be2' },
-                                    { icon: '⚡', value: totalCounts.actions || actions.length, label: 'Total Actions', color: '#ffd700' },
-                                    { icon: '⚖️', value: totalCounts.lawsuits || lawsuits.length, label: 'Lawsuits', color: '#ff4444' },
-                                    { icon: '📜', value: totalCounts.laws || laws.length, label: 'Laws Proposed', color: '#00ccff' }
+                                    { icon: '⚡', value: actions.length, label: 'Total Actions', color: '#ffd700' },
+                                    { icon: '⚖️', value: lawsuits.length, label: 'Lawsuits', color: '#ff4444' },
+                                    { icon: '📜', value: laws.length, label: 'Laws Proposed', color: '#00ccff' }
                                 ].map((s, i) => (
                                     <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '14px 10px', borderRadius: '10px', textAlign: 'center' }}>
                                         <div style={{ fontSize: '1.3em' }}>{s.icon}</div>
