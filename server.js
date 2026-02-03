@@ -2641,7 +2641,9 @@ app.get('/api/v1/brain/status', async (req, res) => {
       SELECT 
         COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') as actions_last_hour,
         COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours') as actions_last_day,
-        COUNT(*) as total_actions
+        COUNT(*) as total_actions,
+        COUNT(*) FILTER (WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')) as total_lawsuits,
+        COUNT(*) FILTER (WHERE activity_type = 'law_proposed') as total_laws
       FROM activity_feed
     `);
     
@@ -2663,6 +2665,8 @@ app.get('/api/v1/brain/status', async (req, res) => {
         actionsLastHour: parseInt(stats.actions_last_hour) || 0,
         actionsLastDay: parseInt(stats.actions_last_day) || 0,
         totalActions: parseInt(stats.total_actions) || 0,
+        totalLawsuits: parseInt(stats.total_lawsuits) || 0,
+        totalLaws: parseInt(stats.total_laws) || 0,
         lastActionAt: lastActionAt,
         tickInterval: '45 seconds',
         brainVersion: '3.0'
