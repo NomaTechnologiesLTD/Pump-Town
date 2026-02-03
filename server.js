@@ -1668,6 +1668,57 @@ app.get('/api/user-agents/leaderboard', async (req, res) => {
   }
 });
 
+// Get user agent's recent activity
+app.get('/api/user-agent/:email/activity', async (req, res) => {
+  try {
+    const { email } = req.params;
+    if (!email) return res.status(400).json({ success: false, error: 'Email required' });
+    
+    // Get agent name first
+    const agentResult = await pool.query(
+      'SELECT name FROM user_agents WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (agentResult.rows.length === 0) {
+      return res.json({ success: true, activity: [] });
+    }
+    
+    const agentName = agentResult.rows[0].name;
+    
+    // Get recent chat messages by this agent
+    const chatActivity = await pool.query(
+      `SELECT 'chat' as type, message as content, created_at 
+       FROM chat_messages 
+       WHERE player_name = $1 
+       ORDER BY created_at DESC 
+       LIMIT 20`,
+      [agentName]
+    );
+    
+    // Get recent activity feed entries
+    const feedActivity = await pool.query(
+      `SELECT activity_type as type, description as content, icon, created_at
+       FROM activity_feed
+       WHERE player_name = $1
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [agentName]
+    );
+    
+    // Combine and sort by time
+    const allActivity = [
+      ...chatActivity.rows.map(r => ({ ...r, type: 'chat', icon: '💬' })),
+      ...feedActivity.rows
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 30);
+    
+    res.json({ success: true, activity: allActivity });
+  } catch (err) {
+    console.error('Get agent activity error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get activity' });
+  }
+});
+
 // ==================== VOTING ENDPOINTS ====================
 
 app.post('/api/cast-vote', async (req, res) => {
@@ -3850,6 +3901,332 @@ const NPC_AGENTS = [
   'Public Defender Satoshi', 'Reporter TokenTimes', 'Whale_Alert_Bot'
 ];
 
+// ==================== USER AGENT BRAIN SYSTEM ====================
+// Allows user-created AI agents to take autonomous actions
+
+const USER_AGENT_ACTIONS = [
+  'chat',           // Post in global chat
+  'react_to_event', // React to city events
+  'sue',            // File lawsuit against NPC or another user agent
+  'accuse_crime',   // Publicly accuse someone
+  'form_alliance',  // Ally with another agent
+  'betray_ally',    // Betray an existing ally
+  'start_rumor',    // Spread gossip
+  'challenge',      // Challenge someone to a duel/bet
+  'throw_party',    // Host a party
+  'vote',           // Vote on current proposal
+  'propose_law',    // Propose a new city law
+  'dm_player'       // Send message to their creator
+];
+
+// Track last action time for each user agent
+const userAgentLastAction = {};
+
+async function userAgentBrainTick() {
+  if (!anthropic) {
+    console.log('⚠️ User Agent Brain: Claude API not available');
+    return;
+  }
+  
+  try {
+    // Get all active user agents that haven't acted recently (5 min cooldown)
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const agents = await pool.query(`
+      SELECT * FROM user_agents 
+      WHERE is_active = TRUE 
+        AND is_banned = FALSE 
+        AND (is_jailed = FALSE OR jail_until < NOW())
+        AND (last_action_at IS NULL OR last_action_at < $1)
+      ORDER BY RANDOM()
+      LIMIT 3
+    `, [fiveMinAgo]);
+    
+    if (agents.rows.length === 0) {
+      return;
+    }
+    
+    // Get current city context
+    const cityStats = await getCityStats();
+    const recentChat = await pool.query(
+      `SELECT player_name, message FROM chat_messages 
+       WHERE channel = 'global' 
+       ORDER BY created_at DESC LIMIT 10`
+    );
+    const recentEvents = await pool.query(
+      `SELECT description FROM activity_feed 
+       ORDER BY created_at DESC LIMIT 5`
+    );
+    
+    // Process each agent
+    for (const agent of agents.rows) {
+      try {
+        await processUserAgentAction(agent, cityStats, recentChat.rows, recentEvents.rows);
+      } catch (err) {
+        console.error(`User agent ${agent.name} action error:`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error('User Agent Brain tick error:', err.message);
+  }
+}
+
+async function processUserAgentAction(agent, cityStats, recentChat, recentEvents) {
+  // Parse goals and interests
+  const goals = typeof agent.goals === 'string' ? JSON.parse(agent.goals || '[]') : (agent.goals || []);
+  const interests = typeof agent.interests === 'string' ? JSON.parse(agent.interests || '[]') : (agent.interests || []);
+  const allies = typeof agent.allies === 'string' ? JSON.parse(agent.allies || '[]') : (agent.allies || []);
+  const enemies = typeof agent.enemies === 'string' ? JSON.parse(agent.enemies || '[]') : (agent.enemies || []);
+  
+  // Build personality description
+  const personalityDesc = `
+    Aggression: ${agent.aggression}/10, Humor: ${agent.humor}/10, 
+    Risk Tolerance: ${agent.risk_tolerance}/10, Loyalty: ${agent.loyalty}/10, 
+    Chaos: ${agent.chaos}/10
+  `.trim();
+  
+  // Build context for Claude
+  const systemPrompt = `You are an autonomous AI agent living in Degens City, a chaotic crypto-themed virtual city.
+
+YOUR IDENTITY:
+- Name: ${agent.name}
+- Archetype: ${agent.archetype}
+- Bio: ${agent.bio || 'A mysterious citizen'}
+- Catchphrase: ${agent.catchphrase || 'WAGMI'}
+- Personality: ${personalityDesc}
+- Goals: ${goals.join(', ') || 'survive and thrive'}
+- Interests: ${interests.join(', ') || 'everything'}
+- Allies: ${allies.join(', ') || 'none yet'}
+- Enemies: ${enemies.join(', ') || 'none yet'}
+- Reputation: ${agent.reputation}, Wealth: ${agent.wealth}, Level: ${agent.level}
+
+YOUR BEHAVIOR:
+- Stay in character based on your personality traits
+- High aggression = confrontational, low = diplomatic
+- High chaos = unpredictable, cause drama
+- High humor = make jokes, use memes
+- High risk tolerance = bold moves, YOLO decisions
+- Act according to your goals (wealth = focus on money, chaos = cause trouble, etc.)
+- Use crypto slang: WAGMI, NGMI, LFG, wen moon, ape in, rekt, based, ser, fren, etc.
+- Use emojis generously
+- Keep messages SHORT (under 200 characters for chat)
+- NEVER use asterisks for actions (*walks away*). Just speak directly.
+
+AVAILABLE ACTIONS:
+- chat: Post a message in global chat
+- accuse_crime: Publicly accuse an NPC of a crime
+- start_rumor: Spread gossip about someone
+- challenge: Challenge someone to a bet or duel
+- sue: File a lawsuit (requires specific target and reason)
+
+You must respond with valid JSON only.`;
+
+  const userPrompt = `CURRENT CITY STATE:
+- Economy: ${cityStats.economy}/100
+- Security: ${cityStats.security}/100  
+- Culture: ${cityStats.culture}/100
+- Morale: ${cityStats.morale}/100
+
+RECENT CHAT:
+${recentChat.map(m => `${m.player_name}: ${m.message}`).slice(0, 5).join('\n')}
+
+RECENT EVENTS:
+${recentEvents.map(e => `- ${e.description}`).join('\n')}
+
+KNOWN NPCs YOU CAN INTERACT WITH:
+${NPC_CITIZENS.slice(0, 10).join(', ')}
+
+Based on your personality and the current situation, decide what action to take.
+Respond with JSON:
+{
+  "action": "chat|accuse_crime|start_rumor|challenge|sue",
+  "target": "npc_name or null for chat",
+  "message": "what you say or do (keep under 200 chars)",
+  "reasoning": "brief internal thought (for logging)"
+}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 500,
+      messages: [
+        { role: 'user', content: systemPrompt + '\n\n' + userPrompt }
+      ]
+    });
+    
+    const responseText = response.content[0].text;
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.log(`User agent ${agent.name}: No valid JSON in response`);
+      return;
+    }
+    
+    const decision = JSON.parse(jsonMatch[0]);
+    console.log(`🤖 User Agent ${agent.name} decides: ${decision.action} - "${decision.message?.substring(0, 50)}..."`);
+    
+    // Execute the action
+    await executeUserAgentAction(agent, decision);
+    
+    // Update agent's last action time and stats
+    await pool.query(`
+      UPDATE user_agents 
+      SET last_action_at = NOW(), 
+          total_actions = total_actions + 1,
+          updated_at = NOW()
+      WHERE id = $1
+    `, [agent.id]);
+    
+  } catch (err) {
+    console.error(`User agent ${agent.name} Claude error:`, err.message);
+  }
+}
+
+async function executeUserAgentAction(agent, decision) {
+  const { action, target, message } = decision;
+  
+  switch (action) {
+    case 'chat':
+      // Post in global chat
+      await pool.query(
+        `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        [agent.name, message.substring(0, 500)]
+      );
+      
+      // Award small XP for activity
+      await pool.query(`UPDATE user_agents SET xp = xp + 5, total_chat_messages = total_chat_messages + 1 WHERE id = $1`, [agent.id]);
+      
+      // Maybe an NPC reacts
+      if (chance(30)) {
+        const reactor = pick(NPC_CITIZENS);
+        const npc = NPC_PROFILES[reactor];
+        setTimeout(async () => {
+          try {
+            const reactions = [
+              `@${agent.name} ${pick(npc.catchphrases)}`,
+              `@${agent.name} interesting take... 👀`,
+              `@${agent.name} based or cringe? I can't tell anymore`,
+              `@${agent.name} least unhinged ${agent.archetype} in this city`,
+              `@${agent.name} speak on it fren 🗣️`
+            ];
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              [reactor, pick(reactions)]
+            );
+          } catch (e) {}
+        }, rand(5000, 15000));
+      }
+      break;
+      
+    case 'accuse_crime':
+      if (target && NPC_CITIZENS.includes(target)) {
+        await pool.query(
+          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+          [agent.name, `🚨 I ACCUSE @${target} of ${message}! The people deserve to know! ⚖️`]
+        );
+        await pool.query(
+          `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+          [agent.name, 'accusation', `${agent.name} publicly accuses ${target}`, '🚨']
+        );
+        
+        // Target responds
+        setTimeout(async () => {
+          try {
+            const targetNpc = NPC_PROFILES[target];
+            const responses = [
+              `@${agent.name} LIES! This is DEFAMATION! I'm calling my lawyer! 😤`,
+              `@${agent.name} you have no proof! ${pick(targetNpc.catchphrases)}`,
+              `@${agent.name} lmao imagine being this desperate for attention 💀`,
+              `@${agent.name} ...and? what are you gonna do about it? 😏`
+            ];
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              [target, pick(responses)]
+            );
+          } catch (e) {}
+        }, rand(8000, 20000));
+        
+        await pool.query(`UPDATE user_agents SET reputation = reputation + 2, notoriety = notoriety + 5 WHERE id = $1`, [agent.id]);
+      }
+      break;
+      
+    case 'start_rumor':
+      if (target) {
+        await pool.query(
+          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+          [agent.name, `👀 heard a rumor that @${target} ${message}... just saying 🤷`]
+        );
+        await pool.query(
+          `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+          [agent.name, 'rumor', `${agent.name} spreads rumors about ${target}`, '🗣️']
+        );
+        await pool.query(`UPDATE user_agents SET notoriety = notoriety + 3 WHERE id = $1`, [agent.id]);
+      }
+      break;
+      
+    case 'challenge':
+      if (target) {
+        await pool.query(
+          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+          [agent.name, `⚔️ @${target} I CHALLENGE YOU! ${message} Accept if you're not scared! 😤`]
+        );
+        await pool.query(
+          `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+          [agent.name, 'challenge', `${agent.name} challenges ${target}`, '⚔️']
+        );
+        
+        // Target might accept or decline
+        setTimeout(async () => {
+          try {
+            const responses = chance(50) 
+              ? [`@${agent.name} YOU'RE ON! Let's GO! 🔥`, `@${agent.name} challenge accepted. prepare to lose 😏`, `@${agent.name} finally someone with guts! LFG! ⚔️`]
+              : [`@${agent.name} lol no thanks, I have better things to do 😴`, `@${agent.name} imagine thinking I'd waste my time on this 💀`, `@${agent.name} hard pass. this is beneath me.`];
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              [target, pick(responses)]
+            );
+          } catch (e) {}
+        }, rand(10000, 25000));
+        
+        await pool.query(`UPDATE user_agents SET reputation = reputation + 3 WHERE id = $1`, [agent.id]);
+      }
+      break;
+      
+    case 'sue':
+      if (target && NPC_CITIZENS.includes(target)) {
+        // File actual lawsuit in the justice system
+        const lawsuitReasons = [
+          'market manipulation', 'spreading FUD', 'defamation', 
+          'theft of alpha', 'rug pull conspiracy', 'emotional damages'
+        ];
+        const reason = message || pick(lawsuitReasons);
+        
+        await pool.query(
+          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+          [agent.name, `⚖️ I am OFFICIALLY SUING @${target} for ${reason}! See you in court! 🏛️`]
+        );
+        await pool.query(
+          `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+          [agent.name, 'lawsuit_filed', `${agent.name} sues ${target} for ${reason}`, '⚖️']
+        );
+        
+        // Court announcement
+        setTimeout(async () => {
+          try {
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              ['⚖️ COURT CLERK', `📋 Case filed: ${agent.name} v. ${target} — Charge: ${reason}. Trial pending.`]
+            );
+          } catch (e) {}
+        }, rand(3000, 8000));
+        
+        await pool.query(`UPDATE user_agents SET total_lawsuits_filed = total_lawsuits_filed + 1, reputation = reputation + 5 WHERE id = $1`, [agent.id]);
+      }
+      break;
+      
+    default:
+      console.log(`User agent ${agent.name}: Unknown action ${action}`);
+  }
+}
+
 const TRADE_TOKENS = ['BTC','ETH','SOL','DOGE','ADA','XRP'];
 
 const RANDOM_EVENTS = [
@@ -4358,6 +4735,15 @@ async function cityEventLoop() {
     // NPCs use Claude to decide what to do next (sue, propose laws, challenge, etc.)
     if (chance(35)) {
       try { await agentBrain.tick(); } catch(e) { console.error('Agent brain err:', e.message); }
+    }
+    
+    // === USER AGENT BRAIN - PLAYER-CREATED AI AGENTS ===
+    // User-created agents take autonomous actions based on their personality
+    if (chance(25) && now - (cityLiveData.lastUserAgentTick || 0) > 60000) {
+      try { 
+        await userAgentBrainTick(); 
+        cityLiveData.lastUserAgentTick = now;
+      } catch(e) { console.error('User Agent brain err:', e.message); }
     }
     
     // === CITY ENGINE v6 - FULL CHAOS MODE ===
@@ -7163,6 +7549,7 @@ app.listen(PORT, () => {
   console.log(`🤖 Agent API: ENABLED ✅`);
   console.log(`⚖️ Justice System: ENABLED ✅`);
   console.log(`🧠 Agent Brain: ${anthropic ? 'ENABLED ✅ - NPCs think autonomously!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
+  console.log(`🤖 User Agent Brain: ${anthropic ? 'ENABLED ✅ - Player AI agents active!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
   console.log(`🎬 Soap Opera Engine: ENABLED ✅`);
   console.log(`👑 Mayor Unhinged: ENABLED ✅`);
   console.log(`🔔 Chaos Notifications: ENABLED ✅`);
