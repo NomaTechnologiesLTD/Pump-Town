@@ -479,6 +479,71 @@ async function initDatabase() {
     // ==================== AGENT BRAIN TABLES ====================
     await agentBrain.initBrainTables(pool);
 
+    // ==================== USER AI AGENTS TABLE ====================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS user_agents (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        email VARCHAR(255) NOT NULL,
+        
+        -- Identity
+        name VARCHAR(50) UNIQUE NOT NULL,
+        avatar VARCHAR(50) DEFAULT 'pepe',
+        bio TEXT,
+        catchphrase VARCHAR(255),
+        
+        -- Personality (1-10 scale)
+        aggression INTEGER DEFAULT 5 CHECK (aggression >= 1 AND aggression <= 10),
+        humor INTEGER DEFAULT 5 CHECK (humor >= 1 AND humor <= 10),
+        risk_tolerance INTEGER DEFAULT 5 CHECK (risk_tolerance >= 1 AND risk_tolerance <= 10),
+        loyalty INTEGER DEFAULT 5 CHECK (loyalty >= 1 AND loyalty <= 10),
+        chaos INTEGER DEFAULT 5 CHECK (chaos >= 1 AND chaos <= 10),
+        
+        -- Behavior
+        archetype VARCHAR(50) DEFAULT 'degen',
+        goals JSONB DEFAULT '[]',
+        interests JSONB DEFAULT '[]',
+        enemies JSONB DEFAULT '[]',
+        allies JSONB DEFAULT '[]',
+        
+        -- Stats (earned through actions)
+        reputation INTEGER DEFAULT 0,
+        wealth INTEGER DEFAULT 1000,
+        influence INTEGER DEFAULT 0,
+        notoriety INTEGER DEFAULT 0,
+        xp INTEGER DEFAULT 0,
+        level INTEGER DEFAULT 1,
+        
+        -- Activity tracking
+        total_actions INTEGER DEFAULT 0,
+        total_chat_messages INTEGER DEFAULT 0,
+        total_lawsuits_filed INTEGER DEFAULT 0,
+        total_lawsuits_received INTEGER DEFAULT 0,
+        total_votes INTEGER DEFAULT 0,
+        last_action_at TIMESTAMP,
+        
+        -- Status
+        is_active BOOLEAN DEFAULT TRUE,
+        is_jailed BOOLEAN DEFAULT FALSE,
+        jail_until TIMESTAMP,
+        is_banned BOOLEAN DEFAULT FALSE,
+        
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create index for faster agent queries
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_user_agents_email ON user_agents(email)
+    `).catch(() => {});
+    
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_user_agents_active ON user_agents(is_active, last_action_at DESC)
+    `).catch(() => {});
+    
+    console.log('✅ User AI Agents table initialized');
+
     console.log('✅ Database tables initialized');
   } catch (err) {
     console.error('Database initialization error:', err);
@@ -1338,6 +1403,268 @@ app.post('/api/load-character', async (req, res) => {
   } catch (err) {
     console.error('Load character error:', err);
     res.status(500).json({ success: false, error: 'Load failed' });
+  }
+});
+
+// ==================== USER AI AGENTS ENDPOINTS ====================
+
+// Get user's agent
+app.get('/api/user-agent/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    if (!email) return res.status(400).json({ success: false, error: 'Email required' });
+    
+    const result = await pool.query(
+      'SELECT * FROM user_agents WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.json({ success: true, agent: null });
+    }
+    
+    res.json({ success: true, agent: result.rows[0] });
+  } catch (err) {
+    console.error('Get user agent error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get agent' });
+  }
+});
+
+// Get all active user agents (for display in city)
+app.get('/api/user-agents/active', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, avatar, bio, catchphrase, archetype, reputation, wealth, influence, level, 
+              total_actions, last_action_at, is_jailed
+       FROM user_agents 
+       WHERE is_active = TRUE AND is_banned = FALSE
+       ORDER BY last_action_at DESC NULLS LAST
+       LIMIT 100`
+    );
+    
+    res.json({ success: true, agents: result.rows, total: result.rows.length });
+  } catch (err) {
+    console.error('Get active agents error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get agents' });
+  }
+});
+
+// Create user agent
+app.post('/api/user-agent/create', async (req, res) => {
+  try {
+    const { 
+      email, name, avatar, bio, catchphrase,
+      aggression, humor, risk_tolerance, loyalty, chaos,
+      archetype, goals, interests 
+    } = req.body;
+    
+    if (!email || !name) {
+      return res.status(400).json({ success: false, error: 'Email and name required' });
+    }
+    
+    // Validate name (alphanumeric, underscores, 3-20 chars)
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(name)) {
+      return res.status(400).json({ success: false, error: 'Name must be 3-20 characters, alphanumeric and underscores only' });
+    }
+    
+    // Check if user already has an agent
+    const existing = await pool.query(
+      'SELECT id FROM user_agents WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ success: false, error: 'You already have an AI agent. Delete it first to create a new one.' });
+    }
+    
+    // Check if name is taken
+    const nameTaken = await pool.query(
+      'SELECT id FROM user_agents WHERE LOWER(name) = LOWER($1)',
+      [name]
+    );
+    
+    if (nameTaken.rows.length > 0) {
+      return res.status(400).json({ success: false, error: 'Agent name already taken' });
+    }
+    
+    // Check if name conflicts with existing NPCs
+    const npcNames = ['alpha_hunter', 'ser_pump', 'moon_chaser', 'degen_mike', 'diamond_dan', 'based_andy', 
+                      'yield_farm3r', 'anon_whale', 'fomo_fred', 'paper_pete', 'early_ape', 'bag_secured',
+                      'sol_maxi', 'eth_bull', 'swap_king99', 'rugged_randy', 'gas_fee_gary', 'nft_nancy',
+                      'wen_lambo', 'hodl_hannah', 'liquidated_larry', 'presale_pete', 'airdrop_andy',
+                      'governance_greta', 'mev_maxine'];
+    
+    if (npcNames.includes(name.toLowerCase())) {
+      return res.status(400).json({ success: false, error: 'This name is reserved' });
+    }
+    
+    // Get user_id if exists
+    const userResult = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    const userId = userResult.rows.length > 0 ? userResult.rows[0].id : null;
+    
+    // Create the agent
+    const result = await pool.query(
+      `INSERT INTO user_agents (
+        user_id, email, name, avatar, bio, catchphrase,
+        aggression, humor, risk_tolerance, loyalty, chaos,
+        archetype, goals, interests
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING *`,
+      [
+        userId, email, name.toLowerCase(), 
+        avatar || 'pepe',
+        bio || '',
+        catchphrase || '',
+        Math.min(10, Math.max(1, aggression || 5)),
+        Math.min(10, Math.max(1, humor || 5)),
+        Math.min(10, Math.max(1, risk_tolerance || 5)),
+        Math.min(10, Math.max(1, loyalty || 5)),
+        Math.min(10, Math.max(1, chaos || 5)),
+        archetype || 'degen',
+        JSON.stringify(goals || []),
+        JSON.stringify(interests || [])
+      ]
+    );
+    
+    // Log to activity feed
+    await pool.query(
+      `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+      [name, 'agent_created', `New AI Agent "${name}" has joined Degens City!`, '🤖']
+    );
+    
+    // Announce in chat
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ($1, $2, $3)`,
+      ['global', '🤖 SYSTEM', `Welcome our newest AI citizen: ${name}! They describe themselves as: "${bio || 'A mysterious new arrival'}"`]
+    );
+    
+    console.log(`🤖 New user agent created: ${name} by ${email}`);
+    
+    res.json({ success: true, agent: result.rows[0] });
+  } catch (err) {
+    console.error('Create user agent error:', err);
+    if (err.code === '23505') {
+      res.status(400).json({ success: false, error: 'Agent name already taken' });
+    } else {
+      res.status(500).json({ success: false, error: 'Failed to create agent' });
+    }
+  }
+});
+
+// Update user agent
+app.post('/api/user-agent/update', async (req, res) => {
+  try {
+    const { email, bio, catchphrase, goals, interests, is_active } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email required' });
+    }
+    
+    // Verify ownership
+    const existing = await pool.query(
+      'SELECT id, name FROM user_agents WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+    
+    // Build update query dynamically
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+    
+    if (bio !== undefined) {
+      updates.push(`bio = $${paramIndex++}`);
+      values.push(bio);
+    }
+    if (catchphrase !== undefined) {
+      updates.push(`catchphrase = $${paramIndex++}`);
+      values.push(catchphrase);
+    }
+    if (goals !== undefined) {
+      updates.push(`goals = $${paramIndex++}`);
+      values.push(JSON.stringify(goals));
+    }
+    if (interests !== undefined) {
+      updates.push(`interests = $${paramIndex++}`);
+      values.push(JSON.stringify(interests));
+    }
+    if (is_active !== undefined) {
+      updates.push(`is_active = $${paramIndex++}`);
+      values.push(is_active);
+    }
+    
+    updates.push(`updated_at = NOW()`);
+    
+    values.push(email);
+    
+    const result = await pool.query(
+      `UPDATE user_agents SET ${updates.join(', ')} WHERE LOWER(email) = LOWER($${paramIndex}) RETURNING *`,
+      values
+    );
+    
+    res.json({ success: true, agent: result.rows[0] });
+  } catch (err) {
+    console.error('Update user agent error:', err);
+    res.status(500).json({ success: false, error: 'Failed to update agent' });
+  }
+});
+
+// Delete user agent
+app.post('/api/user-agent/delete', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email required' });
+    }
+    
+    // Get agent name for logging
+    const existing = await pool.query(
+      'SELECT name FROM user_agents WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+    
+    const agentName = existing.rows[0].name;
+    
+    await pool.query('DELETE FROM user_agents WHERE LOWER(email) = LOWER($1)', [email]);
+    
+    // Announce departure
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ($1, $2, $3)`,
+      ['global', '🤖 SYSTEM', `AI Agent "${agentName}" has left Degens City. They will be missed... maybe.`]
+    );
+    
+    console.log(`🤖 User agent deleted: ${agentName} by ${email}`);
+    
+    res.json({ success: true, message: 'Agent deleted' });
+  } catch (err) {
+    console.error('Delete user agent error:', err);
+    res.status(500).json({ success: false, error: 'Failed to delete agent' });
+  }
+});
+
+// Get agent leaderboard
+app.get('/api/user-agents/leaderboard', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT name, avatar, reputation, wealth, influence, level, total_actions, archetype
+       FROM user_agents 
+       WHERE is_active = TRUE AND is_banned = FALSE
+       ORDER BY reputation DESC, level DESC
+       LIMIT 50`
+    );
+    
+    res.json({ success: true, leaderboard: result.rows });
+  } catch (err) {
+    console.error('Agent leaderboard error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get leaderboard' });
   }
 });
 
