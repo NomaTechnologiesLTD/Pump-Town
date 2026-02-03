@@ -13388,6 +13388,19 @@
             return '$' + price.toFixed(6);
         }
 
+        // Share to X/Twitter with proper text length handling
+        // X has a 280 character limit for tweets
+        function shareToX(text) {
+            const maxLength = 280;
+            let shareText = text;
+            if (shareText.length > maxLength) {
+                // Find the last space before maxLength-3 to add ellipsis
+                const truncateAt = shareText.lastIndexOf(' ', maxLength - 3);
+                shareText = shareText.substring(0, truncateAt > 0 ? truncateAt : maxLength - 3) + '...';
+            }
+            window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
+        }
+
         // Utility: Generate fake citizen count
         const generateFakeCitizenCount = (realCount) => {
             const fakeAdd = Math.floor(Math.random() * (84 - 42 + 1)) + 42;
@@ -13735,7 +13748,7 @@
         };
 
         // Main App Component
-        function PumpTown() {
+        function DegensCity() {
             // ============================================
             // GOVERNANCE DAY TRACKING SYSTEM
             // Day 1 = January 24, 2026 (launch date)
@@ -15621,8 +15634,10 @@
                                             {/* Avatar with pulse ring */}
                                             <div style={{ position: 'relative' }}>
                                                 <div style={{ position: 'absolute', inset: '-8px', borderRadius: '50%', border: '2px solid ' + dashRepTier.color + '44', animation: 'heroPulseRing 3s ease-out infinite', pointerEvents: 'none' }} />
-                                                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, ' + dashRepTier.color + '33, ' + dashRepTier.color + '11)', border: '2px solid ' + dashRepTier.color + '66', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5em' }}>
-                                                    {character?.avatar?.emoji || '🐸'}
+                                                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: character?.avatar?.color ? 'linear-gradient(135deg, ' + character.avatar.color + '33, ' + character.avatar.color + '11)' : 'linear-gradient(135deg, ' + dashRepTier.color + '33, ' + dashRepTier.color + '11)', border: '2px solid ' + dashRepTier.color + '66', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5em', overflow: 'hidden' }}>
+                                                    {character?.avatar?.image ? (
+                                                        <img src={character.avatar.image} alt={character.avatar.name || 'Avatar'} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                                                    ) : '🐸'}
                                                 </div>
                                             </div>
                                             <div>
@@ -19614,7 +19629,7 @@
                                     <div style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '10px' }}>
                                         <h4 style={{ color: '#ffd700', marginBottom: '10px' }}>How do I contact support?</h4>
                                         <p style={{ color: '#ccc', lineHeight: '1.7' }}>
-                                            Join our community on X (Twitter) @Pump_Town_ for updates, support, and to connect with other citizens!
+                                            Join our community on X (Twitter) @DegensCity for updates, support, and to connect with other citizens!
                                         </p>
                                     </div>
                                     
@@ -30789,7 +30804,7 @@
             
             const shareOnX = () => {
                 const text = `🧢 Today's Roast on Degens City!\n\n${roast.target.handle}: "${roast.target.bio}"\n\n🎩 Mayor Satoshi says: "${roast.mayorComment.substring(0, 150)}..."\n\nPlay at degenscity.com 🏛️`;
-                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                shareToX(text);
             };
             
             if (loading) {
@@ -31450,7 +31465,7 @@
             
             const shareOnX = () => {
                 const text = `🎩 Mayor Satoshi's Hot Take:\n\n"${currentTake.take}"\n\n${takeReactions.fire > takeReactions.cap ? '🔥 The people agree!' : '🧢 Controversial!'}\n\nMore alpha at degenscity.com`;
-                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                shareToX(text);
             };
             
             const getCategoryColor = (category) => {
@@ -31662,7 +31677,7 @@
             const shareVerdict = (verdict) => {
                 const emoji = verdict.verdict === 'cap' ? '🧢' : '✅';
                 const text = `${emoji} Mayor Satoshi's verdict on ${verdict.handle}:\n\n"${verdict.bio}"\n\n🎩 "${verdict.mayorComment.substring(0, 100)}..."\n\nMore roasts at degenscity.com`;
-                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                shareToX(text);
             };
             
             return (
@@ -32117,7 +32132,7 @@
             
             const shareResult = () => {
                 const text = `${result.emoji} My Degens City personality type: ${result.title}!\n\n🎩 Mayor Satoshi says: "${result.mayorComment.substring(0, 100)}..."\n\nTake the quiz at degenscity.com 🧢`;
-                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                shareToX(text);
             };
             
             return (
@@ -32304,7 +32319,7 @@
                 setGenerating(false);
             };
             
-            const shareToX = () => {
+            const shareFlexCard = () => {
                 const personality = getPersonalityType();
                 const text = `🏛️ My Degens City Flex Card
 
@@ -32318,9 +32333,9 @@ ${personality.emoji} Type: ${personality.title}
 Think you can beat my stats? 👀
 Play at degenscity.com
 
-#PumpTown #CryptoGaming`;
+#DegensCity #CryptoGaming`;
                 
-                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                shareToX(text);
             };
             
             const currentStyle = cardStyles.find(s => s.id === cardStyle);
@@ -32409,7 +32424,7 @@ Play at degenscity.com
                                 
                                 {/* Actions */}
                                 <div className="flex-card-actions">
-                                    <button className="flex-action-btn share" onClick={shareToX}>
+                                    <button className="flex-action-btn share" onClick={shareFlexCard}>
                                         📤 Share on X
                                     </button>
                                     <button className="flex-action-btn copy" onClick={() => {
@@ -32930,7 +32945,7 @@ Play at degenscity.com
             const shareRoast = () => {
                 if (!roast) return;
                 const text = `🎩 Mayor Satoshi roasted my portfolio!\n\n"${roast.mayorComment.substring(0, 150)}..."\n\nDegen Rating: ${roast.rating} ${roast.emoji}\n\nGet roasted at degenscity.com 🔥`;
-                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                shareToX(text);
             };
             
             const portfolio = getPortfolio();
@@ -34988,7 +35003,7 @@ Play at degenscity.com
                     if (match && match[1] && match[1].trim().length > 1) {
                         const name = match[1].trim().toLowerCase();
                         // Skip common words that aren't names
-                        const skipWords = ['pump town', 'the mayor', 'this', 'that', 'you', 'me', 'us', 'it', 'what', 'how', 'why', 'when', 'where', 'hi', 'hello', 'hey'];
+                        const skipWords = ['degens city', 'the mayor', 'this', 'that', 'you', 'me', 'us', 'it', 'what', 'how', 'why', 'when', 'where', 'hi', 'hello', 'hey'];
                         if (!skipWords.includes(name)) {
                             // Check if this name is in our known handles
                             if (knownHandles[name]) {
@@ -35288,8 +35303,8 @@ Play at degenscity.com
             };
 
             const handleShare = () => {
-                const text = `I just voted in Degens City! 🏛️\n\nCheck it out: pumptown.xyz\n\n#PumpTown #Solana #TOWN`;
-                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                const text = `I just voted in Degens City! 🏛️\n\nCheck it out: degenscity.com\n\n#DegensCity #Solana #TOWN`;
+                shareToX(text);
             };
 
             const winningOption = currentVote.options.reduce((a, b) => 
@@ -35813,7 +35828,7 @@ Play at degenscity.com
             );
         }
 
-        ReactDOM.render(<PumpTown />, document.getElementById('root'));
+        ReactDOM.render(<DegensCity />, document.getElementById('root'));
     </script>
     
     <!-- Cloudflare Web Analytics -->
