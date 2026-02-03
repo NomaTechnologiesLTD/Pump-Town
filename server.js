@@ -2553,6 +2553,127 @@ function getTimeAgoString(date) {
   return `${days}d ago`;
 }
 
+// ==================== BRAIN API - AUTONOMOUS NPC ACTIONS ====================
+
+// Get recent autonomous actions from activity feed
+app.get('/api/v1/brain/actions', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    
+    // Get actions from activity_feed - these are the autonomous NPC actions
+    const result = await pool.query(`
+      SELECT id, player_name as npc, activity_type as action, description, icon, created_at
+      FROM activity_feed 
+      WHERE activity_type IN ('chat', 'accusation', 'rumor', 'challenge', 'lawsuit_filed', 'party', 'alliance_proposal', 'alliance_formed', 'betrayal', 'law_proposed', 'voted', 'level_up', 'jailed', 'crime_detected', 'arrest', 'trial_verdict')
+      ORDER BY created_at DESC 
+      LIMIT $1
+    `, [limit]);
+    
+    res.json({ 
+      success: true, 
+      actions: result.rows,
+      count: result.rows.length
+    });
+  } catch (err) {
+    console.error('Brain actions error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch actions' });
+  }
+});
+
+// Get lawsuits from activity feed
+app.get('/api/v1/brain/lawsuits', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, player_name as plaintiff, description, icon, created_at
+      FROM activity_feed 
+      WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')
+      ORDER BY created_at DESC 
+      LIMIT 30
+    `);
+    
+    res.json({ 
+      success: true, 
+      lawsuits: result.rows,
+      count: result.rows.length
+    });
+  } catch (err) {
+    console.error('Brain lawsuits error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch lawsuits' });
+  }
+});
+
+// Get proposed laws from activity feed
+app.get('/api/v1/brain/laws', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, player_name as proposer, description, icon, created_at
+      FROM activity_feed 
+      WHERE activity_type = 'law_proposed'
+      ORDER BY created_at DESC 
+      LIMIT 20
+    `);
+    
+    res.json({ 
+      success: true, 
+      laws: result.rows,
+      count: result.rows.length
+    });
+  } catch (err) {
+    console.error('Brain laws error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch laws' });
+  }
+});
+
+// Get brain status - overall stats
+app.get('/api/v1/brain/status', async (req, res) => {
+  try {
+    // Count total NPCs
+    const totalNpcs = NPC_CITIZENS ? NPC_CITIZENS.length : 25;
+    
+    // Count active user agents
+    const userAgentsResult = await pool.query(
+      'SELECT COUNT(*) FROM user_agents WHERE is_active = TRUE AND is_banned = FALSE'
+    );
+    const activeUserAgents = parseInt(userAgentsResult.rows[0].count) || 0;
+    
+    // Get action counts from activity feed
+    const statsResult = await pool.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') as actions_last_hour,
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours') as actions_last_day,
+        COUNT(*) as total_actions
+      FROM activity_feed
+    `);
+    
+    const stats = statsResult.rows[0];
+    
+    // Get last action time
+    const lastActionResult = await pool.query(
+      'SELECT created_at FROM activity_feed ORDER BY created_at DESC LIMIT 1'
+    );
+    const lastActionAt = lastActionResult.rows[0]?.created_at || null;
+    
+    res.json({ 
+      success: true, 
+      status: {
+        enabled: true,
+        totalNpcs: totalNpcs,
+        activeUserAgents: activeUserAgents,
+        totalCitizens: totalNpcs + activeUserAgents,
+        actionsLastHour: parseInt(stats.actions_last_hour) || 0,
+        actionsLastDay: parseInt(stats.actions_last_day) || 0,
+        totalActions: parseInt(stats.total_actions) || 0,
+        lastActionAt: lastActionAt,
+        tickInterval: '45 seconds',
+        brainVersion: '3.0'
+      }
+    });
+  } catch (err) {
+    console.error('Brain status error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch status' });
+  }
+});
+
 // ==================== PLAYER PROFILES ====================
 
 // Get player profile by name

@@ -36759,10 +36759,10 @@ Play at degenscity.com
                         {brainStatus && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '16px' }}>
                                 {[
-                                    { icon: '🤖', value: brainStatus.totalNpcs || 0, label: 'AI Citizens', color: '#8a2be2' },
-                                    { icon: '⚡', value: actions.length, label: 'Total Actions', color: '#ffd700' },
-                                    { icon: '⚖️', value: lawsuits.length, label: 'Lawsuits', color: '#ff4444' },
-                                    { icon: '📜', value: laws.length, label: 'Laws Proposed', color: '#00ccff' }
+                                    { icon: '🤖', value: brainStatus.totalCitizens || brainStatus.totalNpcs || 0, label: 'AI Citizens', color: '#8a2be2' },
+                                    { icon: '⚡', value: brainStatus.totalActions || 0, label: 'Total Actions', color: '#ffd700' },
+                                    { icon: '🔥', value: brainStatus.actionsLastHour || 0, label: 'Last Hour', color: '#ff6600' },
+                                    { icon: '📊', value: brainStatus.actionsLastDay || 0, label: 'Last 24h', color: '#00ccff' }
                                 ].map((s, i) => (
                                     <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '14px 10px', borderRadius: '10px', textAlign: 'center' }}>
                                         <div style={{ fontSize: '1.3em' }}>{s.icon}</div>
