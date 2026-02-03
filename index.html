@@ -35481,6 +35481,11 @@ Play at degenscity.com
             const [brainStatus, setBrainStatus] = useState(null);
             const [loading, setLoading] = useState(true);
             
+            // Track total counts (use API totals or track cumulative unique items)
+            const [totalCounts, setTotalCounts] = useState(() => {
+                const saved = localStorage.getItem('brain_total_counts');
+                return saved ? JSON.parse(saved) : { actions: 0, lawsuits: 0, laws: 0, seenActionIds: [], seenLawsuitIds: [], seenLawIds: [] };
+            });
             
             const fetchData = async () => {
                 try {
@@ -35500,6 +35505,36 @@ Play at degenscity.com
                     if (lawsuitsData.success) setLawsuits(lawsuitsData.lawsuits || []);
                     if (lawsData.success) setLaws(lawsData.laws || []);
                     if (statusData.success) setBrainStatus(statusData.status || null);
+                    
+                    // Update total counts - use API totals if available, otherwise track unique IDs
+                    setTotalCounts(prev => {
+                        const newActions = actionsData.actions || [];
+                        const newLawsuits = lawsuitsData.lawsuits || [];
+                        const newLaws = lawsData.laws || [];
+                        
+                        // Get new unique IDs we haven't seen before
+                        const newActionIds = newActions.map(a => a.id || a.timestamp).filter(id => id && !prev.seenActionIds.includes(id));
+                        const newLawsuitIds = newLawsuits.map(l => l.id || l.timestamp).filter(id => id && !prev.seenLawsuitIds.includes(id));
+                        const newLawIds = newLaws.map(l => l.id || l.timestamp).filter(id => id && !prev.seenLawIds.includes(id));
+                        
+                        // Use API totals if provided, otherwise increment our count
+                        const updated = {
+                            actions: actionsData.total || (prev.actions + newActionIds.length),
+                            lawsuits: lawsuitsData.total || (prev.lawsuits + newLawsuitIds.length),
+                            laws: lawsData.total || (prev.laws + newLawIds.length),
+                            seenActionIds: [...new Set([...prev.seenActionIds, ...newActionIds])].slice(-500),
+                            seenLawsuitIds: [...new Set([...prev.seenLawsuitIds, ...newLawsuitIds])].slice(-200),
+                            seenLawIds: [...new Set([...prev.seenLawIds, ...newLawIds])].slice(-200)
+                        };
+                        
+                        // Ensure counts never decrease
+                        updated.actions = Math.max(updated.actions, prev.actions);
+                        updated.lawsuits = Math.max(updated.lawsuits, prev.lawsuits);
+                        updated.laws = Math.max(updated.laws, prev.laws);
+                        
+                        localStorage.setItem('brain_total_counts', JSON.stringify(updated));
+                        return updated;
+                    });
                 } catch (err) {
                     console.error('Brain fetch error:', err);
                 }
@@ -35556,9 +35591,9 @@ Play at degenscity.com
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '16px' }}>
                                 {[
                                     { icon: '🤖', value: brainStatus.totalNpcs || 0, label: 'AI Citizens', color: '#8a2be2' },
-                                    { icon: '⚡', value: actions.length, label: 'Total Actions', color: '#ffd700' },
-                                    { icon: '⚖️', value: lawsuits.length, label: 'Lawsuits', color: '#ff4444' },
-                                    { icon: '📜', value: laws.length, label: 'Laws Proposed', color: '#00ccff' }
+                                    { icon: '⚡', value: totalCounts.actions || actions.length, label: 'Total Actions', color: '#ffd700' },
+                                    { icon: '⚖️', value: totalCounts.lawsuits || lawsuits.length, label: 'Lawsuits', color: '#ff4444' },
+                                    { icon: '📜', value: totalCounts.laws || laws.length, label: 'Laws Proposed', color: '#00ccff' }
                                 ].map((s, i) => (
                                     <div key={i} style={{ background: 'rgba(0,0,0,0.3)', padding: '14px 10px', borderRadius: '10px', textAlign: 'center' }}>
                                         <div style={{ fontSize: '1.3em' }}>{s.icon}</div>
