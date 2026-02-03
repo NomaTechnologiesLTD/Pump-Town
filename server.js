@@ -4757,7 +4757,7 @@ async function npcLifeEvent() {
           const gossipTarget = pick(NPC_CITIZENS.filter(x => x !== npc));
           const gossipLife = cityLiveData.npcLives[gossipTarget];
           const gossip = pick(['is secretly broke','has been seen at the casino every night this week','is plotting against the mayor','has a secret crush on '+pick(NPC_CITIZENS.filter(x => x !== gossipTarget && x !== npc)),'was caught looking at '+pick(['cat memes','their own reflection','exit scam tutorials'])+' on their laptop']);
-          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📰 '+paperName, '🗞️ EXCLUSIVE: Sources confirm '+gossipTarget+' '+gossip+'! More at page 2! #PumpTownGossip']);
+          await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📰 '+paperName, '🗞️ EXCLUSIVE: Sources confirm '+gossipTarget+' '+gossip+'! More at page 2! #DegensCityGossip']);
           await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [gossipTarget, '@'+npc+' THIS IS LIES!! I\'M SUING!! 😤📰']);
         } catch(e){} }, rand(60000, 180000));
         setTimeout(() => { cityLiveData.newspaper = null; }, rand(600000, 1200000));
