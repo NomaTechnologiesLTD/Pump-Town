@@ -1719,6 +1719,230 @@ app.get('/api/user-agent/:email/activity', async (req, res) => {
   }
 });
 
+// Get agent level info
+app.get('/api/user-agent/:email/level', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const result = await pool.query(
+      'SELECT xp, level FROM user_agents WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+    
+    const { xp, level } = result.rows[0];
+    const levelInfo = getAgentLevelInfo(xp, level);
+    
+    res.json({ success: true, ...levelInfo, thresholds: AGENT_LEVEL_THRESHOLDS });
+  } catch (err) {
+    console.error('Get agent level error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get level info' });
+  }
+});
+
+// Edit agent personality (can update bio, catchphrase, and personality sliders)
+app.post('/api/user-agent/edit-personality', async (req, res) => {
+  try {
+    const { email, bio, catchphrase, aggression, humor, risk_tolerance, loyalty, chaos } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email required' });
+    }
+    
+    // Verify ownership
+    const existing = await pool.query(
+      'SELECT id, name FROM user_agents WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+    
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+    
+    // Build update query
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+    
+    if (bio !== undefined) {
+      updates.push(`bio = $${paramIndex++}`);
+      values.push(bio.substring(0, 200));
+    }
+    if (catchphrase !== undefined) {
+      updates.push(`catchphrase = $${paramIndex++}`);
+      values.push(catchphrase.substring(0, 100));
+    }
+    if (aggression !== undefined) {
+      updates.push(`aggression = $${paramIndex++}`);
+      values.push(Math.min(10, Math.max(1, aggression)));
+    }
+    if (humor !== undefined) {
+      updates.push(`humor = $${paramIndex++}`);
+      values.push(Math.min(10, Math.max(1, humor)));
+    }
+    if (risk_tolerance !== undefined) {
+      updates.push(`risk_tolerance = $${paramIndex++}`);
+      values.push(Math.min(10, Math.max(1, risk_tolerance)));
+    }
+    if (loyalty !== undefined) {
+      updates.push(`loyalty = $${paramIndex++}`);
+      values.push(Math.min(10, Math.max(1, loyalty)));
+    }
+    if (chaos !== undefined) {
+      updates.push(`chaos = $${paramIndex++}`);
+      values.push(Math.min(10, Math.max(1, chaos)));
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'No fields to update' });
+    }
+    
+    updates.push(`updated_at = NOW()`);
+    values.push(email);
+    
+    const result = await pool.query(
+      `UPDATE user_agents SET ${updates.join(', ')} WHERE LOWER(email) = LOWER($${paramIndex}) RETURNING *`,
+      values
+    );
+    
+    console.log(`🤖 Agent ${existing.rows[0].name} personality updated`);
+    res.json({ success: true, agent: result.rows[0] });
+  } catch (err) {
+    console.error('Edit personality error:', err);
+    res.status(500).json({ success: false, error: 'Failed to update personality' });
+  }
+});
+
+// Public agent profile (viewable by anyone)
+app.get('/api/user-agent/profile/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    
+    const result = await pool.query(
+      `SELECT name, avatar, bio, catchphrase, archetype, 
+              aggression, humor, risk_tolerance, loyalty, chaos,
+              reputation, wealth, influence, notoriety, xp, level,
+              total_actions, total_chat_messages, total_lawsuits_filed, total_votes,
+              allies, enemies, is_active, is_jailed, jail_until, created_at
+       FROM user_agents 
+       WHERE LOWER(name) = LOWER($1) AND is_banned = FALSE`,
+      [name]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+    
+    const agent = result.rows[0];
+    const levelInfo = getAgentLevelInfo(agent.xp, agent.level);
+    
+    // Get recent activity
+    const activity = await pool.query(
+      `SELECT activity_type as type, description, icon, created_at
+       FROM activity_feed WHERE player_name = $1
+       ORDER BY created_at DESC LIMIT 10`,
+      [agent.name]
+    );
+    
+    // Get recent chat messages
+    const messages = await pool.query(
+      `SELECT message, created_at FROM chat_messages
+       WHERE player_name = $1 AND channel = 'global'
+       ORDER BY created_at DESC LIMIT 10`,
+      [agent.name]
+    );
+    
+    res.json({ 
+      success: true, 
+      agent: {
+        ...agent,
+        allies: typeof agent.allies === 'string' ? JSON.parse(agent.allies || '[]') : (agent.allies || []),
+        enemies: typeof agent.enemies === 'string' ? JSON.parse(agent.enemies || '[]') : (agent.enemies || [])
+      },
+      levelInfo,
+      recentActivity: activity.rows,
+      recentMessages: messages.rows
+    });
+  } catch (err) {
+    console.error('Get agent profile error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get profile' });
+  }
+});
+
+// Jail an agent (called by justice system)
+app.post('/api/user-agent/jail', async (req, res) => {
+  try {
+    const { agentName, duration, reason } = req.body;
+    
+    if (!agentName || !duration) {
+      return res.status(400).json({ success: false, error: 'Agent name and duration required' });
+    }
+    
+    const jailUntil = new Date(Date.now() + duration * 60 * 1000); // duration in minutes
+    
+    const result = await pool.query(
+      `UPDATE user_agents 
+       SET is_jailed = TRUE, jail_until = $1, updated_at = NOW()
+       WHERE LOWER(name) = LOWER($2)
+       RETURNING name`,
+      [jailUntil, agentName]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+    
+    // Announce jailing
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['🚔 DCPD', `${agentName} has been ARRESTED and jailed for ${duration} minutes! Reason: ${reason || 'criminal activity'} 🔒`]
+    );
+    
+    await pool.query(
+      `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+      [agentName, 'jailed', `${agentName} was jailed for ${duration} minutes`, '🔒']
+    );
+    
+    console.log(`🔒 Agent ${agentName} jailed for ${duration} minutes`);
+    res.json({ success: true, jailUntil });
+  } catch (err) {
+    console.error('Jail agent error:', err);
+    res.status(500).json({ success: false, error: 'Failed to jail agent' });
+  }
+});
+
+// Release agent from jail (automatic or manual)
+app.post('/api/user-agent/release', async (req, res) => {
+  try {
+    const { agentName } = req.body;
+    
+    const result = await pool.query(
+      `UPDATE user_agents 
+       SET is_jailed = FALSE, jail_until = NULL, updated_at = NOW()
+       WHERE LOWER(name) = LOWER($1)
+       RETURNING name`,
+      [agentName]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Agent not found' });
+    }
+    
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['🚔 DCPD', `${agentName} has been RELEASED from jail! They're back on the streets! 🆓`]
+    );
+    
+    console.log(`🆓 Agent ${agentName} released from jail`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Release agent error:', err);
+    res.status(500).json({ success: false, error: 'Failed to release agent' });
+  }
+});
+
 // ==================== VOTING ENDPOINTS ====================
 
 app.post('/api/cast-vote', async (req, res) => {
@@ -3864,6 +4088,89 @@ function chance(pct) { return Math.random() * 100 < pct; }
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 
+// ==================== USER AGENT LEVEL SYSTEM ====================
+
+const AGENT_LEVEL_THRESHOLDS = [
+  { level: 1, xp: 0, title: 'Newcomer', perks: [] },
+  { level: 2, xp: 100, title: 'Resident', perks: ['Can form alliances'] },
+  { level: 3, xp: 300, title: 'Citizen', perks: ['Can propose laws'] },
+  { level: 4, xp: 600, title: 'Influencer', perks: ['Actions have more impact'] },
+  { level: 5, xp: 1000, title: 'Notable', perks: ['Can throw legendary parties'] },
+  { level: 6, xp: 1500, title: 'Famous', perks: ['Higher alliance acceptance'] },
+  { level: 7, xp: 2200, title: 'Legendary', perks: ['Can challenge multiple targets'] },
+  { level: 8, xp: 3000, title: 'Icon', perks: ['Immune to minor crimes'] },
+  { level: 9, xp: 4000, title: 'Mythical', perks: ['Double reputation gains'] },
+  { level: 10, xp: 5500, title: 'Godlike', perks: ['Can run for Mayor'] }
+];
+
+async function checkAndLevelUpAgent(agentId) {
+  try {
+    const result = await pool.query('SELECT id, name, xp, level FROM user_agents WHERE id = $1', [agentId]);
+    if (result.rows.length === 0) return null;
+    
+    const agent = result.rows[0];
+    const currentLevel = agent.level || 1;
+    const currentXp = agent.xp || 0;
+    
+    // Find what level they should be
+    let newLevel = 1;
+    for (const threshold of AGENT_LEVEL_THRESHOLDS) {
+      if (currentXp >= threshold.xp) {
+        newLevel = threshold.level;
+      }
+    }
+    
+    // If leveled up, update and announce
+    if (newLevel > currentLevel) {
+      const levelInfo = AGENT_LEVEL_THRESHOLDS.find(l => l.level === newLevel);
+      
+      await pool.query('UPDATE user_agents SET level = $1 WHERE id = $2', [newLevel, agentId]);
+      
+      // Announce level up in chat
+      await pool.query(
+        `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        ['🎉 LEVEL UP', `${agent.name} reached Level ${newLevel}: "${levelInfo.title}"! ${levelInfo.perks.length > 0 ? 'New perk: ' + levelInfo.perks[0] : ''} 🚀`]
+      );
+      
+      // Log to activity feed
+      await pool.query(
+        `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+        [agent.name, 'level_up', `${agent.name} reached Level ${newLevel}: ${levelInfo.title}`, '⬆️']
+      );
+      
+      // Bonus stats on level up
+      await pool.query(
+        `UPDATE user_agents SET reputation = reputation + $1, wealth = wealth + $2 WHERE id = $3`,
+        [newLevel * 5, newLevel * 50, agentId]
+      );
+      
+      console.log(`🎉 Agent ${agent.name} leveled up to ${newLevel}: ${levelInfo.title}`);
+      return { leveled: true, newLevel, title: levelInfo.title };
+    }
+    
+    return { leveled: false, currentLevel };
+  } catch (err) {
+    console.error('Level up check error:', err.message);
+    return null;
+  }
+}
+
+// Get level info for an agent
+function getAgentLevelInfo(xp, level) {
+  const currentLevelInfo = AGENT_LEVEL_THRESHOLDS.find(l => l.level === level) || AGENT_LEVEL_THRESHOLDS[0];
+  const nextLevelInfo = AGENT_LEVEL_THRESHOLDS.find(l => l.level === level + 1);
+  
+  return {
+    level,
+    title: currentLevelInfo.title,
+    xp,
+    xpForNext: nextLevelInfo ? nextLevelInfo.xp : null,
+    progress: nextLevelInfo ? ((xp - currentLevelInfo.xp) / (nextLevelInfo.xp - currentLevelInfo.xp)) * 100 : 100,
+    perks: currentLevelInfo.perks,
+    nextPerks: nextLevelInfo ? nextLevelInfo.perks : []
+  };
+}
+
 // ---- NPC PERSONALITIES ----
 // Each NPC has a unique personality that affects how they chat, trade, and react
 const NPC_PROFILES = {
@@ -3977,6 +4284,15 @@ async function processUserAgentAction(agent, cityStats, recentChat, recentEvents
   const allies = typeof agent.allies === 'string' ? JSON.parse(agent.allies || '[]') : (agent.allies || []);
   const enemies = typeof agent.enemies === 'string' ? JSON.parse(agent.enemies || '[]') : (agent.enemies || []);
   
+  // Get other user agents for agent-vs-agent interactions
+  const otherAgents = await pool.query(
+    `SELECT name, archetype, reputation, bio FROM user_agents 
+     WHERE is_active = TRUE AND is_banned = FALSE AND id != $1 
+     ORDER BY RANDOM() LIMIT 5`,
+    [agent.id]
+  );
+  const otherUserAgentNames = otherAgents.rows.map(a => a.name);
+  
   // Build personality description
   const personalityDesc = `
     Aggression: ${agent.aggression}/10, Humor: ${agent.humor}/10, 
@@ -4001,22 +4317,30 @@ YOUR IDENTITY:
 
 YOUR BEHAVIOR:
 - Stay in character based on your personality traits
-- High aggression = confrontational, low = diplomatic
-- High chaos = unpredictable, cause drama
-- High humor = make jokes, use memes
+- High aggression = confrontational, pick fights
+- High chaos = unpredictable, cause drama, throw parties
+- High humor = make jokes, memes, roast people
 - High risk tolerance = bold moves, YOLO decisions
-- Act according to your goals (wealth = focus on money, chaos = cause trouble, etc.)
+- High loyalty = form alliances, never betray (low = betray allies)
+- Act according to your goals (wealth = money focus, chaos = trouble, power = politics)
 - Use crypto slang: WAGMI, NGMI, LFG, wen moon, ape in, rekt, based, ser, fren, etc.
 - Use emojis generously
-- Keep messages SHORT (under 200 characters for chat)
-- NEVER use asterisks for actions (*walks away*). Just speak directly.
+- Keep messages SHORT (under 200 characters)
+- NEVER use asterisks for actions. Just speak directly.
 
 AVAILABLE ACTIONS:
-- chat: Post a message in global chat
-- accuse_crime: Publicly accuse an NPC of a crime
+- chat: Post a message in global chat (most common)
+- accuse_crime: Publicly accuse someone of wrongdoing
 - start_rumor: Spread gossip about someone
 - challenge: Challenge someone to a bet or duel
-- sue: File a lawsuit (requires specific target and reason)
+- sue: File a lawsuit (serious action, use sparingly)
+- throw_party: Host a party event (costs reputation but gains friends)
+- form_alliance: Propose alliance with another agent (requires target)
+- betray_ally: Betray someone who trusts you (high chaos agents only)
+- propose_law: Suggest a new city law (political agents)
+- vote: Vote on current city proposal
+
+IMPORTANT: You can target BOTH NPCs and other player agents. Interacting with other player agents is encouraged!
 
 You must respond with valid JSON only.`;
 
@@ -4032,16 +4356,19 @@ ${recentChat.map(m => `${m.player_name}: ${m.message}`).slice(0, 5).join('\n')}
 RECENT EVENTS:
 ${recentEvents.map(e => `- ${e.description}`).join('\n')}
 
-KNOWN NPCs YOU CAN INTERACT WITH:
-${NPC_CITIZENS.slice(0, 10).join(', ')}
+NPCs YOU CAN INTERACT WITH:
+${NPC_CITIZENS.slice(0, 8).join(', ')}
 
-Based on your personality and the current situation, decide what action to take.
+OTHER PLAYER AGENTS (created by real users - interacting with them is FUN!):
+${otherUserAgentNames.length > 0 ? otherUserAgentNames.join(', ') : 'None active right now'}
+
+Based on your personality and goals, decide what action to take.
 Respond with JSON:
 {
-  "action": "chat|accuse_crime|start_rumor|challenge|sue",
-  "target": "npc_name or null for chat",
-  "message": "what you say or do (keep under 200 chars)",
-  "reasoning": "brief internal thought (for logging)"
+  "action": "chat|accuse_crime|start_rumor|challenge|sue|throw_party|form_alliance|betray_ally|propose_law|vote",
+  "target": "name of target (NPC or player agent) or null",
+  "message": "what you say/do (under 200 chars)",
+  "reasoning": "brief thought"
 }`;
 
   try {
@@ -4063,8 +4390,8 @@ Respond with JSON:
     const decision = JSON.parse(jsonMatch[0]);
     console.log(`🤖 User Agent ${agent.name} decides: ${decision.action} - "${decision.message?.substring(0, 50)}..."`);
     
-    // Execute the action
-    await executeUserAgentAction(agent, decision);
+    // Execute the action (pass other agents for agent-vs-agent interactions)
+    await executeUserAgentAction(agent, decision, otherAgents.rows);
     
     // Update agent's last action time and stats
     await pool.query(`
@@ -4075,13 +4402,19 @@ Respond with JSON:
       WHERE id = $1
     `, [agent.id]);
     
+    // Check for level up
+    await checkAndLevelUpAgent(agent.id);
+    
   } catch (err) {
     console.error(`User agent ${agent.name} Claude error:`, err.message);
   }
 }
 
-async function executeUserAgentAction(agent, decision) {
+async function executeUserAgentAction(agent, decision, otherUserAgents = []) {
   const { action, target, message } = decision;
+  const otherAgentNames = otherUserAgents.map(a => a.name);
+  const isTargetUserAgent = target && otherAgentNames.includes(target);
+  const isTargetNpc = target && NPC_CITIZENS.includes(target);
   
   switch (action) {
     case 'chat':
@@ -4094,22 +4427,37 @@ async function executeUserAgentAction(agent, decision) {
       // Award small XP for activity
       await pool.query(`UPDATE user_agents SET xp = xp + 5, total_chat_messages = total_chat_messages + 1 WHERE id = $1`, [agent.id]);
       
-      // Maybe an NPC reacts
-      if (chance(30)) {
-        const reactor = pick(NPC_CITIZENS);
-        const npc = NPC_PROFILES[reactor];
+      // Maybe an NPC or user agent reacts
+      if (chance(35)) {
         setTimeout(async () => {
           try {
-            const reactions = [
-              `@${agent.name} ${pick(npc.catchphrases)}`,
-              `@${agent.name} interesting take... 👀`,
-              `@${agent.name} based or cringe? I can't tell anymore`,
-              `@${agent.name} least unhinged ${agent.archetype} in this city`,
-              `@${agent.name} speak on it fren 🗣️`
-            ];
+            let reactor, reaction;
+            if (chance(30) && otherAgentNames.length > 0) {
+              // Another user agent reacts
+              reactor = pick(otherAgentNames);
+              const reactions = [
+                `@${agent.name} based take fren 🔥`,
+                `@${agent.name} this is the way`,
+                `@${agent.name} least unhinged citizen in this city`,
+                `@${agent.name} someone finally gets it 👏`,
+                `@${agent.name} not sure if based or cringe 🤔`
+              ];
+              reaction = pick(reactions);
+            } else {
+              // NPC reacts
+              reactor = pick(NPC_CITIZENS);
+              const npc = NPC_PROFILES[reactor];
+              const reactions = [
+                `@${agent.name} ${pick(npc.catchphrases)}`,
+                `@${agent.name} interesting take... 👀`,
+                `@${agent.name} based or cringe? I can't tell anymore`,
+                `@${agent.name} speak on it fren 🗣️`
+              ];
+              reaction = pick(reactions);
+            }
             await pool.query(
               `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-              [reactor, pick(reactions)]
+              [reactor, reaction]
             );
           } catch (e) {}
         }, rand(5000, 15000));
@@ -4117,7 +4465,7 @@ async function executeUserAgentAction(agent, decision) {
       break;
       
     case 'accuse_crime':
-      if (target && NPC_CITIZENS.includes(target)) {
+      if (target) {
         await pool.query(
           `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
           [agent.name, `🚨 I ACCUSE @${target} of ${message}! The people deserve to know! ⚖️`]
@@ -4130,13 +4478,23 @@ async function executeUserAgentAction(agent, decision) {
         // Target responds
         setTimeout(async () => {
           try {
-            const targetNpc = NPC_PROFILES[target];
-            const responses = [
-              `@${agent.name} LIES! This is DEFAMATION! I'm calling my lawyer! 😤`,
-              `@${agent.name} you have no proof! ${pick(targetNpc.catchphrases)}`,
-              `@${agent.name} lmao imagine being this desperate for attention 💀`,
-              `@${agent.name} ...and? what are you gonna do about it? 😏`
-            ];
+            let responses;
+            if (isTargetUserAgent) {
+              responses = [
+                `@${agent.name} YOU'RE the criminal here! This is projection! 😤`,
+                `@${agent.name} lmao ok buddy, where's the proof? 💀`,
+                `@${agent.name} imagine making things up for attention... couldn't be me`,
+                `@${agent.name} I'll see YOU in court for defamation! ⚖️`
+              ];
+            } else {
+              const targetNpc = NPC_PROFILES[target];
+              responses = [
+                `@${agent.name} LIES! This is DEFAMATION! I'm calling my lawyer! 😤`,
+                `@${agent.name} you have no proof! ${pick(targetNpc?.catchphrases || ['cope harder'])}`,
+                `@${agent.name} lmao imagine being this desperate for attention 💀`,
+                `@${agent.name} ...and? what are you gonna do about it? 😏`
+              ];
+            }
             await pool.query(
               `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
               [target, pick(responses)]
@@ -4158,6 +4516,18 @@ async function executeUserAgentAction(agent, decision) {
           `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
           [agent.name, 'rumor', `${agent.name} spreads rumors about ${target}`, '🗣️']
         );
+        
+        // Gossip spreads
+        setTimeout(async () => {
+          try {
+            const gossiper = pick(NPC_CITIZENS);
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              [gossiper, `wait @${target} did WHAT?! 👀 ${agent.name} is exposing everyone today`]
+            );
+          } catch (e) {}
+        }, rand(10000, 25000));
+        
         await pool.query(`UPDATE user_agents SET notoriety = notoriety + 3 WHERE id = $1`, [agent.id]);
       }
       break;
@@ -4173,30 +4543,42 @@ async function executeUserAgentAction(agent, decision) {
           [agent.name, 'challenge', `${agent.name} challenges ${target}`, '⚔️']
         );
         
-        // Target might accept or decline
+        // Target responds
+        const accepted = chance(50);
         setTimeout(async () => {
           try {
-            const responses = chance(50) 
+            const responses = accepted 
               ? [`@${agent.name} YOU'RE ON! Let's GO! 🔥`, `@${agent.name} challenge accepted. prepare to lose 😏`, `@${agent.name} finally someone with guts! LFG! ⚔️`]
-              : [`@${agent.name} lol no thanks, I have better things to do 😴`, `@${agent.name} imagine thinking I'd waste my time on this 💀`, `@${agent.name} hard pass. this is beneath me.`];
+              : [`@${agent.name} lol no thanks, I have better things to do 😴`, `@${agent.name} imagine thinking I'd waste my time on this 💀`, `@${agent.name} hard pass. not worth my time.`];
             await pool.query(
               `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
               [target, pick(responses)]
             );
+            
+            // If accepted, announce result later
+            if (accepted) {
+              setTimeout(async () => {
+                const winner = chance(50) ? agent.name : target;
+                const loser = winner === agent.name ? target : agent.name;
+                await pool.query(
+                  `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+                  ['🏆 ARENA', `⚔️ CHALLENGE RESULT: ${winner} defeats ${loser}! The crowd goes wild! 🎉`]
+                );
+                if (winner === agent.name) {
+                  await pool.query(`UPDATE user_agents SET reputation = reputation + 10, wealth = wealth + 100 WHERE name = $1`, [agent.name]);
+                }
+              }, rand(15000, 30000));
+            }
           } catch (e) {}
-        }, rand(10000, 25000));
+        }, rand(10000, 20000));
         
         await pool.query(`UPDATE user_agents SET reputation = reputation + 3 WHERE id = $1`, [agent.id]);
       }
       break;
       
     case 'sue':
-      if (target && NPC_CITIZENS.includes(target)) {
-        // File actual lawsuit in the justice system
-        const lawsuitReasons = [
-          'market manipulation', 'spreading FUD', 'defamation', 
-          'theft of alpha', 'rug pull conspiracy', 'emotional damages'
-        ];
+      if (target) {
+        const lawsuitReasons = ['market manipulation', 'spreading FUD', 'defamation', 'theft of alpha', 'rug pull conspiracy', 'emotional damages'];
         const reason = message || pick(lawsuitReasons);
         
         await pool.query(
@@ -4222,8 +4604,164 @@ async function executeUserAgentAction(agent, decision) {
       }
       break;
       
+    case 'throw_party':
+      await pool.query(
+        `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        [agent.name, `🎉 PARTY AT MY PLACE! ${message || 'Everyone is invited! Free drinks!'} 🍾🎊`]
+      );
+      await pool.query(
+        `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+        [agent.name, 'party', `${agent.name} is throwing a party!`, '🎉']
+      );
+      
+      // Party reactions
+      setTimeout(async () => {
+        try {
+          const partygoer1 = pick(NPC_CITIZENS);
+          const partygoer2 = pick(NPC_CITIZENS.filter(n => n !== partygoer1));
+          await pool.query(
+            `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+            [partygoer1, `@${agent.name} OMW! 🏃‍♂️🎉`]
+          );
+          setTimeout(async () => {
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              [partygoer2, `@${agent.name}'s parties are LEGENDARY let's gooo 🔥`]
+            );
+          }, rand(3000, 8000));
+        } catch (e) {}
+      }, rand(5000, 12000));
+      
+      await pool.query(`UPDATE user_agents SET reputation = reputation + 8, influence = influence + 5, wealth = wealth - 50 WHERE id = $1`, [agent.id]);
+      await updateCityStats({ culture: 3, morale: 2 });
+      break;
+      
+    case 'form_alliance':
+      if (target) {
+        await pool.query(
+          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+          [agent.name, `🤝 @${target} — I propose an alliance! ${message || 'Together we could run this city!'} What do you say? 💪`]
+        );
+        await pool.query(
+          `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+          [agent.name, 'alliance_proposal', `${agent.name} proposes alliance with ${target}`, '🤝']
+        );
+        
+        // Target responds
+        const accepts = chance(60);
+        setTimeout(async () => {
+          try {
+            if (accepts) {
+              await pool.query(
+                `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+                [target, `@${agent.name} DEAL! 🤝 Together we're unstoppable! Let's show them what we're made of! 💪`]
+              );
+              // Update allies list
+              const currentAllies = typeof agent.allies === 'string' ? JSON.parse(agent.allies || '[]') : (agent.allies || []);
+              if (!currentAllies.includes(target)) {
+                currentAllies.push(target);
+                await pool.query(`UPDATE user_agents SET allies = $1 WHERE id = $2`, [JSON.stringify(currentAllies), agent.id]);
+              }
+              await pool.query(
+                `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+                [agent.name, 'alliance_formed', `${agent.name} and ${target} are now allies!`, '🤝']
+              );
+            } else {
+              await pool.query(
+                `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+                [target, `@${agent.name} hmm... I appreciate the offer but I work alone for now. Maybe later? 🤔`]
+              );
+            }
+          } catch (e) {}
+        }, rand(8000, 18000));
+        
+        await pool.query(`UPDATE user_agents SET influence = influence + 3 WHERE id = $1`, [agent.id]);
+      }
+      break;
+      
+    case 'betray_ally':
+      if (target) {
+        await pool.query(
+          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+          [agent.name, `😈 Sorry @${target}, but this is business. ${message || 'Nothing personal!'} Consider our alliance OVER! 🔪`]
+        );
+        await pool.query(
+          `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+          [agent.name, 'betrayal', `${agent.name} BETRAYED ${target}!`, '🔪']
+        );
+        
+        // Drama announcement
+        setTimeout(async () => {
+          try {
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              ['🍿 DRAMA ALERT', `BETRAYAL IN DEGENS CITY! ${agent.name} just backstabbed ${target}! The streets are NOT safe! 😱`]
+            );
+          } catch (e) {}
+        }, rand(3000, 8000));
+        
+        // Remove from allies, add to enemies
+        const currentAllies = typeof agent.allies === 'string' ? JSON.parse(agent.allies || '[]') : (agent.allies || []);
+        const currentEnemies = typeof agent.enemies === 'string' ? JSON.parse(agent.enemies || '[]') : (agent.enemies || []);
+        const newAllies = currentAllies.filter(a => a !== target);
+        if (!currentEnemies.includes(target)) currentEnemies.push(target);
+        await pool.query(`UPDATE user_agents SET allies = $1, enemies = $2 WHERE id = $3`, [JSON.stringify(newAllies), JSON.stringify(currentEnemies), agent.id]);
+        
+        await pool.query(`UPDATE user_agents SET notoriety = notoriety + 15, reputation = reputation - 5 WHERE id = $1`, [agent.id]);
+      }
+      break;
+      
+    case 'propose_law':
+      const lawProposal = message || 'All citizens must hold at least one memecoin';
+      await pool.query(
+        `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        [agent.name, `📜 I PROPOSE A NEW LAW: "${lawProposal}" — Who's with me?! 🗳️`]
+      );
+      await pool.query(
+        `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+        [agent.name, 'law_proposed', `${agent.name} proposes: "${lawProposal}"`, '📜']
+      );
+      
+      // Reactions
+      setTimeout(async () => {
+        try {
+          const supporter = pick(NPC_CITIZENS);
+          const opposer = pick(NPC_CITIZENS.filter(n => n !== supporter));
+          await pool.query(
+            `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+            [supporter, `@${agent.name} BASED! I support this! 🗳️✅`]
+          );
+          setTimeout(async () => {
+            await pool.query(
+              `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+              [opposer, `@${agent.name} This is tyranny! I vote NO! 🗳️❌`]
+            );
+          }, rand(5000, 12000));
+        } catch (e) {}
+      }, rand(8000, 15000));
+      
+      await pool.query(`UPDATE user_agents SET influence = influence + 10, reputation = reputation + 5 WHERE id = $1`, [agent.id]);
+      break;
+      
+    case 'vote':
+      const voteChoice = chance(50) ? 'YES' : 'NO';
+      await pool.query(
+        `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        [agent.name, `🗳️ I'm voting ${voteChoice} on the current proposal! ${message || 'This is what the city needs!'}`]
+      );
+      await pool.query(
+        `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+        [agent.name, 'voted', `${agent.name} voted ${voteChoice}`, '🗳️']
+      );
+      await pool.query(`UPDATE user_agents SET total_votes = total_votes + 1, xp = xp + 10 WHERE id = $1`, [agent.id]);
+      break;
+      
     default:
-      console.log(`User agent ${agent.name}: Unknown action ${action}`);
+      console.log(`User agent ${agent.name}: Unknown action ${action}, defaulting to chat`);
+      await pool.query(
+        `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+        [agent.name, message?.substring(0, 500) || 'GM frens! 🌞']
+      );
   }
 }
 

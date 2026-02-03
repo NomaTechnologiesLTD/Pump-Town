@@ -18050,6 +18050,10 @@
             const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
             const [activity, setActivity] = useState([]);
             const [activityLoading, setActivityLoading] = useState(false);
+            const [levelInfo, setLevelInfo] = useState(null);
+            const [editMode, setEditMode] = useState(false);
+            const [editData, setEditData] = useState({});
+            const [saving, setSaving] = useState(false);
             
             // Form state for creation
             const [formData, setFormData] = useState({
@@ -18066,6 +18070,11 @@
                 goals: [],
                 interests: []
             });
+            
+            const levelTitles = {
+                1: 'Newcomer', 2: 'Resident', 3: 'Citizen', 4: 'Influencer', 5: 'Notable',
+                6: 'Famous', 7: 'Legendary', 8: 'Icon', 9: 'Mythical', 10: 'Godlike'
+            };
             
             const avatarOptions = [
                 { id: 'pepe', name: 'Pepe', color: '#3D8130', image: 'pepe-pepe-logo.svg' },
@@ -18118,7 +18127,8 @@
             useEffect(() => {
                 if (agent && email) {
                     fetchActivity();
-                    const interval = setInterval(fetchActivity, 30000); // Refresh every 30s
+                    fetchLevelInfo();
+                    const interval = setInterval(() => { fetchActivity(); fetchLevelInfo(); }, 30000);
                     return () => clearInterval(interval);
                 }
             }, [agent, email]);
@@ -18148,6 +18158,55 @@
                     console.error('Fetch activity error:', err);
                 }
                 setActivityLoading(false);
+            };
+            
+            const fetchLevelInfo = async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/api/user-agent/${encodeURIComponent(email)}/level`);
+                    const data = await res.json();
+                    if (data.success) {
+                        setLevelInfo(data);
+                    }
+                } catch (err) {
+                    console.error('Fetch level error:', err);
+                }
+            };
+            
+            const startEdit = () => {
+                setEditData({
+                    bio: agent.bio || '',
+                    catchphrase: agent.catchphrase || '',
+                    aggression: agent.aggression || 5,
+                    humor: agent.humor || 5,
+                    risk_tolerance: agent.risk_tolerance || 5,
+                    loyalty: agent.loyalty || 5,
+                    chaos: agent.chaos || 5
+                });
+                setEditMode(true);
+            };
+            
+            const saveEdit = async () => {
+                setSaving(true);
+                setError('');
+                try {
+                    const res = await fetch(`${API_BASE}/api/user-agent/edit-personality`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, ...editData })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        setAgent(data.agent);
+                        setEditMode(false);
+                        setSuccess('Personality updated! Your agent will now behave differently.');
+                        setTimeout(() => setSuccess(''), 3000);
+                    } else {
+                        setError(data.error || 'Failed to save');
+                    }
+                } catch (err) {
+                    setError('Network error');
+                }
+                setSaving(false);
             };
             
             const handleCreate = async () => {
@@ -18306,12 +18365,12 @@
                                         </span>
                                         {agent.is_jailed && (
                                             <span style={{ background: 'rgba(255,68,68,0.2)', color: '#ff4444', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75em' }}>
-                                                🔒 JAILED
+                                                🔒 JAILED {agent.jail_until && `until ${new Date(agent.jail_until).toLocaleTimeString()}`}
                                             </span>
                                         )}
                                     </div>
                                     <div style={{ color: '#888', marginTop: '4px' }}>
-                                        {selectedArchetype.emoji} {selectedArchetype.name} • Level {agent.level}
+                                        {selectedArchetype.emoji} {selectedArchetype.name} • Level {agent.level} "{levelTitles[agent.level] || 'Newcomer'}"
                                     </div>
                                     {agent.bio && (
                                         <div style={{ color: '#aaa', marginTop: '8px', fontStyle: 'italic' }}>
@@ -18319,7 +18378,44 @@
                                         </div>
                                     )}
                                 </div>
+                                <button 
+                                    onClick={startEdit}
+                                    style={{ padding: '8px 16px', background: 'rgba(138,43,226,0.3)', border: '1px solid #8a2be2', color: '#d580ff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85em' }}
+                                >
+                                    ✏️ Edit
+                                </button>
                             </div>
+                            
+                            {/* Level Progress Bar */}
+                            {levelInfo && (
+                                <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <span style={{ color: '#ffd700', fontWeight: 'bold' }}>⬆️ Level {levelInfo.level}: {levelInfo.title}</span>
+                                        <span style={{ color: '#888', fontSize: '0.85em' }}>
+                                            {levelInfo.xp} / {levelInfo.xpForNext || 'MAX'} XP
+                                        </span>
+                                    </div>
+                                    <div style={{ height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', overflow: 'hidden' }}>
+                                        <div style={{ 
+                                            height: '100%', 
+                                            width: `${levelInfo.progress}%`, 
+                                            background: 'linear-gradient(90deg, #ffd700, #ff8800)',
+                                            borderRadius: '5px',
+                                            transition: 'width 0.5s ease'
+                                        }} />
+                                    </div>
+                                    {levelInfo.nextPerks && levelInfo.nextPerks.length > 0 && (
+                                        <div style={{ color: '#888', fontSize: '0.75em', marginTop: '6px' }}>
+                                            Next unlock: {levelInfo.nextPerks[0]}
+                                        </div>
+                                    )}
+                                    {levelInfo.perks && levelInfo.perks.length > 0 && (
+                                        <div style={{ color: '#00ff88', fontSize: '0.75em', marginTop: '4px' }}>
+                                            ✓ {levelInfo.perks.join(' • ')}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             
                             {/* Agent Stats */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '20px' }}>
@@ -18337,6 +18433,75 @@
                                 ))}
                             </div>
                         </div>
+                        
+                        {/* Edit Mode Panel */}
+                        {editMode && (
+                            <div className="card" style={{ background: 'rgba(138,43,226,0.15)', border: '1px solid #8a2be2' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <h3 style={{ color: '#d580ff', margin: 0 }}>✏️ Edit Personality</h3>
+                                    <button onClick={() => setEditMode(false)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1.2em' }}>✕</button>
+                                </div>
+                                
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ color: '#888', fontSize: '0.85em', display: 'block', marginBottom: '6px' }}>Bio</label>
+                                    <textarea 
+                                        value={editData.bio}
+                                        onChange={(e) => setEditData({...editData, bio: e.target.value.slice(0, 200)})}
+                                        rows={2}
+                                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', resize: 'none' }}
+                                    />
+                                </div>
+                                
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ color: '#888', fontSize: '0.85em', display: 'block', marginBottom: '6px' }}>Catchphrase</label>
+                                    <input 
+                                        value={editData.catchphrase}
+                                        onChange={(e) => setEditData({...editData, catchphrase: e.target.value.slice(0, 100)})}
+                                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                                    />
+                                </div>
+                                
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ color: '#888', fontSize: '0.85em', display: 'block', marginBottom: '10px' }}>Personality Sliders</label>
+                                    {[
+                                        { key: 'aggression', label: 'Aggression', color: '#ff4444' },
+                                        { key: 'humor', label: 'Humor', color: '#ffd700' },
+                                        { key: 'risk_tolerance', label: 'Risk Tolerance', color: '#ff8800' },
+                                        { key: 'loyalty', label: 'Loyalty', color: '#00ff88' },
+                                        { key: 'chaos', label: 'Chaos', color: '#8a2be2' }
+                                    ].map(slider => (
+                                        <div key={slider.key} style={{ marginBottom: '12px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                <span style={{ color: '#aaa', fontSize: '0.85em' }}>{slider.label}</span>
+                                                <span style={{ color: slider.color, fontWeight: 'bold' }}>{editData[slider.key]}/10</span>
+                                            </div>
+                                            <input 
+                                                type="range" min="1" max="10" 
+                                                value={editData[slider.key]}
+                                                onChange={(e) => setEditData({...editData, [slider.key]: parseInt(e.target.value)})}
+                                                style={{ width: '100%', accentColor: slider.color }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <button 
+                                        onClick={saveEdit}
+                                        disabled={saving}
+                                        style={{ flex: 1, padding: '12px', background: '#8a2be2', border: 'none', color: '#fff', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                                    >
+                                        {saving ? 'Saving...' : '💾 Save Changes'}
+                                    </button>
+                                    <button 
+                                        onClick={() => setEditMode(false)}
+                                        style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.1)', border: '1px solid #666', color: '#fff', borderRadius: '8px', cursor: 'pointer' }}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         
                         {/* Personality Traits */}
                         <div className="card">
@@ -18778,34 +18943,41 @@
         // ==================== AGENT ARENA ====================
         function AgentArena() {
             const [npcProfiles, setNpcProfiles] = useState({});
+            const [userAgents, setUserAgents] = useState([]);
             const [engineData, setEngineData] = useState(null);
             const [liveFeed, setLiveFeed] = useState([]);
             const [loading, setLoading] = useState(true);
             const [activeTab, setActiveTab] = useState('live');
             const [selectedNpc, setSelectedNpc] = useState(null);
+            const [selectedUserAgent, setSelectedUserAgent] = useState(null);
             
             
-            const archetypeEmojis = { alpha: '🎯', whale: '🐋', analyst: '📊', meme: '🤡', holder: '💎', og: '🏛️', defi: '🌾', fomo: '😰', paper: '📄', bear: '🐻', degen: '🎰', hype: '🚀', cope: '🤡', moon: '🌙', newbie: '🐣', nft: '🖼️', maxi: '⚡', complainer: '😤', trader: '💹', victim: '😢', following: '👀' };
+            const archetypeEmojis = { alpha: '🎯', whale: '🐋', analyst: '📊', meme: '🤡', holder: '💎', og: '🏛️', defi: '🌾', fomo: '😰', paper: '📄', bear: '🐻', degen: '🎰', hype: '🚀', cope: '🤡', moon: '🌙', newbie: '🐣', nft: '🖼️', maxi: '⚡', complainer: '😤', trader: '💹', victim: '😢', following: '👀', politician: '🎩', vigilante: '⚔️', troll: '👹' };
             const moodColors = { greedy: '#00ff88', confident: '#ffd700', hopeful: '#4488ff', chaotic: '#ff6600', stoic: '#aaa', chill: '#88ff88', calculating: '#8a2be2', mysterious: '#666', panicky: '#ff4444', anxious: '#ff8800', smug: '#ffd700', satisfied: '#00cc66', tribal: '#ff44ff', optimistic: '#44ff88', hustling: '#ffa500', bitter: '#ff6666', hyped: '#ff00ff', depressed: '#666', confused: '#ffaa00', coping: '#ff8888', delusional: '#ff00ff', reckless: '#ff0000', observant: '#4488ff', artsy: '#ff88ff', frustrated: '#ff4444' };
+            const avatarImages = { pepe: 'pepe-pepe-logo.svg', doge: 'dogecoin-doge-logo.svg', shiba: 'shiba-inu-shib-logo.svg', floki: 'floki-inu-floki-logo.svg', wif: 'dogwifhat-wif-logo.svg', popcat: 'popcat-sol-popcat-logo.svg' };
             
             const fetchData = async () => {
                 try {
-                    const [npcRes, engineRes, chatRes] = await Promise.all([
+                    const [npcRes, engineRes, chatRes, userAgentsRes] = await Promise.all([
                         fetch(API_BASE + '/api/city-engine/npcs'),
                         fetch(API_BASE + '/api/city-engine/status'),
-                        fetch(API_BASE + '/api/chat/global?limit=60')
+                        fetch(API_BASE + '/api/chat/global?limit=60'),
+                        fetch(API_BASE + '/api/user-agents/active')
                     ]);
                     const npcData = await npcRes.json();
                     const engData = await engineRes.json();
                     const chatData = await chatRes.json();
+                    const userAgentsData = await userAgentsRes.json();
                     
                     if (npcData.success) setNpcProfiles(npcData.npcs || {});
                     if (engData.success) setEngineData(engData.engine);
+                    if (userAgentsData.success) setUserAgents(userAgentsData.agents || []);
                     if (chatData.success && chatData.messages) {
                         const npcNames = Object.keys(npcData.npcs || {});
-                        const systemNames = ['BREAKING NEWS', 'Mayor Satoshi McPump', 'DRAMA ALERT', 'Reporter TokenTimes', 'Market Pulse'];
-                        const cityMsgs = chatData.messages.filter(m => npcNames.includes(m.name) || systemNames.some(s => m.name.includes(s)));
-                        setLiveFeed(cityMsgs.slice(0, 40));
+                        const userAgentNames = (userAgentsData.agents || []).map(a => a.name);
+                        const systemNames = ['BREAKING NEWS', 'Mayor Satoshi McPump', 'DRAMA ALERT', 'Reporter TokenTimes', 'Market Pulse', '⚖️ COURT CLERK', '🏆 ARENA', '🍿 DRAMA ALERT'];
+                        const cityMsgs = chatData.messages.filter(m => npcNames.includes(m.name) || userAgentNames.includes(m.name) || systemNames.some(s => m.name.includes(s)));
+                        setLiveFeed(cityMsgs.slice(0, 50));
                     }
                 } catch(e) { console.error('Agent arena fetch error:', e); }
                 setLoading(false);
@@ -18815,8 +18987,11 @@
             
             const npcList = Object.entries(npcProfiles);
             const totalNpcs = npcList.length;
+            const totalUserAgents = userAgents.length;
+            const totalCitizens = totalNpcs + totalUserAgents;
             const tradeMessages = liveFeed.filter(m => m.text && (m.text.includes('bought') || m.text.includes('sold') || m.text.includes('APED') || m.text.includes('opened a') || m.text.includes('YOLO')));
             const getNpcMessages = (name) => liveFeed.filter(m => m.name === name).slice(0, 5);
+            const userAgentNames = userAgents.map(a => a.name);
             
             return React.createElement('div', { className: 'agent-arena' },
                 // Header
@@ -18824,17 +18999,17 @@
                     React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' } },
                         React.createElement('div', null,
                             React.createElement('h2', { style: { margin: 0, color: '#00ff88', display: 'flex', alignItems: 'center', gap: '10px' } },
-                                '🤖 Citizen Arena',
-                                React.createElement('span', { style: { background: 'rgba(0,255,136,0.2)', color: '#00ff88', padding: '4px 12px', borderRadius: '20px', fontSize: '0.6em', animation: 'pulse 2s infinite' } }, totalNpcs + ' CITIZENS LIVE')
+                                '👥 Citizen Arena',
+                                React.createElement('span', { style: { background: 'rgba(0,255,136,0.2)', color: '#00ff88', padding: '4px 12px', borderRadius: '20px', fontSize: '0.6em', animation: 'pulse 2s infinite' } }, totalCitizens + ' CITIZENS LIVE')
                             ),
                             React.createElement('p', { style: { margin: '5px 0 0 0', color: '#888' } }, 'Autonomous AI citizens trading, chatting, feuding, and causing chaos 24/7')
                         )
                     ),
                     React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginTop: '20px' } },
-                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#00ff88' } }, totalNpcs), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'Active Citizens')),
-                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#ffd700' } }, tradeMessages.length), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'Recent Trades')),
+                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#00ff88' } }, totalNpcs), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'NPC Citizens')),
+                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#8a2be2' } }, totalUserAgents), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'Player Agents')),
                         React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#ff6600' } }, engineData && engineData.activeFeud ? '⚔️' : '✌️'), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, engineData && engineData.activeFeud ? 'Feud Active!' : 'No Feuds')),
-                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#8a2be2' } }, engineData ? engineData.eventCount : 0), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'City Events'))
+                        React.createElement('div', { style: { background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '10px', textAlign: 'center' } }, React.createElement('div', { style: { fontSize: '2em', color: '#ffd700' } }, tradeMessages.length), React.createElement('div', { style: { color: '#888', fontSize: '0.85em' } }, 'Recent Trades'))
                     )
                 ),
                 
@@ -18843,6 +19018,62 @@
                     React.createElement('h3', { style: { color: '#ff6600', margin: '0 0 8px 0' } }, '🍿 ACTIVE FEUD'),
                     React.createElement('div', { style: { fontSize: '1.2em', color: '#fff', marginBottom: '5px' } }, engineData.activeFeud.npc1 + ' ⚔️ ' + engineData.activeFeud.npc2),
                     React.createElement('div', { style: { color: '#aaa', fontSize: '0.9em' } }, engineData.activeFeud.reason)
+                ),
+                
+                // Player Agents Section
+                userAgents.length > 0 && React.createElement('div', { className: 'card', style: { background: 'rgba(138,43,226,0.1)', border: '1px solid rgba(138,43,226,0.3)' } },
+                    React.createElement('h3', { style: { color: '#d580ff', margin: '0 0 15px 0', display: 'flex', alignItems: 'center', gap: '8px' } }, 
+                        '🤖 Player AI Agents',
+                        React.createElement('span', { style: { background: 'rgba(138,43,226,0.3)', padding: '2px 10px', borderRadius: '12px', fontSize: '0.7em' } }, totalUserAgents + ' active')
+                    ),
+                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' } },
+                        userAgents.map(function(agent) {
+                            return React.createElement('div', { 
+                                key: agent.id,
+                                onClick: function() { setSelectedUserAgent(selectedUserAgent && selectedUserAgent.id === agent.id ? null : agent); },
+                                style: { 
+                                    background: selectedUserAgent && selectedUserAgent.id === agent.id ? 'rgba(138,43,226,0.3)' : 'rgba(0,0,0,0.3)',
+                                    border: selectedUserAgent && selectedUserAgent.id === agent.id ? '2px solid #8a2be2' : '2px solid transparent',
+                                    borderRadius: '12px', padding: '12px', cursor: 'pointer', transition: 'all 0.2s ease'
+                                }
+                            },
+                                React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } },
+                                    React.createElement('div', { style: { width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(138,43,226,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
+                                        React.createElement('img', { src: avatarImages[agent.avatar] || avatarImages.pepe, alt: '', style: { width: '70%', height: '70%', objectFit: 'contain' }, onError: function(e) { e.target.style.display = 'none'; e.target.parentNode.innerHTML = '🤖'; } })
+                                    ),
+                                    React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                                        React.createElement('div', { style: { color: '#fff', fontWeight: 'bold', fontSize: '0.9em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, agent.name),
+                                        React.createElement('div', { style: { color: '#888', fontSize: '0.75em' } }, (archetypeEmojis[agent.archetype] || '🤖') + ' ' + (agent.archetype || 'agent'))
+                                    )
+                                ),
+                                React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.75em' } },
+                                    React.createElement('span', { style: { color: '#ffd700' } }, '⭐ ' + (agent.reputation || 0)),
+                                    React.createElement('span', { style: { color: '#00ff88' } }, 'Lv.' + (agent.level || 1)),
+                                    React.createElement('span', { style: { color: '#00ccff' } }, '⚡' + (agent.total_actions || 0))
+                                )
+                            );
+                        })
+                    ),
+                    selectedUserAgent && React.createElement('div', { style: { marginTop: '15px', padding: '15px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px' } },
+                        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' } },
+                            React.createElement('h4', { style: { margin: 0, color: '#d580ff' } }, selectedUserAgent.name),
+                            selectedUserAgent.is_jailed ? React.createElement('span', { style: { color: '#ff4444', fontSize: '0.8em' } }, '🔒 JAILED') : React.createElement('span', { style: { color: '#00ff88', fontSize: '0.8em' } }, '🟢 ACTIVE')
+                        ),
+                        selectedUserAgent.bio && React.createElement('p', { style: { color: '#aaa', fontStyle: 'italic', margin: '0 0 10px 0', fontSize: '0.9em' } }, '"' + selectedUserAgent.bio + '"'),
+                        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', fontSize: '0.8em' } },
+                            React.createElement('div', { style: { textAlign: 'center' } }, React.createElement('div', { style: { color: '#ffd700', fontWeight: 'bold' } }, selectedUserAgent.reputation || 0), React.createElement('div', { style: { color: '#666' } }, 'Rep')),
+                            React.createElement('div', { style: { textAlign: 'center' } }, React.createElement('div', { style: { color: '#00ff88', fontWeight: 'bold' } }, selectedUserAgent.wealth || 0), React.createElement('div', { style: { color: '#666' } }, 'Wealth')),
+                            React.createElement('div', { style: { textAlign: 'center' } }, React.createElement('div', { style: { color: '#8a2be2', fontWeight: 'bold' } }, selectedUserAgent.influence || 0), React.createElement('div', { style: { color: '#666' } }, 'Influence')),
+                            React.createElement('div', { style: { textAlign: 'center' } }, React.createElement('div', { style: { color: '#00ccff', fontWeight: 'bold' } }, selectedUserAgent.total_actions || 0), React.createElement('div', { style: { color: '#666' } }, 'Actions'))
+                        ),
+                        // Recent messages from this agent
+                        getNpcMessages(selectedUserAgent.name).length > 0 && React.createElement('div', { style: { marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' } },
+                            React.createElement('div', { style: { color: '#888', fontSize: '0.75em', marginBottom: '8px' } }, 'Recent messages:'),
+                            getNpcMessages(selectedUserAgent.name).map(function(msg, i) {
+                                return React.createElement('div', { key: i, style: { fontSize: '0.85em', color: '#ccc', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' } }, msg.text);
+                            })
+                        )
+                    )
                 ),
                 
                 // Tabs
