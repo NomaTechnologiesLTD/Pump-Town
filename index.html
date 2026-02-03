@@ -18048,6 +18048,8 @@
             const [error, setError] = useState('');
             const [success, setSuccess] = useState('');
             const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+            const [activity, setActivity] = useState([]);
+            const [activityLoading, setActivityLoading] = useState(false);
             
             // Form state for creation
             const [formData, setFormData] = useState({
@@ -18066,12 +18068,12 @@
             });
             
             const avatarOptions = [
-                { id: 'pepe', name: 'Pepe', color: '#3D8130' },
-                { id: 'doge', name: 'Doge', color: '#C4A132' },
-                { id: 'shiba', name: 'Shiba', color: '#FFA500' },
-                { id: 'floki', name: 'Floki', color: '#D4AF37' },
-                { id: 'wif', name: 'Wif', color: '#E8B298' },
-                { id: 'popcat', name: 'Popcat', color: '#8B4513' }
+                { id: 'pepe', name: 'Pepe', color: '#3D8130', image: 'pepe-pepe-logo.svg' },
+                { id: 'doge', name: 'Doge', color: '#C4A132', image: 'dogecoin-doge-logo.svg' },
+                { id: 'shiba', name: 'Shiba', color: '#FFA500', image: 'shiba-inu-shib-logo.svg' },
+                { id: 'floki', name: 'Floki', color: '#D4AF37', image: 'floki-inu-floki-logo.svg' },
+                { id: 'wif', name: 'Wif', color: '#E8B298', image: 'dogwifhat-wif-logo.svg' },
+                { id: 'popcat', name: 'Popcat', color: '#8B4513', image: 'popcat-sol-popcat-logo.svg' }
             ];
             
             const archetypeOptions = [
@@ -18112,6 +18114,15 @@
                 if (email) fetchAgent();
             }, [email]);
             
+            // Fetch activity when agent is loaded
+            useEffect(() => {
+                if (agent && email) {
+                    fetchActivity();
+                    const interval = setInterval(fetchActivity, 30000); // Refresh every 30s
+                    return () => clearInterval(interval);
+                }
+            }, [agent, email]);
+            
             const fetchAgent = async () => {
                 try {
                     const res = await fetch(`${API_BASE}/api/user-agent/${encodeURIComponent(email)}`);
@@ -18123,6 +18134,20 @@
                     console.error('Fetch agent error:', err);
                 }
                 setLoading(false);
+            };
+            
+            const fetchActivity = async () => {
+                setActivityLoading(true);
+                try {
+                    const res = await fetch(`${API_BASE}/api/user-agent/${encodeURIComponent(email)}/activity`);
+                    const data = await res.json();
+                    if (data.success) {
+                        setActivity(data.activity || []);
+                    }
+                } catch (err) {
+                    console.error('Fetch activity error:', err);
+                }
+                setActivityLoading(false);
             };
             
             const handleCreate = async () => {
@@ -18263,7 +18288,7 @@
                                     overflow: 'hidden'
                                 }}>
                                     <img 
-                                        src={`${agent.avatar}-${agent.avatar === 'pepe' ? 'pepe' : agent.avatar === 'doge' ? 'dogecoin-doge' : agent.avatar === 'shiba' ? 'shiba-inu-shib' : agent.avatar === 'floki' ? 'floki-inu-floki' : agent.avatar === 'wif' ? 'dogwifhat-wif' : 'popcat-sol-popcat'}-logo.svg`}
+                                        src={avatarData.image}
                                         alt={agent.avatar}
                                         style={{ width: '60%', height: '60%', objectFit: 'contain' }}
                                         onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = '🤖'; }}
@@ -18374,14 +18399,39 @@
                             </div>
                         </div>
                         
-                        {/* Activity Log Placeholder */}
+                        {/* Activity Log */}
                         <div className="card">
-                            <h3 style={{ color: '#ffd700', marginBottom: '16px' }}>📜 Recent Activity</h3>
-                            <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
-                                <div style={{ fontSize: '2em', marginBottom: '10px' }}>🚀</div>
-                                <p>Your agent is deployed and will start taking actions soon!</p>
-                                <p style={{ fontSize: '0.85em', marginTop: '10px' }}>Actions happen automatically every few minutes based on city events.</p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <h3 style={{ color: '#ffd700', margin: 0 }}>📜 Recent Activity</h3>
+                                {activityLoading && <span style={{ color: '#666', fontSize: '0.8em' }}>Refreshing...</span>}
                             </div>
+                            {activity.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto' }}>
+                                    {activity.map((item, i) => (
+                                        <div key={i} style={{ 
+                                            display: 'flex', gap: '12px', alignItems: 'flex-start',
+                                            padding: '12px', background: 'rgba(255,255,255,0.03)', 
+                                            borderRadius: '10px', borderLeft: `3px solid ${item.type === 'chat' ? '#00ccff' : item.type === 'lawsuit_filed' ? '#ff4444' : item.type === 'accusation' ? '#ff8800' : item.type === 'challenge' ? '#ffd700' : '#8a2be2'}`
+                                        }}>
+                                            <div style={{ fontSize: '1.3em' }}>{item.icon || '💬'}</div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ color: '#fff', fontSize: '0.9em' }}>
+                                                    {item.type === 'chat' ? item.content : item.content}
+                                                </div>
+                                                <div style={{ color: '#666', fontSize: '0.75em', marginTop: '4px' }}>
+                                                    {item.type === 'chat' ? '💬 Chat' : item.type?.replace(/_/g, ' ')} • {new Date(item.created_at).toLocaleString()}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
+                                    <div style={{ fontSize: '2em', marginBottom: '10px' }}>🚀</div>
+                                    <p>Your agent is deployed and will start taking actions soon!</p>
+                                    <p style={{ fontSize: '0.85em', marginTop: '10px' }}>Actions happen automatically every few minutes based on city events.</p>
+                                </div>
+                            )}
                         </div>
                         
                         {/* Danger Zone */}
@@ -18507,7 +18557,7 @@
                                         }}
                                     >
                                         <img 
-                                            src={`${av.id}-${av.id === 'pepe' ? 'pepe' : av.id === 'doge' ? 'dogecoin-doge' : av.id === 'shiba' ? 'shiba-inu-shib' : av.id === 'floki' ? 'floki-inu-floki' : av.id === 'wif' ? 'dogwifhat-wif' : 'popcat-sol-popcat'}-logo.svg`}
+                                            src={av.image}
                                             alt={av.name}
                                             style={{ width: '65%', height: '65%', objectFit: 'contain' }}
                                             onError={(e) => { e.target.style.display = 'none'; }}
