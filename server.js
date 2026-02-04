@@ -2560,19 +2560,30 @@ app.get('/api/v1/brain/actions', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     
-    // Get actions from activity_feed - these are the autonomous NPC actions
-    const result = await pool.query(`
-      SELECT id, player_name as npc, activity_type as action, description, icon, created_at
-      FROM activity_feed 
-      WHERE activity_type IN ('chat', 'accusation', 'rumor', 'challenge', 'lawsuit_filed', 'party', 'alliance_proposal', 'alliance_formed', 'betrayal', 'law_proposed', 'voted', 'level_up', 'jailed', 'crime_detected', 'arrest', 'trial_verdict')
+    // First try to get from autonomous_actions table (the real brain actions)
+    let result = await pool.query(`
+      SELECT id, npc_name, action_type, target_name, target_type, description, chat_message as ai_reasoning, created_at
+      FROM autonomous_actions 
       ORDER BY created_at DESC 
       LIMIT $1
     `, [limit]);
     
+    // If no autonomous actions, fall back to activity_feed
+    if (result.rows.length === 0) {
+      result = await pool.query(`
+        SELECT id, player_name as npc_name, activity_type as action_type, description, icon, created_at
+        FROM activity_feed 
+        WHERE activity_type IN ('chat', 'accusation', 'rumor', 'challenge', 'lawsuit_filed', 'party', 'alliance_proposal', 'alliance_formed', 'betrayal', 'law_proposed', 'voted', 'level_up', 'jailed', 'crime_detected', 'arrest', 'trial_verdict')
+        ORDER BY created_at DESC 
+        LIMIT $1
+      `, [limit]);
+    }
+    
     res.json({ 
       success: true, 
       actions: result.rows,
-      count: result.rows.length
+      count: result.rows.length,
+      source: result.rows.length > 0 && result.rows[0].ai_reasoning ? 'autonomous_actions' : 'activity_feed'
     });
   } catch (err) {
     console.error('Brain actions error:', err);

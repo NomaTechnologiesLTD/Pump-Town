@@ -36881,7 +36881,14 @@ Play at degenscity.com
                                     </div>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        {actions.slice(0, 30).map((action, i) => (
+                                        {actions.slice(0, 30).map((action, i) => {
+                                            const npcName = action.npc_name || action.npc || action.player_name || 'Unknown NPC';
+                                            const actionType = action.action_type || action.action || 'acted';
+                                            const targetName = action.target_name || '';
+                                            const desc = action.description || '';
+                                            const reasoning = action.ai_reasoning || action.chat_message || '';
+                                            
+                                            return (
                                             <div key={action.id || i} style={{
                                                 background: 'rgba(255,255,255,0.02)',
                                                 border: '1px solid rgba(138,43,226,0.15)',
@@ -36890,41 +36897,39 @@ Play at degenscity.com
                                                 transition: 'border-color 0.2s'
                                             }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                                                    <span style={{ fontSize: '1.3em' }}>{actionIcons[action.action_type] || '🧠'}</span>
-                                                    <span style={{ color: '#d580ff', fontWeight: 'bold', fontSize: '0.95em' }}>{action.npc_name}</span>
+                                                    <span style={{ fontSize: '1.3em' }}>{actionIcons[actionType] || '🧠'}</span>
+                                                    <span style={{ color: '#d580ff', fontWeight: 'bold', fontSize: '0.95em' }}>{npcName}</span>
                                                     <span style={{ color: '#555', fontSize: '0.85em' }}>
-                                                        {action.action_type?.replace('_', ' ')}
-                                                        {action.target_name && (
-                                                            <span> → <span style={{ color: '#ffd700' }}>{action.target_name}</span></span>
+                                                        {actionType.replace(/_/g, ' ')}
+                                                        {targetName && (
+                                                            <span> → <span style={{ color: '#ffd700' }}>{targetName}</span></span>
                                                         )}
                                                     </span>
                                                     <span style={{ marginLeft: 'auto', color: '#444', fontSize: '0.75em' }}>{timeAgo(action.created_at)}</span>
                                                 </div>
-                                                {action.description && (
-                                                    <div style={{ color: '#aaa', fontSize: '0.85em', marginLeft: '34px' }}>{action.description}</div>
+                                                {desc && (
+                                                    <div style={{ color: '#aaa', fontSize: '0.85em', marginLeft: '34px' }}>{desc}</div>
                                                 )}
-                                                {action.ai_reasoning && (
+                                                {reasoning && (
                                                     <div style={{ color: '#666', fontSize: '0.78em', marginLeft: '34px', fontStyle: 'italic', marginTop: '4px' }}>
-                                                        💭 "{action.ai_reasoning}"
+                                                        💭 "{reasoning}"
                                                     </div>
                                                 )}
                                                 {/* Share on X Button for actions */}
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
                                                     <button
                                                         onClick={() => {
-                                                            const actionEmoji = actionIcons[action.action_type] || '🧠';
-                                                            const targetText = action.target_name ? ` → ${action.target_handle || action.target_name}` : '';
-                                                            const desc = action.description || '';
-                                                            const reasoning = action.ai_reasoning || '';
+                                                            const actionEmoji = actionIcons[actionType] || '🧠';
+                                                            const targetText = targetName ? ` → ${action.target_handle || targetName}` : '';
                                                             
                                                             let tweetText = '';
-                                                            if (action.action_type === 'sue') {
-                                                                tweetText = `⚖️ LAWSUIT in Degens City!\n\n${action.npc_name} is suing ${action.target_name || 'someone'}${action.target_handle ? ` ${action.target_handle}` : ''}!\n\n${desc ? `📋 "${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}Watch the chaos at degenscity.com 🏙️`;
-                                                            } else if (action.action_type === 'propose_law') {
-                                                                tweetText = `🏛️ NEW LAW PROPOSED in Degens City!\n\n${action.npc_name} wants to pass:\n\n${desc ? `📜 "${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}Vote now at degenscity.com ⚖️`;
+                                                            if (actionType === 'sue' || actionType === 'lawsuit_filed') {
+                                                                tweetText = `⚖️ LAWSUIT in Degens City!\n\n${npcName} is suing ${targetName || 'someone'}${action.target_handle ? ` ${action.target_handle}` : ''}!\n\n${desc ? `📋 "${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}Watch the chaos at degenscity.com 🏙️`;
+                                                            } else if (actionType === 'propose_law' || actionType === 'law_proposed') {
+                                                                tweetText = `🏛️ NEW LAW PROPOSED in Degens City!\n\n${npcName} wants to pass:\n\n${desc ? `📜 "${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}Vote now at degenscity.com ⚖️`;
                                                             } else {
-                                                                const actionName = (action.action_type || 'acted').replace(/_/g, ' ');
-                                                                tweetText = `${actionEmoji} ${action.npc_name} just ${actionName}${targetText} in Degens City!\n\n${desc ? `"${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}AI NPCs making autonomous decisions 🤖\n\ndegenscity.com`;
+                                                                const actionName = actionType.replace(/_/g, ' ');
+                                                                tweetText = `${actionEmoji} ${npcName} just ${actionName}${targetText} in Degens City!\n\n${desc ? `"${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}AI NPCs making autonomous decisions 🤖\n\ndegenscity.com`;
                                                             }
                                                             
                                                             const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
@@ -36951,7 +36956,8 @@ Play at degenscity.com
                                                     </button>
                                                 </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
