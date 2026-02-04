@@ -139,6 +139,10 @@ async function initDatabase() {
     await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS resources JSONB DEFAULT '{}'`).catch(() => {});
     await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS season_pass JSONB DEFAULT '{}'`).catch(() => {});
     
+    // Add jail columns for player legal system
+    await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS is_jailed BOOLEAN DEFAULT FALSE`).catch(() => {});
+    await client.query(`ALTER TABLE characters ADD COLUMN IF NOT EXISTS jail_until TIMESTAMP`).catch(() => {});
+    
     // Add unique constraint on email if it doesn't exist (for existing databases)
     // First, remove any duplicate emails (keep most recent)
     await client.query(`
@@ -3530,6 +3534,256 @@ app.post('/api/player/trade/sell', async (req, res) => {
   } catch (error) {
     console.error('Player sell error:', error);
     res.status(500).json({ success: false, error: 'Trade failed' });
+  }
+});
+
+// ==================== PLAYER LEGAL ACTIONS ====================
+
+// Get player legal status
+app.get('/api/player/legal-status/:playerName', async (req, res) => {
+  try {
+    const { playerName } = req.params;
+    
+    // Check if player has a character (for jail status)
+    let isJailed = false;
+    let jailUntil = null;
+    try {
+      const charResult = await pool.query(
+        'SELECT is_jailed, jail_until FROM characters WHERE LOWER(name) = LOWER($1)',
+        [playerName]
+      );
+      if (charResult.rows.length > 0) {
+        isJailed = charResult.rows[0].is_jailed || false;
+        jailUntil = charResult.rows[0].jail_until;
+        // Check if jail time has expired
+        if (jailUntil && new Date(jailUntil) < new Date()) {
+          isJailed = false;
+          await pool.query('UPDATE characters SET is_jailed = FALSE WHERE LOWER(name) = LOWER($1)', [playerName]);
+        }
+      }
+    } catch (e) { }
+    
+    // Count lawsuits filed by player
+    let lawsuitsFiled = 0;
+    try {
+      const result = await pool.query(
+        'SELECT COUNT(*) FROM lawsuits WHERE LOWER(plaintiff_name) = LOWER($1)',
+        [playerName]
+      );
+      lawsuitsFiled = parseInt(result.rows[0].count) || 0;
+    } catch (e) { }
+    
+    // Count lawsuits against player
+    let lawsuitsAgainst = 0;
+    try {
+      const result = await pool.query(
+        'SELECT COUNT(*) FROM lawsuits WHERE LOWER(defendant_name) = LOWER($1)',
+        [playerName]
+      );
+      lawsuitsAgainst = parseInt(result.rows[0].count) || 0;
+    } catch (e) { }
+    
+    // Count laws proposed by player
+    let lawsProposed = 0;
+    try {
+      const result = await pool.query(
+        'SELECT COUNT(*) FROM proposed_laws WHERE LOWER(proposer_name) = LOWER($1)',
+        [playerName]
+      );
+      lawsProposed = parseInt(result.rows[0].count) || 0;
+    } catch (e) { }
+    
+    // Get recent legal activity
+    let recentActions = [];
+    try {
+      const lawsuits = await pool.query(`
+        SELECT 'lawsuit' as type, complaint as description, created_at 
+        FROM lawsuits WHERE LOWER(plaintiff_name) = LOWER($1)
+        ORDER BY created_at DESC LIMIT 5
+      `, [playerName]);
+      
+      const laws = await pool.query(`
+        SELECT 'law' as type, law_title as description, created_at 
+        FROM proposed_laws WHERE LOWER(proposer_name) = LOWER($1)
+        ORDER BY created_at DESC LIMIT 5
+      `, [playerName]);
+      
+      recentActions = [...lawsuits.rows, ...laws.rows]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 10)
+        .map(a => ({
+          type: a.type,
+          description: a.description,
+          timeAgo: getTimeAgo(a.created_at)
+        }));
+    } catch (e) { }
+    
+    res.json({
+      success: true,
+      status: {
+        isJailed,
+        jailUntil,
+        lawsuitsFiled,
+        lawsuitsAgainst,
+        lawsProposed
+      },
+      recentActions
+    });
+  } catch (error) {
+    console.error('Legal status error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get legal status' });
+  }
+});
+
+// Helper function for time ago
+function getTimeAgo(date) {
+  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+  if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+  return Math.floor(seconds / 86400) + 'd ago';
+}
+
+// Player file lawsuit
+app.post('/api/player/sue', async (req, res) => {
+  try {
+    const { playerName, targetName, targetType, complaint, damagesRequested } = req.body;
+    
+    if (!playerName || !targetName || !complaint) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+    
+    // Check if player is jailed
+    try {
+      const charResult = await pool.query(
+        'SELECT is_jailed, jail_until FROM characters WHERE LOWER(name) = LOWER($1)',
+        [playerName]
+      );
+      if (charResult.rows.length > 0 && charResult.rows[0].is_jailed) {
+        const jailUntil = charResult.rows[0].jail_until;
+        if (jailUntil && new Date(jailUntil) > new Date()) {
+          return res.status(403).json({ success: false, error: 'You cannot sue while in jail!' });
+        }
+      }
+    } catch (e) { }
+    
+    const caseNumber = 'DC-' + Date.now().toString(36).toUpperCase();
+    const damages = damagesRequested || Math.floor(Math.random() * 100000) + 10000;
+    
+    // Insert lawsuit
+    await pool.query(`
+      INSERT INTO lawsuits (case_number, plaintiff_name, plaintiff_type, defendant_name, defendant_type, complaint, damages_requested, status)
+      VALUES ($1, $2, 'player', $3, $4, $5, $6, 'filed')
+    `, [caseNumber, playerName, targetName, targetType || 'celebrity', complaint, damages]);
+    
+    // Announce in chat
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['⚖️ COURT NEWS', `📋 NEW LAWSUIT: ${playerName} is suing ${targetName} for $${damages.toLocaleString()}! Case #${caseNumber}. Reason: "${complaint.substring(0, 100)}..." 🍿`]
+    );
+    
+    // Add to activity feed
+    await pool.query(
+      `INSERT INTO activity_feed (player_name, activity_type, description, icon)
+       VALUES ($1, 'lawsuit_filed', $2, '⚖️')`,
+      [playerName, `Filed lawsuit against ${targetName}: ${complaint.substring(0, 100)}`]
+    );
+    
+    console.log(`⚖️ ${playerName} sued ${targetName} for $${damages} - Case #${caseNumber}`);
+    
+    res.json({ success: true, caseNumber, message: 'Lawsuit filed!' });
+  } catch (error) {
+    console.error('Player sue error:', error);
+    res.status(500).json({ success: false, error: 'Failed to file lawsuit' });
+  }
+});
+
+// Player propose law
+app.post('/api/player/propose-law', async (req, res) => {
+  try {
+    const { playerName, lawTitle, lawDescription } = req.body;
+    
+    if (!playerName || !lawTitle || !lawDescription) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+    
+    // Check if player is jailed
+    try {
+      const charResult = await pool.query(
+        'SELECT is_jailed, jail_until FROM characters WHERE LOWER(name) = LOWER($1)',
+        [playerName]
+      );
+      if (charResult.rows.length > 0 && charResult.rows[0].is_jailed) {
+        const jailUntil = charResult.rows[0].jail_until;
+        if (jailUntil && new Date(jailUntil) > new Date()) {
+          return res.status(403).json({ success: false, error: 'You cannot propose laws while in jail!' });
+        }
+      }
+    } catch (e) { }
+    
+    // Insert proposed law
+    await pool.query(`
+      INSERT INTO proposed_laws (proposer_name, law_title, law_description, status)
+      VALUES ($1, $2, $3, 'proposed')
+    `, [playerName, lawTitle.substring(0, 200), lawDescription]);
+    
+    // Announce in chat
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['🏛️ City Hall', `📜 NEW LAW PROPOSED by ${playerName}: "${lawTitle}". Citizens, cast your votes! 🗳️`]
+    );
+    
+    // Add to activity feed
+    await pool.query(
+      `INSERT INTO activity_feed (player_name, activity_type, description, icon)
+       VALUES ($1, 'law_proposed', $2, '📜')`,
+      [playerName, `Proposed law: ${lawTitle}`]
+    );
+    
+    console.log(`📜 ${playerName} proposed law: "${lawTitle}"`);
+    
+    res.json({ success: true, message: 'Law proposed!' });
+  } catch (error) {
+    console.error('Player propose law error:', error);
+    res.status(500).json({ success: false, error: 'Failed to propose law' });
+  }
+});
+
+// Jail a player (called by system/admin)
+app.post('/api/player/jail', async (req, res) => {
+  try {
+    const { playerName, hours, reason } = req.body;
+    
+    if (!playerName || !hours) {
+      return res.status(400).json({ success: false, error: 'Missing playerName or hours' });
+    }
+    
+    const jailUntil = new Date(Date.now() + hours * 3600000);
+    
+    // Update character
+    await pool.query(`
+      UPDATE characters SET is_jailed = TRUE, jail_until = $1 WHERE LOWER(name) = LOWER($2)
+    `, [jailUntil, playerName]);
+    
+    // Announce
+    await pool.query(
+      `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+      ['👮 Officer_Blockchain', `🚔 ARREST: ${playerName} has been sent to Degen Jail for ${hours} hour(s)! Reason: ${reason || 'Criminal activity'}. ⛓️`]
+    );
+    
+    // Activity feed
+    await pool.query(
+      `INSERT INTO activity_feed (player_name, activity_type, description, icon)
+       VALUES ($1, 'jailed', $2, '⛓️')`,
+      [playerName, `Jailed for ${hours}h - ${reason || 'Criminal activity'}`]
+    );
+    
+    console.log(`⛓️ ${playerName} jailed for ${hours} hours`);
+    
+    res.json({ success: true, message: `${playerName} jailed until ${jailUntil.toISOString()}` });
+  } catch (error) {
+    console.error('Jail player error:', error);
+    res.status(500).json({ success: false, error: 'Failed to jail player' });
   }
 });
 

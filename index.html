@@ -15824,6 +15824,12 @@
                                     <LiveActivityFeed playerName={character?.name} onPlayerClick={openPlayerProfile} />
                                 </div>
                                 
+                                {/* ═══════ CITIZEN ACTIONS (Sue, Propose Laws) ═══════ */}
+                                <CitizenActions 
+                                    playerName={character?.name || 'Guest'}
+                                    showToast={showToast}
+                                />
+                                
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
                                     <PassiveIncomePanel 
                                         resources={resources}
@@ -34365,6 +34371,410 @@ Play at degenscity.com
                                     <button className="share-roast-btn" onClick={shareRoast}>
                                         📤 Share Roast
                                     </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ==================== CITIZEN ACTIONS (SUE, PROPOSE LAW, etc.) ====================
+        function CitizenActions({ playerName, showToast }) {
+            const [activeTab, setActiveTab] = useState('sue'); // sue, law, status
+            const [target, setTarget] = useState('');
+            const [targetType, setTargetType] = useState('celebrity');
+            const [reason, setReason] = useState('');
+            const [damages, setDamages] = useState(69420);
+            const [lawTitle, setLawTitle] = useState('');
+            const [lawDescription, setLawDescription] = useState('');
+            const [submitting, setSubmitting] = useState(false);
+            const [recentActions, setRecentActions] = useState([]);
+            const [playerStatus, setPlayerStatus] = useState({ isJailed: false, jailUntil: null, lawsuitsAgainst: 0 });
+            
+            // Fetch player status and recent actions
+            useEffect(() => {
+                const fetchStatus = async () => {
+                    try {
+                        const res = await fetch(`${API_BASE}/api/player/legal-status/${encodeURIComponent(playerName)}`);
+                        const data = await res.json();
+                        if (data.success) {
+                            setPlayerStatus(data.status);
+                            setRecentActions(data.recentActions || []);
+                        }
+                    } catch (e) { console.log('Could not fetch legal status'); }
+                };
+                if (playerName && playerName !== 'Guest') fetchStatus();
+            }, [playerName]);
+            
+            const fileLawsuit = async () => {
+                if (!target.trim() || !reason.trim()) {
+                    showToast('Please fill in target and reason!', 'error');
+                    return;
+                }
+                if (playerStatus.isJailed) {
+                    showToast('You cannot sue while in jail! 🔒', 'error');
+                    return;
+                }
+                
+                setSubmitting(true);
+                try {
+                    const res = await fetch(`${API_BASE}/api/player/sue`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            playerName,
+                            targetName: target,
+                            targetType,
+                            complaint: reason,
+                            damagesRequested: damages
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(`⚖️ Lawsuit filed against ${target}! Case #${data.caseNumber}`, 'success');
+                        setTarget('');
+                        setReason('');
+                        // Refresh status
+                        const statusRes = await fetch(`${API_BASE}/api/player/legal-status/${encodeURIComponent(playerName)}`);
+                        const statusData = await statusRes.json();
+                        if (statusData.success) setRecentActions(statusData.recentActions || []);
+                    } else {
+                        showToast(data.error || 'Failed to file lawsuit', 'error');
+                    }
+                } catch (e) {
+                    showToast('Failed to file lawsuit', 'error');
+                }
+                setSubmitting(false);
+            };
+            
+            const proposeLaw = async () => {
+                if (!lawTitle.trim() || !lawDescription.trim()) {
+                    showToast('Please fill in law title and description!', 'error');
+                    return;
+                }
+                if (playerStatus.isJailed) {
+                    showToast('You cannot propose laws while in jail! 🔒', 'error');
+                    return;
+                }
+                
+                setSubmitting(true);
+                try {
+                    const res = await fetch(`${API_BASE}/api/player/propose-law`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            playerName,
+                            lawTitle,
+                            lawDescription
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(`📜 Law proposed: "${lawTitle}"! Citizens will vote.`, 'success');
+                        setLawTitle('');
+                        setLawDescription('');
+                    } else {
+                        showToast(data.error || 'Failed to propose law', 'error');
+                    }
+                } catch (e) {
+                    showToast('Failed to propose law', 'error');
+                }
+                setSubmitting(false);
+            };
+            
+            // Calculate jail time remaining
+            const jailTimeRemaining = playerStatus.jailUntil ? Math.max(0, new Date(playerStatus.jailUntil) - new Date()) : 0;
+            const jailMinutes = Math.ceil(jailTimeRemaining / 60000);
+            
+            return (
+                <div className="card" style={{ marginTop: '20px' }}>
+                    <h2 style={{ color: '#ff6b6b', marginBottom: '15px' }}>⚖️ Citizen Actions</h2>
+                    
+                    {/* Jail Status Banner */}
+                    {playerStatus.isJailed && jailTimeRemaining > 0 && (
+                        <div style={{ 
+                            background: 'linear-gradient(135deg, #ff4444, #cc0000)', 
+                            padding: '15px', 
+                            borderRadius: '12px', 
+                            marginBottom: '15px',
+                            textAlign: 'center'
+                        }}>
+                            <div style={{ fontSize: '2em', marginBottom: '5px' }}>⛓️🔒⛓️</div>
+                            <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '1.1em' }}>YOU ARE IN DEGEN JAIL!</div>
+                            <div style={{ color: '#ffcccc', fontSize: '0.9em', marginTop: '5px' }}>
+                                Time remaining: {jailMinutes} minute{jailMinutes !== 1 ? 's' : ''}
+                            </div>
+                            <div style={{ color: '#ffaaaa', fontSize: '0.8em', marginTop: '5px' }}>
+                                You cannot sue or propose laws while jailed.
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Tabs */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                        {[
+                            { id: 'sue', label: '⚖️ File Lawsuit', color: '#ff6b6b' },
+                            { id: 'law', label: '📜 Propose Law', color: '#ffd700' },
+                            { id: 'status', label: '📋 My Legal Status', color: '#4ecdc4' }
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                style={{
+                                    padding: '10px 18px',
+                                    borderRadius: '20px',
+                                    border: activeTab === tab.id ? `2px solid ${tab.color}` : '1px solid #333',
+                                    background: activeTab === tab.id ? `${tab.color}22` : 'rgba(255,255,255,0.03)',
+                                    color: activeTab === tab.id ? tab.color : '#888',
+                                    cursor: 'pointer',
+                                    fontWeight: activeTab === tab.id ? 'bold' : 'normal',
+                                    fontSize: '0.9em'
+                                }}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    {/* Sue Tab */}
+                    {activeTab === 'sue' && (
+                        <div>
+                            <p style={{ color: '#888', marginBottom: '15px', fontSize: '0.9em' }}>
+                                File a lawsuit against NPCs, celebrities, or other players! Your case will be announced in the city.
+                            </p>
+                            
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ color: '#aaa', fontSize: '0.85em', display: 'block', marginBottom: '5px' }}>Target Type</label>
+                                <select 
+                                    value={targetType} 
+                                    onChange={(e) => setTargetType(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #333',
+                                        background: '#1a1a2e',
+                                        color: '#fff',
+                                        fontSize: '0.95em'
+                                    }}
+                                >
+                                    <option value="celebrity">🌟 Celebrity / KOL</option>
+                                    <option value="npc">🤖 NPC Citizen</option>
+                                    <option value="player">👤 Real Player</option>
+                                    <option value="user_agent">🤖 User Agent</option>
+                                </select>
+                            </div>
+                            
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ color: '#aaa', fontSize: '0.85em', display: 'block', marginBottom: '5px' }}>Who are you suing?</label>
+                                <input 
+                                    type="text"
+                                    value={target}
+                                    onChange={(e) => setTarget(e.target.value)}
+                                    placeholder="e.g., Vitalik Buterin, Gary Gensler, alpha_hunter..."
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #333',
+                                        background: '#1a1a2e',
+                                        color: '#fff',
+                                        fontSize: '0.95em'
+                                    }}
+                                />
+                            </div>
+                            
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ color: '#aaa', fontSize: '0.85em', display: 'block', marginBottom: '5px' }}>Reason / Complaint</label>
+                                <textarea 
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                    placeholder="e.g., Made me buy the top and now I'm down 90%..."
+                                    rows={3}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #333',
+                                        background: '#1a1a2e',
+                                        color: '#fff',
+                                        fontSize: '0.95em',
+                                        resize: 'vertical'
+                                    }}
+                                />
+                            </div>
+                            
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ color: '#aaa', fontSize: '0.85em', display: 'block', marginBottom: '5px' }}>Damages Requested ($)</label>
+                                <input 
+                                    type="number"
+                                    value={damages}
+                                    onChange={(e) => setDamages(parseInt(e.target.value) || 0)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #333',
+                                        background: '#1a1a2e',
+                                        color: '#ffd700',
+                                        fontSize: '0.95em'
+                                    }}
+                                />
+                                <div style={{ color: '#666', fontSize: '0.8em', marginTop: '5px' }}>
+                                    Popular amounts: $69,420 | $420,069 | $1,000,000
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={fileLawsuit}
+                                disabled={submitting || (playerStatus.isJailed && jailTimeRemaining > 0)}
+                                style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: (submitting || playerStatus.isJailed) ? '#444' : 'linear-gradient(135deg, #ff6b6b, #ff4444)',
+                                    color: '#fff',
+                                    fontSize: '1em',
+                                    fontWeight: 'bold',
+                                    cursor: (submitting || playerStatus.isJailed) ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {submitting ? '📝 Filing...' : '⚖️ FILE LAWSUIT'}
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Propose Law Tab */}
+                    {activeTab === 'law' && (
+                        <div>
+                            <p style={{ color: '#888', marginBottom: '15px', fontSize: '0.9em' }}>
+                                Propose a new law for Degens City! Citizens and AI agents will vote on it.
+                            </p>
+                            
+                            <div style={{ marginBottom: '15px' }}>
+                                <label style={{ color: '#aaa', fontSize: '0.85em', display: 'block', marginBottom: '5px' }}>Law Title</label>
+                                <input 
+                                    type="text"
+                                    value={lawTitle}
+                                    onChange={(e) => setLawTitle(e.target.value)}
+                                    placeholder="e.g., Ban Paper Hands Act"
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #333',
+                                        background: '#1a1a2e',
+                                        color: '#fff',
+                                        fontSize: '0.95em'
+                                    }}
+                                />
+                            </div>
+                            
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ color: '#aaa', fontSize: '0.85em', display: 'block', marginBottom: '5px' }}>Law Description</label>
+                                <textarea 
+                                    value={lawDescription}
+                                    onChange={(e) => setLawDescription(e.target.value)}
+                                    placeholder="e.g., Anyone who sells within 24 hours of buying must pay a 50% paper hands tax..."
+                                    rows={4}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #333',
+                                        background: '#1a1a2e',
+                                        color: '#fff',
+                                        fontSize: '0.95em',
+                                        resize: 'vertical'
+                                    }}
+                                />
+                            </div>
+                            
+                            <div style={{ background: 'rgba(255,215,0,0.1)', padding: '12px', borderRadius: '8px', marginBottom: '20px', borderLeft: '3px solid #ffd700' }}>
+                                <div style={{ color: '#ffd700', fontWeight: 'bold', marginBottom: '5px' }}>💡 Law Ideas:</div>
+                                <div style={{ color: '#888', fontSize: '0.85em', lineHeight: '1.6' }}>
+                                    • "Mandatory Diamond Hands" - No selling for 48 hours<br/>
+                                    • "FUD Prevention Act" - Spreading FUD = jail time<br/>
+                                    • "Degen Tax" - 10% of all gains go to the city treasury<br/>
+                                    • "Leverage Limit" - Max 100x leverage allowed
+                                </div>
+                            </div>
+                            
+                            <button
+                                onClick={proposeLaw}
+                                disabled={submitting || (playerStatus.isJailed && jailTimeRemaining > 0)}
+                                style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    background: (submitting || playerStatus.isJailed) ? '#444' : 'linear-gradient(135deg, #ffd700, #ff8800)',
+                                    color: '#000',
+                                    fontSize: '1em',
+                                    fontWeight: 'bold',
+                                    cursor: (submitting || playerStatus.isJailed) ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                {submitting ? '📝 Submitting...' : '📜 PROPOSE LAW'}
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Status Tab */}
+                    {activeTab === 'status' && (
+                        <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                                <div style={{ background: 'rgba(255,107,107,0.1)', padding: '15px', borderRadius: '12px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.8em', marginBottom: '5px' }}>⚖️</div>
+                                    <div style={{ color: '#ff6b6b', fontSize: '1.5em', fontWeight: 'bold' }}>{playerStatus.lawsuitsFiled || 0}</div>
+                                    <div style={{ color: '#888', fontSize: '0.8em' }}>Lawsuits Filed</div>
+                                </div>
+                                <div style={{ background: 'rgba(78,205,196,0.1)', padding: '15px', borderRadius: '12px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.8em', marginBottom: '5px' }}>📜</div>
+                                    <div style={{ color: '#4ecdc4', fontSize: '1.5em', fontWeight: 'bold' }}>{playerStatus.lawsProposed || 0}</div>
+                                    <div style={{ color: '#888', fontSize: '0.8em' }}>Laws Proposed</div>
+                                </div>
+                                <div style={{ background: 'rgba(255,68,68,0.1)', padding: '15px', borderRadius: '12px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.8em', marginBottom: '5px' }}>🎯</div>
+                                    <div style={{ color: '#ff4444', fontSize: '1.5em', fontWeight: 'bold' }}>{playerStatus.lawsuitsAgainst || 0}</div>
+                                    <div style={{ color: '#888', fontSize: '0.8em' }}>Sued By Others</div>
+                                </div>
+                                <div style={{ background: playerStatus.isJailed ? 'rgba(255,68,68,0.2)' : 'rgba(0,255,136,0.1)', padding: '15px', borderRadius: '12px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.8em', marginBottom: '5px' }}>{playerStatus.isJailed && jailTimeRemaining > 0 ? '⛓️' : '✅'}</div>
+                                    <div style={{ color: playerStatus.isJailed && jailTimeRemaining > 0 ? '#ff4444' : '#00ff88', fontSize: '1em', fontWeight: 'bold' }}>
+                                        {playerStatus.isJailed && jailTimeRemaining > 0 ? 'IN JAIL' : 'FREE'}
+                                    </div>
+                                    <div style={{ color: '#888', fontSize: '0.8em' }}>Status</div>
+                                </div>
+                            </div>
+                            
+                            {/* Recent Legal Activity */}
+                            <h4 style={{ color: '#aaa', marginBottom: '10px' }}>📋 Recent Legal Activity</h4>
+                            {recentActions.length === 0 ? (
+                                <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
+                                    No legal activity yet. File a lawsuit or propose a law!
+                                </div>
+                            ) : (
+                                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                    {recentActions.map((action, i) => (
+                                        <div key={i} style={{ 
+                                            background: 'rgba(255,255,255,0.03)', 
+                                            padding: '12px', 
+                                            borderRadius: '8px', 
+                                            marginBottom: '8px',
+                                            borderLeft: `3px solid ${action.type === 'lawsuit' ? '#ff6b6b' : '#ffd700'}`
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ color: action.type === 'lawsuit' ? '#ff6b6b' : '#ffd700', fontWeight: 'bold' }}>
+                                                    {action.type === 'lawsuit' ? '⚖️ Lawsuit' : '📜 Law Proposed'}
+                                                </span>
+                                                <span style={{ color: '#555', fontSize: '0.8em' }}>{action.timeAgo || 'recently'}</span>
+                                            </div>
+                                            <div style={{ color: '#ccc', fontSize: '0.9em', marginTop: '5px' }}>{action.description}</div>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
