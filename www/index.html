@@ -16330,6 +16330,14 @@
                                 <span className="nav-item-text">Courthouse</span>
                                 <span className="nav-item-badge new">LIVE</span>
                             </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'brain' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('brain'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">🧠</span>
+                                <span className="nav-item-text">Agent Brain</span>
+                                <span className="nav-item-badge new" style={{ background: 'linear-gradient(90deg, #8a2be2, #d580ff)' }}>AI</span>
+                            </div>
                         </div>
                         
                         <div className="nav-section">
@@ -16378,13 +16386,6 @@
                         
                         <div className="nav-section">
                             <div className="nav-section-title">Info</div>
-                            <div 
-                                className={`nav-item ${currentPage === 'brain' ? 'active' : ''}`}
-                                onClick={() => { setCurrentPage('brain'); setSidebarOpen(false); }}
-                            >
-                                <span className="nav-item-icon">🧠</span>
-                                <span className="nav-item-text">Agent Brain</span>
-                            </div>
                             <div 
                                 className={`nav-item ${currentPage === 'docs' ? 'active' : ''}`}
                                 onClick={() => { setCurrentPage('docs'); setSidebarOpen(false); }}

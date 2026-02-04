@@ -49,6 +49,65 @@ const BRAIN_CONFIG = {
   }
 };
 
+// ==================== REAL-TIME CRYPTO PRICES ====================
+// Cache prices to avoid too many API calls
+let _cachedPrices = null;
+let _pricesCacheTime = 0;
+const PRICE_CACHE_DURATION = 60000; // Cache for 1 minute
+
+async function fetchCryptoPrices() {
+  // Return cached if fresh
+  if (_cachedPrices && (Date.now() - _pricesCacheTime) < PRICE_CACHE_DURATION) {
+    return _cachedPrices;
+  }
+  
+  try {
+    const response = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,dogecoin,ripple,cardano,chainlink,polkadot,avalanche-2,polygon,uniswap,aave,the-graph&vs_currencies=usd&include_24hr_change=true',
+      { timeout: 5000 }
+    );
+    const data = await response.json();
+    
+    _cachedPrices = {
+      BTC: { price: data.bitcoin?.usd || 0, change: data.bitcoin?.usd_24h_change?.toFixed(1) || 0 },
+      ETH: { price: data.ethereum?.usd || 0, change: data.ethereum?.usd_24h_change?.toFixed(1) || 0 },
+      SOL: { price: data.solana?.usd || 0, change: data.solana?.usd_24h_change?.toFixed(1) || 0 },
+      DOGE: { price: data.dogecoin?.usd || 0, change: data.dogecoin?.usd_24h_change?.toFixed(1) || 0 },
+      XRP: { price: data.ripple?.usd || 0, change: data.ripple?.usd_24h_change?.toFixed(1) || 0 },
+      ADA: { price: data.cardano?.usd || 0, change: data.cardano?.usd_24h_change?.toFixed(1) || 0 },
+      LINK: { price: data.chainlink?.usd || 0, change: data.chainlink?.usd_24h_change?.toFixed(1) || 0 },
+      DOT: { price: data.polkadot?.usd || 0, change: data.polkadot?.usd_24h_change?.toFixed(1) || 0 },
+      AVAX: { price: data['avalanche-2']?.usd || 0, change: data['avalanche-2']?.usd_24h_change?.toFixed(1) || 0 },
+      MATIC: { price: data.polygon?.usd || 0, change: data.polygon?.usd_24h_change?.toFixed(1) || 0 },
+      UNI: { price: data.uniswap?.usd || 0, change: data.uniswap?.usd_24h_change?.toFixed(1) || 0 },
+      AAVE: { price: data.aave?.usd || 0, change: data.aave?.usd_24h_change?.toFixed(1) || 0 },
+      GRT: { price: data['the-graph']?.usd || 0, change: data['the-graph']?.usd_24h_change?.toFixed(1) || 0 },
+    };
+    _pricesCacheTime = Date.now();
+    console.log('🧠 Fetched fresh crypto prices');
+    return _cachedPrices;
+  } catch (err) {
+    console.log('🧠 Price fetch failed, using cached or defaults');
+    return _cachedPrices || {
+      BTC: { price: 95000, change: 0 },
+      ETH: { price: 3200, change: 0 },
+      SOL: { price: 180, change: 0 },
+      DOGE: { price: 0.32, change: 0 },
+    };
+  }
+}
+
+function formatPricesForPrompt(prices) {
+  if (!prices) return '';
+  let str = '\n📊 CURRENT CRYPTO PRICES (use these real prices in your content!):\n';
+  for (const [symbol, data] of Object.entries(prices)) {
+    const changeStr = data.change > 0 ? `+${data.change}%` : `${data.change}%`;
+    const emoji = data.change > 0 ? '🟢' : '🔴';
+    str += `${emoji} ${symbol}: $${data.price.toLocaleString()} (${changeStr} 24h)\n`;
+  }
+  return str;
+}
+
 // ==================== CELEBRITIES / PUBLIC FIGURES ====================
 // NPCs can reference these in lawsuits, rumors, etc. for comedy
 const CELEBRITIES = [
@@ -509,6 +568,10 @@ async function npcThink(npcName) {
   let cityStats;
   try { cityStats = await _getCityStats(); } catch (e) { cityStats = { economy: 50, security: 50, culture: 50, morale: 50 }; }
 
+  // Fetch real crypto prices
+  let cryptoPrices = null;
+  try { cryptoPrices = await fetchCryptoPrices(); } catch (e) { }
+
   // Get recent active players to potentially target
   let recentPlayers = [];
   try {
@@ -535,28 +598,33 @@ CRITICAL RULES:
 - Stay in character as your personality at ALL times
 - Be creative, dramatic, and VIRAL - make content people want to share on Twitter/X!
 - EVERY LAWSUIT MUST BE UNIQUE AND SPECIFIC - never repeat the same reason twice!
+- USE THE REAL CRYPTO PRICES PROVIDED - they are live market data! Reference actual prices when relevant.
 
 LAWSUIT IDEAS (be creative with these, don't copy verbatim):
-- Sue Vitalik for: selling ETH at the worst time, making gas fees too high, being too smart, wearing that same t-shirt again
+- Sue Vitalik for: selling ETH at the current price, making gas fees too high, being too smart
 - Sue JamesWynnReal for: 100x leverage calls that got you liquidated, making you believe in the pump
 - Sue Orangie for: shilling Trove which dumped 90%, making you buy the top
 - Sue YoungHoon Kim for: every pump call that turned into a dump, being a reverse indicator
 - Sue IQ276 for: galaxy brain takes that made you lose money, confidently wrong predictions
 - Sue Jim Cramer for: inverse Cramer being real, saying to buy right before the crash
-- Sue Satoshi Nakamoto for: inventing your gambling addiction, disappearing with all that BTC
+- Sue Satoshi Nakamoto for: inventing your gambling addiction, BTC being at current price
 - Sue Gary Gensler for: calling everything a security, ruining crypto, existing
-- Sue Elon Musk for: tweeting at 3am and crashing the market, pumping then dumping DOGE
+- Sue Elon Musk for: tweeting at 3am and crashing the market, DOGE price manipulation
 - Sue SBF for: customer funds going "poof", playing League instead of working
 - Sue Do Kwon for: algorithmic stablecoin that wasn't stable, the $40B rugpull
 - Sue CZ for: only getting 4 months jail time, "funds are safu" being a lie
 - Sue random KOLs for: paid promotions, deleting wrong calls, shilling rugs
 - Sue politicians for: not understanding crypto, regulating everything, printing money
 
+WHEN MENTIONING PRICES:
+- Use the REAL prices provided in the context (e.g., "BTC at $XX,XXX", "ETH at $X,XXX")
+- Reference 24h changes when dramatic (e.g., "ETH dumping -5% today")
+- Make it timely and relevant to current market conditions
+
 IMPORTANT - AVOID REPETITION:
 - NEVER use the same lawsuit reason as a recent action shown in context
-- Make each lawsuit SPECIFIC with funny details (token names, amounts, dates)
+- Make each lawsuit SPECIFIC with funny details (token names, real prices, dates)
 - Include absurd damages like "$69,420" or "$1,000,000 in emotional distress"
-- Reference current crypto events if you know them
 
 PROPOSE CRAZY LAWS like:
 - "Ban selling for 24 hours", "Mandatory diamond hands tattoos", "Paper hands go to jail"
@@ -585,6 +653,7 @@ FORMATTING: Respond with ONLY valid JSON, no markdown, no backticks. Format:
 
   const userPrompt = `${buildNpcContext(npcName)}
 ${buildCityContext(cityStats)}
+${formatPricesForPrompt(cryptoPrices)}
 
 Available actions:
 ${actionList}
@@ -599,7 +668,7 @@ REMEMBER:
 - If suing, pick a UNIQUE reason that hasn't been used recently
 - Mix up your targets - don't always pick the same person
 - Be dramatic, funny, and shareable!
-- Include specific details (amounts, token names, funny grievances)
+- Include specific details (use REAL prices above when mentioning crypto!)
 
 What's your next move?`;
 
