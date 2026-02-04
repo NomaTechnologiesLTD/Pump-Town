@@ -27,25 +27,25 @@
 
 const BRAIN_CONFIG = {
   // How often the brain ticks (called from city engine, not its own interval)
-  minTimeBetweenThoughts: 120000,   // 2 min minimum between any NPC thinking
-  minTimeBetweenSameNpc: 600000,    // 10 min before same NPC thinks again
-  maxConcurrentActions: 3,          // Max actions processing at once
+  minTimeBetweenThoughts: 30000,    // 30 sec minimum between any NPC thinking (was 2 min)
+  minTimeBetweenSameNpc: 180000,    // 3 min before same NPC thinks again (was 10 min)
+  maxConcurrentActions: 5,          // Max actions processing at once (was 3)
   claudeModel: 'claude-sonnet-4-5-20250929',  // Use Sonnet for speed + cost
   maxTokens: 500,
-  // Action cooldowns (ms)
+  // Action cooldowns (ms) - all reduced for more activity
   cooldowns: {
-    sue: 300000,          // 5 min between lawsuits
-    propose_law: 600000,  // 10 min between law proposals
-    challenge: 300000,    // 5 min between challenges
-    party: 600000,        // 10 min between parties
-    rumor: 180000,        // 3 min between rumors
-    accuse: 300000,       // 5 min between accusations
-    business: 600000,     // 10 min between businesses
-    protest: 600000,      // 10 min between protests
-    betray: 900000,       // 15 min between betrayals
-    run_for_mayor: 1800000, // 30 min
-    crime: 600000,        // 10 min between crimes
-    dm_player: 300000,    // 5 min between DMs to players
+    sue: 120000,          // 2 min between lawsuits (was 5 min)
+    propose_law: 300000,  // 5 min between law proposals (was 10 min)
+    challenge: 90000,     // 1.5 min between challenges (was 5 min)
+    party: 180000,        // 3 min between parties (was 10 min)
+    rumor: 60000,         // 1 min between rumors (was 3 min)
+    accuse: 90000,        // 1.5 min between accusations (was 5 min)
+    business: 300000,     // 5 min between businesses (was 10 min)
+    protest: 300000,      // 5 min between protests (was 10 min)
+    betray: 300000,       // 5 min between betrayals (was 15 min)
+    run_for_mayor: 600000, // 10 min (was 30 min)
+    crime: 180000,        // 3 min between crimes (was 10 min)
+    dm_player: 120000,    // 2 min between DMs to players (was 5 min)
   }
 };
 
@@ -1029,14 +1029,28 @@ async function executeAction(decision) {
 
   const result = await executor(decision);
 
-  // Log the action
+  // Log to autonomous_actions table
   try {
     await _pool.query(
       `INSERT INTO autonomous_actions (npc_name, action_type, target_name, target_type, description, ai_reasoning, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'completed')`,
       [decision.npc_name, decision.action, decision.target || null, decision.target_type || null, decision.description, decision.reasoning]
     );
-  } catch (e) { }
+  } catch (e) { console.error('Failed to log autonomous action:', e.message); }
+
+  // ALSO log to activity_feed so it shows in main action feed
+  const actionIcons = {
+    sue: '⚖️', propose_law: '📜', challenge: '⚔️', throw_party: '🎉',
+    start_rumor: '🗣️', accuse_crime: '🚨', open_business: '🏪',
+    file_complaint: '📝', form_alliance: '🤝', betray_ally: '🗡️',
+    run_for_mayor: '👑', commit_crime: '💀', dm_player: '💬'
+  };
+  try {
+    await _pool.query(
+      `INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1, $2, $3, $4)`,
+      [decision.npc_name, decision.action, decision.description || `${decision.npc_name} ${decision.action.replace('_', ' ')}s${decision.target ? ' ' + decision.target : ''}`, actionIcons[decision.action] || '🧠']
+    );
+  } catch (e) { console.error('Failed to log to activity feed:', e.message); }
 
   // Track for context
   recentAutonomousActions.unshift({
@@ -1057,11 +1071,24 @@ async function tick() {
   const now = Date.now();
 
   // Global cooldown
-  if (now - lastBrainTick < BRAIN_CONFIG.minTimeBetweenThoughts) return;
-  if (activeActions >= BRAIN_CONFIG.maxConcurrentActions) return;
-  if (!_anthropic || !_NPC_CITIZENS || _NPC_CITIZENS.length === 0) return;
+  if (now - lastBrainTick < BRAIN_CONFIG.minTimeBetweenThoughts) {
+    return; // Silent return for cooldown
+  }
+  if (activeActions >= BRAIN_CONFIG.maxConcurrentActions) {
+    console.log(`🧠 [BRAIN] Skipped: ${activeActions} actions already processing`);
+    return;
+  }
+  if (!_anthropic) {
+    console.log(`🧠 [BRAIN] Skipped: No Anthropic client (API key missing?)`);
+    return;
+  }
+  if (!_NPC_CITIZENS || _NPC_CITIZENS.length === 0) {
+    console.log(`🧠 [BRAIN] Skipped: No NPC citizens loaded`);
+    return;
+  }
 
   lastBrainTick = now;
+  console.log(`🧠 [BRAIN] Tick starting... ${_NPC_CITIZENS.length} NPCs available`);
 
   // Pick a random NPC to think
   // Preference for NPCs who haven't thought recently, and who are in interesting states
@@ -1070,7 +1097,12 @@ async function tick() {
     return (now - lastThought) > BRAIN_CONFIG.minTimeBetweenSameNpc;
   });
 
-  if (candidates.length === 0) return;
+  if (candidates.length === 0) {
+    console.log(`🧠 [BRAIN] Skipped: All NPCs on cooldown`);
+    return;
+  }
+  
+  console.log(`🧠 [BRAIN] ${candidates.length} NPCs available to think`);
 
   // Weight NPCs by "interestingness" - bankrupt, drunk, unhinged, have nemesis, etc.
   const weighted = candidates.map(npc => {
@@ -1129,13 +1161,30 @@ async function tick() {
 // ==================== API ENDPOINTS (for frontend) ====================
 
 function registerRoutes(app) {
-  // Get recent autonomous actions
+  // Get recent autonomous actions (with fallback to activity_feed for brain-related actions)
   app.get('/api/v1/brain/actions', async (req, res) => {
     try {
+      // First try autonomous_actions table
       const result = await _pool.query(
         `SELECT * FROM autonomous_actions ORDER BY created_at DESC LIMIT 50`
       );
-      res.json({ success: true, actions: result.rows });
+      
+      // If we have brain actions, return them
+      if (result.rows.length > 0) {
+        res.json({ success: true, actions: result.rows });
+        return;
+      }
+      
+      // Fallback: get relevant actions from activity_feed
+      const fallback = await _pool.query(
+        `SELECT id, player_name as npc_name, activity_type as action_type, description, icon, created_at,
+                NULL as target_name, NULL as target_type, NULL as ai_reasoning
+         FROM activity_feed 
+         WHERE activity_type IN ('sue', 'lawsuit_filed', 'propose_law', 'law_proposed', 'challenge', 'party', 'rumor', 'accuse', 'accusation', 'alliance', 'betrayal', 'crime', 'chat')
+         ORDER BY created_at DESC LIMIT 50`
+      );
+      
+      res.json({ success: true, actions: fallback.rows, source: 'activity_feed' });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
@@ -1166,22 +1215,50 @@ function registerRoutes(app) {
   });
 
   // Get brain status
-  app.get('/api/v1/brain/status', (req, res) => {
-    res.json({
-      success: true,
-      status: {
-        enabled: !!_anthropic,
-        totalNpcs: _NPC_CITIZENS ? _NPC_CITIZENS.length : 0,
-        recentActions: recentAutonomousActions.length,
-        activeActions,
-        lastTickAge: Date.now() - lastBrainTick,
-        npcThoughtTimes: Object.entries(npcLastThought).map(([npc, time]) => ({
-          npc,
-          lastThought: new Date(time).toISOString(),
-          ageMs: Date.now() - time
-        }))
-      }
-    });
+  app.get('/api/v1/brain/status', async (req, res) => {
+    try {
+      // Get actual counts from database
+      const [actionsCount, lawsuitsCount, lawsCount] = await Promise.all([
+        _pool.query('SELECT COUNT(*) as count FROM autonomous_actions'),
+        _pool.query('SELECT COUNT(*) as count FROM lawsuits'),
+        _pool.query('SELECT COUNT(*) as count FROM proposed_laws')
+      ]);
+      
+      res.json({
+        success: true,
+        status: {
+          enabled: !!_anthropic,
+          totalNpcs: _NPC_CITIZENS ? _NPC_CITIZENS.length : 0,
+          totalCitizens: _NPC_CITIZENS ? _NPC_CITIZENS.length : 0,
+          totalActions: parseInt(actionsCount.rows[0]?.count || 0),
+          totalLawsuits: parseInt(lawsuitsCount.rows[0]?.count || 0),
+          totalLaws: parseInt(lawsCount.rows[0]?.count || 0),
+          recentActions: recentAutonomousActions.length,
+          activeActions,
+          lastTickAge: Date.now() - lastBrainTick,
+          npcThoughtTimes: Object.entries(npcLastThought).map(([npc, time]) => ({
+            npc,
+            lastThought: new Date(time).toISOString(),
+            ageMs: Date.now() - time
+          }))
+        }
+      });
+    } catch (err) {
+      res.json({
+        success: true,
+        status: {
+          enabled: !!_anthropic,
+          totalNpcs: _NPC_CITIZENS ? _NPC_CITIZENS.length : 0,
+          totalCitizens: _NPC_CITIZENS ? _NPC_CITIZENS.length : 0,
+          totalActions: recentAutonomousActions.length,
+          totalLawsuits: 0,
+          totalLaws: 0,
+          recentActions: recentAutonomousActions.length,
+          activeActions,
+          lastTickAge: Date.now() - lastBrainTick
+        }
+      });
+    }
   });
 
   console.log('🧠 Agent Brain API routes registered');

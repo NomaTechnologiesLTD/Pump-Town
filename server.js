@@ -5396,7 +5396,7 @@ async function cityEventLoop() {
     
     // === AGENT BRAIN - AUTONOMOUS AI DECISIONS ===
     // NPCs use Claude to decide what to do next (sue, propose laws, challenge, etc.)
-    if (chance(35)) {
+    if (chance(60)) {
       try { await agentBrain.tick(); } catch(e) { console.error('Agent brain err:', e.message); }
     }
     
