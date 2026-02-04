@@ -36913,10 +36913,20 @@ Play at degenscity.com
                                                     <button
                                                         onClick={() => {
                                                             const actionEmoji = actionIcons[action.action_type] || '🧠';
-                                                            const targetText = action.target_name ? ` ${action.target_handle || action.target_name}` : '';
-                                                            const tweetText = action.action_type === 'sue' 
-                                                                ? `⚖️ LAWSUIT FILED in Degens City!\n\n${action.npc_name} is suing${targetText}!\n\n"${action.description || action.ai_reasoning || 'No reason needed'}"\n\n💭 "${action.ai_reasoning || 'Justice must be served'}"\n\nWatch the chaos: degenscity.com 🏙️`
-                                                                : `${actionEmoji} ${action.npc_name} just ${action.action_type?.replace('_', ' ')}${targetText} in Degens City!\n\n"${action.description || ''}"\n\n💭 "${action.ai_reasoning || ''}"\n\nAI NPCs making autonomous decisions 🤖\n\ndegenscity.com`;
+                                                            const targetText = action.target_name ? ` → ${action.target_handle || action.target_name}` : '';
+                                                            const desc = action.description || '';
+                                                            const reasoning = action.ai_reasoning || '';
+                                                            
+                                                            let tweetText = '';
+                                                            if (action.action_type === 'sue') {
+                                                                tweetText = `⚖️ LAWSUIT in Degens City!\n\n${action.npc_name} is suing ${action.target_name || 'someone'}${action.target_handle ? ` ${action.target_handle}` : ''}!\n\n${desc ? `📋 "${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}Watch the chaos at degenscity.com 🏙️`;
+                                                            } else if (action.action_type === 'propose_law') {
+                                                                tweetText = `🏛️ NEW LAW PROPOSED in Degens City!\n\n${action.npc_name} wants to pass:\n\n${desc ? `📜 "${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}Vote now at degenscity.com ⚖️`;
+                                                            } else {
+                                                                const actionName = (action.action_type || 'acted').replace(/_/g, ' ');
+                                                                tweetText = `${actionEmoji} ${action.npc_name} just ${actionName}${targetText} in Degens City!\n\n${desc ? `"${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}AI NPCs making autonomous decisions 🤖\n\ndegenscity.com`;
+                                                            }
+                                                            
                                                             const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
                                                             window.open(tweetUrl, '_blank', 'width=550,height=420');
                                                         }}
