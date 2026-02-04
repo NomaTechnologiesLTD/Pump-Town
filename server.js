@@ -2583,18 +2583,39 @@ app.get('/api/v1/brain/actions', async (req, res) => {
 // Get lawsuits from activity feed
 app.get('/api/v1/brain/lawsuits', async (req, res) => {
   try {
+    // First try the actual lawsuits table
     const result = await pool.query(`
-      SELECT id, player_name as plaintiff, description, icon, created_at
+      SELECT id, case_number, plaintiff_name, defendant_name, complaint as description, 
+             damages_requested, status, verdict, created_at
+      FROM lawsuits
+      ORDER BY created_at DESC 
+      LIMIT 30
+    `);
+    
+    if (result.rows.length > 0) {
+      res.json({ 
+        success: true, 
+        lawsuits: result.rows,
+        count: result.rows.length,
+        source: 'lawsuits_table'
+      });
+      return;
+    }
+    
+    // Fallback to activity feed
+    const fallback = await pool.query(`
+      SELECT id, player_name as plaintiff_name, description, icon, created_at
       FROM activity_feed 
-      WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')
+      WHERE activity_type IN ('lawsuit_filed', 'trial_verdict', 'sue')
       ORDER BY created_at DESC 
       LIMIT 30
     `);
     
     res.json({ 
       success: true, 
-      lawsuits: result.rows,
-      count: result.rows.length
+      lawsuits: fallback.rows,
+      count: fallback.rows.length,
+      source: 'activity_feed'
     });
   } catch (err) {
     console.error('Brain lawsuits error:', err);
@@ -2605,18 +2626,39 @@ app.get('/api/v1/brain/lawsuits', async (req, res) => {
 // Get proposed laws from activity feed
 app.get('/api/v1/brain/laws', async (req, res) => {
   try {
+    // First try the actual proposed_laws table
     const result = await pool.query(`
-      SELECT id, player_name as proposer, description, icon, created_at
+      SELECT id, proposer_name, law_title, law_description as description, 
+             votes_for, votes_against, status, created_at
+      FROM proposed_laws
+      ORDER BY created_at DESC 
+      LIMIT 20
+    `);
+    
+    if (result.rows.length > 0) {
+      res.json({ 
+        success: true, 
+        laws: result.rows,
+        count: result.rows.length,
+        source: 'proposed_laws_table'
+      });
+      return;
+    }
+    
+    // Fallback to activity feed
+    const fallback = await pool.query(`
+      SELECT id, player_name as proposer_name, description, icon, created_at
       FROM activity_feed 
-      WHERE activity_type = 'law_proposed'
+      WHERE activity_type IN ('law_proposed', 'propose_law')
       ORDER BY created_at DESC 
       LIMIT 20
     `);
     
     res.json({ 
       success: true, 
-      laws: result.rows,
-      count: result.rows.length
+      laws: fallback.rows,
+      count: fallback.rows.length,
+      source: 'activity_feed'
     });
   } catch (err) {
     console.error('Brain laws error:', err);
