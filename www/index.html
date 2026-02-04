@@ -36750,9 +36750,9 @@ Play at degenscity.com
             const fetchData = async () => {
                 try {
                     const [actionsRes, lawsuitsRes, lawsRes, statusRes] = await Promise.all([
-                        fetch(`${API_BASE}/api/v1/brain/actions`),
-                        fetch(`${API_BASE}/api/v1/brain/lawsuits`),
-                        fetch(`${API_BASE}/api/v1/brain/laws`),
+                        fetch(`${API_BASE}/api/v1/brain/actions?limit=100`),
+                        fetch(`${API_BASE}/api/v1/brain/lawsuits?limit=50`),
+                        fetch(`${API_BASE}/api/v1/brain/laws?limit=50`),
                         fetch(`${API_BASE}/api/v1/brain/status`)
                     ]);
                     
@@ -36881,8 +36881,8 @@ Play at degenscity.com
                                         <p>No autonomous actions yet. The NPCs are still warming up their neural networks...</p>
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        {actions.slice(0, 30).map((action, i) => {
+                                    <div style={{ maxHeight: '600px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '8px' }}>
+                                        {actions.map((action, i) => {
                                             const npcName = action.npc_name || action.npc || action.player_name || 'Unknown NPC';
                                             const actionType = action.action_type || action.action || 'acted';
                                             const targetName = action.target_name || '';
@@ -36973,7 +36973,7 @@ Play at degenscity.com
                                         <p>No lawsuits filed yet. Give the NPCs some time to get litigious...</p>
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ maxHeight: '600px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
                                         {lawsuits.map((suit, i) => (
                                             <div key={suit.id || i} style={{
                                                 background: suit.status === 'filed' 
@@ -37081,7 +37081,7 @@ Play at degenscity.com
                                         <p>No laws proposed yet. The NPCs haven't discovered politics yet...</p>
                                     </div>
                                 ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ maxHeight: '600px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
                                         {laws.map((law, i) => (
                                             <div key={law.id || i} style={{
                                                 background: 'rgba(255,255,255,0.02)',

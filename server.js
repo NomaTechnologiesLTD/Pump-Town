@@ -2610,6 +2610,7 @@ app.get('/api/v1/brain/actions', async (req, res) => {
 // Get lawsuits from activity feed
 app.get('/api/v1/brain/lawsuits', async (req, res) => {
   try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     let lawsuits = [];
     let source = 'none';
     
@@ -2621,8 +2622,8 @@ app.get('/api/v1/brain/lawsuits', async (req, res) => {
                twitter_share_text, target_handle, created_at, resolved_at
         FROM lawsuits 
         ORDER BY created_at DESC 
-        LIMIT 30
-      `);
+        LIMIT $1
+      `, [limit]);
       if (result.rows.length > 0) {
         lawsuits = result.rows;
         source = 'lawsuits_table';
@@ -2639,8 +2640,8 @@ app.get('/api/v1/brain/lawsuits', async (req, res) => {
           FROM activity_feed 
           WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')
           ORDER BY created_at DESC 
-          LIMIT 30
-        `);
+          LIMIT $1
+        `, [limit]);
         lawsuits = result.rows;
         source = 'activity_feed';
       } catch (e) {
@@ -2663,6 +2664,7 @@ app.get('/api/v1/brain/lawsuits', async (req, res) => {
 // Get proposed laws from activity feed
 app.get('/api/v1/brain/laws', async (req, res) => {
   try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
     let laws = [];
     let source = 'none';
     
@@ -2672,8 +2674,8 @@ app.get('/api/v1/brain/laws', async (req, res) => {
         SELECT id, proposer_name, law_title, law_description, votes_for, votes_against, status, created_at
         FROM proposed_laws 
         ORDER BY created_at DESC 
-        LIMIT 20
-      `);
+        LIMIT $1
+      `, [limit]);
       if (result.rows.length > 0) {
         laws = result.rows;
         source = 'proposed_laws_table';
@@ -2690,8 +2692,8 @@ app.get('/api/v1/brain/laws', async (req, res) => {
           FROM activity_feed 
           WHERE activity_type = 'law_proposed'
           ORDER BY created_at DESC 
-          LIMIT 20
-        `);
+          LIMIT $1
+        `, [limit]);
         laws = result.rows;
         source = 'activity_feed';
       } catch (e) {
