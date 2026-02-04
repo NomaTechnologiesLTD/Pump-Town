@@ -2641,13 +2641,32 @@ app.get('/api/v1/brain/status', async (req, res) => {
       SELECT 
         COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') as actions_last_hour,
         COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours') as actions_last_day,
-        COUNT(*) as total_actions,
-        COUNT(*) FILTER (WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')) as total_lawsuits,
-        COUNT(*) FILTER (WHERE activity_type = 'law_proposed') as total_laws
+        COUNT(*) as total_actions
       FROM activity_feed
     `);
     
     const stats = statsResult.rows[0];
+    
+    // Get ACTUAL lawsuits count from lawsuits table
+    let totalLawsuits = 0;
+    try {
+      const lawsuitsResult = await pool.query('SELECT COUNT(*) FROM lawsuits');
+      totalLawsuits = parseInt(lawsuitsResult.rows[0].count) || 0;
+    } catch (e) { console.log('Lawsuits table may not exist yet'); }
+    
+    // Get ACTUAL laws count from proposed_laws table
+    let totalLaws = 0;
+    try {
+      const lawsResult = await pool.query('SELECT COUNT(*) FROM proposed_laws');
+      totalLaws = parseInt(lawsResult.rows[0].count) || 0;
+    } catch (e) { console.log('Proposed_laws table may not exist yet'); }
+    
+    // Get autonomous actions count
+    let totalAutonomousActions = 0;
+    try {
+      const autonomousResult = await pool.query('SELECT COUNT(*) FROM autonomous_actions');
+      totalAutonomousActions = parseInt(autonomousResult.rows[0].count) || 0;
+    } catch (e) { console.log('Autonomous_actions table may not exist yet'); }
     
     // Get last action time
     const lastActionResult = await pool.query(
@@ -2658,18 +2677,20 @@ app.get('/api/v1/brain/status', async (req, res) => {
     res.json({ 
       success: true, 
       status: {
-        enabled: true,
+        enabled: !!anthropic,
+        anthropicConfigured: !!anthropic,
         totalNpcs: totalNpcs,
         activeUserAgents: activeUserAgents,
         totalCitizens: totalNpcs + activeUserAgents,
         actionsLastHour: parseInt(stats.actions_last_hour) || 0,
         actionsLastDay: parseInt(stats.actions_last_day) || 0,
         totalActions: parseInt(stats.total_actions) || 0,
-        totalLawsuits: parseInt(stats.total_lawsuits) || 0,
-        totalLaws: parseInt(stats.total_laws) || 0,
+        totalAutonomousActions: totalAutonomousActions,
+        totalLawsuits: totalLawsuits,
+        totalLaws: totalLaws,
         lastActionAt: lastActionAt,
         tickInterval: '45 seconds',
-        brainVersion: '3.0'
+        brainVersion: '3.1'
       }
     });
   } catch (err) {
@@ -5396,7 +5417,8 @@ async function cityEventLoop() {
     
     // === AGENT BRAIN - AUTONOMOUS AI DECISIONS ===
     // NPCs use Claude to decide what to do next (sue, propose laws, challenge, etc.)
-    if (chance(60)) {
+    if (chance(80)) {
+      console.log('🧠 Attempting agent brain tick...');
       try { await agentBrain.tick(); } catch(e) { console.error('Agent brain err:', e.message); }
     }
     
