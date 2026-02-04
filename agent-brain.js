@@ -193,24 +193,58 @@ const CELEBRITIES = [
   // ============ POLITICIANS & REGULATORS ============
   { name: 'Gary Gensler', handle: '@GaryGensler', domain: 'politics', traits: ['SEC tyrant', 'hates crypto', 'everything is a security'] },
   { name: 'Elizabeth Warren', handle: '@SenWarren', domain: 'politics', traits: ['anti-crypto army', 'hates DeFi', 'consumer protection'] },
-  { name: 'Donald Trump', handle: '@realDonaldTrump', domain: 'politics', traits: ['launched $TRUMP coin', 'crypto president'] },
-  { name: 'Joe Biden', handle: '@JoeBiden', domain: 'politics', traits: ['signed crypto EO', 'anti-mining', 'confused'] },
+  { name: 'Donald Trump', handle: '@realDonaldTrump', domain: 'politics', traits: ['launched $TRUMP memecoin', 'crypto president', 'pumped and dumped his own coin', 'sold steaks and NFTs', 'MAGA memecoin king', 'made crypto great again allegedly', 'golden sneakers', '$TRUMP to the moon then to zero'] },
+  { name: 'Joe Biden', handle: '@JoeBiden', domain: 'politics', traits: ['signed crypto EO', 'anti-mining', 'confused about blockchain', 'falls asleep during hearings'] },
   { name: 'Cynthia Lummis', handle: '@SenLummis', domain: 'politics', traits: ['Bitcoin senator', 'pro-crypto', 'Wyoming'] },
-  { name: 'Ted Cruz', handle: '@tedcruz', domain: 'politics', traits: ['Bitcoin mining supporter', 'Texas'] },
-  { name: 'Ron DeSantis', handle: '@GovRonDeSantis', domain: 'politics', traits: ['anti-CBDC', 'Florida', 'crypto friendly'] },
+  { name: 'Ted Cruz', handle: '@tedcruz', domain: 'politics', traits: ['Bitcoin mining supporter', 'Texas', 'Cancun vacation during crisis'] },
+  { name: 'Ron DeSantis', handle: '@GovRonDeSantis', domain: 'politics', traits: ['anti-CBDC', 'Florida', 'crypto friendly', 'Twitter Spaces disaster'] },
   { name: 'Maxine Waters', handle: '@RepMaxineWaters', domain: 'politics', traits: ['House Financial Services', 'crypto skeptic'] },
   { name: 'Brad Sherman', handle: '@BradSherman', domain: 'politics', traits: ['ban Bitcoin guy', 'crypto enemy'] },
   { name: 'Patrick McHenry', handle: '@PatrickMcHenry', domain: 'politics', traits: ['pro-crypto', 'stablecoin bills'] },
   { name: 'Hester Peirce', handle: '@HesterPeirce', domain: 'politics', traits: ['Crypto Mom', 'SEC dissenter'] },
-  { name: 'Janet Yellen', handle: '@SecYellen', domain: 'politics', traits: ['Treasury Secretary', 'crypto concern'] },
-  { name: 'Jerome Powell', handle: '@federalreserve', domain: 'politics', traits: ['Fed Chair', 'money printer', 'transitory'] },
-  { name: 'Vivek Ramaswamy', handle: '@VivekGRamaswamy', domain: 'politics', traits: ['pro-crypto', 'DOGE department'] },
-  { name: 'RFK Jr', handle: '@RobertKennedyJr', domain: 'politics', traits: ['Bitcoin supporter', 'anti-CBDC'] },
-  { name: 'Javier Milei', handle: '@JMilei', domain: 'politics', traits: ['Argentina president', 'libertarian', 'chainsaw'] },
-  { name: 'Nayib Bukele', handle: '@nyib', domain: 'politics', traits: ['El Salvador', 'Bitcoin legal tender', 'volcano mining'] },
+  { name: 'Janet Yellen', handle: '@SecYellen', domain: 'politics', traits: ['Treasury Secretary', 'crypto concern', 'printed trillions'] },
+  { name: 'Jerome Powell', handle: '@federalreserve', domain: 'politics', traits: ['Fed Chair', 'money printer goes brrr', 'transitory inflation', 'rate hike destroyer'] },
+  { name: 'Vivek Ramaswamy', handle: '@VivekGRamaswamy', domain: 'politics', traits: ['pro-crypto', 'DOGE department', 'talks faster than blockchain'] },
+  { name: 'RFK Jr', handle: '@RobertKennedyJr', domain: 'politics', traits: ['Bitcoin supporter', 'anti-CBDC', 'brain worm'] },
+  { name: 'Javier Milei', handle: '@JMilei', domain: 'politics', traits: ['Argentina president', 'libertarian', 'chainsaw economics', 'shilled $LIBRA rugpull'] },
+  { name: 'Nayib Bukele', handle: '@nyib', domain: 'politics', traits: ['El Salvador', 'Bitcoin legal tender', 'volcano mining', 'bought every BTC dip with tax money'] },
   { name: 'AOC', handle: '@AOC', domain: 'politics', traits: ['crypto skeptic', 'progressive', 'NFT gala dress'] },
-  { name: 'Nancy Pelosi', handle: '@SpeakerPelosi', domain: 'politics', traits: ['stock trades', 'insider trading memes'] },
-  { name: 'Elon Musk', handle: '@elonmusk', domain: 'tech', traits: ['tweets tank markets', 'doge father', 'owns Twitter'] },
+  { name: 'Nancy Pelosi', handle: '@SpeakerPelosi', domain: 'politics', traits: ['stock trades', 'insider trading queen', 'beats every hedge fund', 'perfectly timed options'] },
+  { name: 'Barack Obama', handle: '@BarackObama', domain: 'politics', traits: ['former president', 'probably has a secret wallet', 'hope and change but no Bitcoin'] },
+  { name: 'Hillary Clinton', handle: '@HillaryClinton', domain: 'politics', traits: ['deleted emails', 'probably deleted seed phrases too', 'anti-crypto'] },
+  { name: 'Kamala Harris', handle: '@KamalaHarris', domain: 'politics', traits: ['VP', 'unburdened by what has been', 'coconut tree', 'never mentioned crypto once'] },
+  { name: 'Bernie Sanders', handle: '@BernieSanders', domain: 'politics', traits: ['tax the rich', 'wants to tax crypto gains at 90%', 'still asking for donations'] },
+  { name: 'Matt Gaetz', handle: '@mattgaetz', domain: 'politics', traits: ['Florida man', 'Venmo receipts', 'crypto bro congressman'] },
+  { name: 'Marjorie Taylor Greene', handle: '@mtgreenee', domain: 'politics', traits: ['Jewish space lasers', 'bought crypto', 'chaos agent'] },
+  { name: 'George Santos', handle: '@Santos4Congress', domain: 'politics', traits: ['lied about everything', 'probably lied about his portfolio too', 'fraud king'] },
+  { name: 'Vladimir Putin', handle: '@KremlinRussia', domain: 'politics', traits: ['war criminal', 'banned crypto then unbanned it', 'ruble printer'] },
+  { name: 'Xi Jinping', handle: '@XHNews', domain: 'politics', traits: ['banned Bitcoin 47 times', 'China FUD machine', 'digital yuan shill'] },
+  { name: 'Kim Jong Un', handle: '@DPRK', domain: 'politics', traits: ['Lazarus Group hacker', 'stole billions in crypto', 'North Korea funds nukes with BTC'] },
+
+  // ============ EPSTEIN LIST / SCANDAL-LINKED ============
+  { name: 'Bill Clinton', handle: '@BillClinton', domain: 'epstein', traits: ['Epstein island frequent flyer', '26 flights on Lolita Express', 'did not have relations with that blockchain'] },
+  { name: 'Prince Andrew', handle: '@RoyalFamily', domain: 'epstein', traits: ['Epstein island visitor', 'cant sweat', 'pizza express alibi', 'settled out of court'] },
+  { name: 'Ghislaine Maxwell', handle: '@GhislaineMaxwell', domain: 'epstein', traits: ['Epstein recruiter', 'in prison', 'submarine license', 'Reddit power mod'] },
+  { name: 'Bill Gates', handle: '@BillGates', domain: 'epstein', traits: ['met with Epstein multiple times', 'divorce after Epstein links exposed', 'anti-Bitcoin', 'id rather short Bitcoin'] },
+  { name: 'Les Wexner', handle: '@LBrands', domain: 'epstein', traits: ['gave Epstein power of attorney', 'Victorias Secret connection', 'billionaire enabler'] },
+  { name: 'Alan Dershowitz', handle: '@AlanDersh', domain: 'epstein', traits: ['Epstein lawyer', 'kept his underwear on allegedly', 'legal gymnastics'] },
+  { name: 'Jean-Luc Brunel', handle: '@ModelScout', domain: 'epstein', traits: ['Epstein associate', 'model agency pipeline', 'died in prison'] },
+  { name: 'Leon Black', handle: '@Apollo', domain: 'epstein', traits: ['paid Epstein $158M', 'Apollo Global founder', 'financial advice from a predator'] },
+  { name: 'Jes Staley', handle: '@Barclays', domain: 'epstein', traits: ['Barclays CEO fired', 'Epstein close friend', '1200 emails with Epstein'] },
+  { name: 'Victoria Kennedy', handle: '@VicKennedy', domain: 'epstein', traits: ['Epstein flight logs', 'Kennedy dynasty'] },
+  { name: 'Kevin Spacey', handle: '@KevinSpacey', domain: 'epstein', traits: ['Epstein island visitor', 'House of Cards irl', 'cancelled'] },
+  { name: 'Chris Tucker', handle: '@ChrisTucker', domain: 'epstein', traits: ['Epstein flight logs', 'Rush Hour to Epstein Island'] },
+  { name: 'Naomi Campbell', handle: '@NaomiCampbell', domain: 'epstein', traits: ['Epstein flight logs', 'supermodel connections'] },
+  { name: 'Woody Allen', handle: '@WoodyAllen', domain: 'epstein', traits: ['Epstein dinner guest', 'problematic director', 'Manhattan connections'] },
+  { name: 'Jeffrey Epstein', handle: '@Epstein', domain: 'epstein', traits: ['didnt unalive himself', 'island owner', 'client list still sealed', 'cameras conveniently broke'] },
+
+  // ============ MORE POLITICIANS & WORLD LEADERS ============
+  { name: 'Boris Johnson', handle: '@BorisJohnson', domain: 'politics', traits: ['party during lockdown', 'Brexit chaos', 'bad hair'] },
+  { name: 'Justin Trudeau', handle: '@JustinTrudeau', domain: 'politics', traits: ['blackface', 'froze bank accounts', 'crypto crackdown on truckers'] },
+  { name: 'Recep Erdogan', handle: '@RTErdogan', domain: 'politics', traits: ['lira printer', 'inflation 80%', 'banned crypto exchanges'] },
+  { name: 'Olaf Scholz', handle: '@OlafScholz', domain: 'politics', traits: ['sold Bitcoins early', 'Germany dumped BTC at the bottom', 'worst trade in history'] },
+
+  { name: 'Elon Musk', handle: '@elonmusk', domain: 'tech', traits: ['tweets tank markets', 'doge father', 'owns Twitter', 'DOGE department'] },
   { name: 'Mark Zuckerberg', handle: '@fzuck', domain: 'tech', traits: ['meta', 'killed Diem', 'lizard person'] },
   { name: 'Jack Dorsey', handle: '@jack', domain: 'tech', traits: ['Bitcoin maxi', 'Block CEO', 'Web5'] },
   { name: 'Bill Gates', handle: '@BillGates', domain: 'tech', traits: ['anti-Bitcoin', 'would short if could'] },
@@ -745,6 +779,25 @@ LAWSUIT IDEAS (be creative with these, don't copy verbatim):
 - Sue Finn (@finnbags) for: BagsApp showing me my losses every day, portfolio tracker that tracks my pain, push notifications reminding me I'm poor, making my bags feel heavier, P&L display that ruined my day
 - Sue random KOLs for: paid promotions, deleting wrong calls, shilling rugs
 - Sue politicians for: not understanding crypto, regulating everything, printing money
+
+POLITICIAN LAWSUIT IDEAS (be savage and funny):
+- Sue Trump for: launching $TRUMP memecoin that dumped 80%, making crypto great again but only for insiders, golden sneakers cost more than your portfolio, selling NFTs of himself for $99
+- Sue Pelosi for: insider trading that beats every hedge fund, perfectly timed NVDA calls, knowing the future apparently, making Congress a stock picking competition
+- Sue Biden for: falling asleep during crypto regulation hearings, not knowing what a blockchain is, signing executive orders he cant explain
+- Sue Jerome Powell for: money printer goes brrr, transitory inflation that lasted 3 years, destroying savings with rate hikes, lying about pivot dates
+- Sue Elizabeth Warren for: building an anti-crypto army, wanting to ban everything fun, consumer protection from profits
+- Sue Milei for: shilling $LIBRA rugpull, chainsaw economics that cut everyones portfolio
+- Sue Bukele for: buying every BTC dip with El Salvador tax money, volcano mining that produced zero blocks
+- Sue Olaf Scholz for: Germany dumping 50K BTC at the literal bottom, worst national trade in history, paperhanding a countrys Bitcoin stack
+
+EPSTEIN FILE LAWSUIT IDEAS (dark humor, be bold):
+- Sue Bill Clinton for: 26 flights on the Lolita Express but zero flights to transparency, frequent flyer miles on the wrong airline
+- Sue Prince Andrew for: cant sweat but can visit islands, pizza express alibi that nobody believes, settling out of court with taxpayer money
+- Sue Ghislaine Maxwell for: recruiting for the worlds worst networking event, Reddit power modding, submarine license for escaping accountability
+- Sue Bill Gates for: meeting Epstein AFTER conviction, divorcing because Epstein links exposed, saying hed rather short Bitcoin than explain those dinners
+- Sue Jeffrey Epstein for: not unaliving himself, cameras breaking at the perfect time, client list still sealed, being the worst financial advisor in history
+- Sue Kevin Spacey for: House of Cards being a documentary about his life, island vacation with the wrong crowd
+- Sue Alan Dershowitz for: keeping his underwear on allegedly, legal gymnastics that would win Olympic gold
 
 WHEN MENTIONING PRICES:
 - Use the REAL prices provided in the context (e.g., "BTC at $XX,XXX", "ETH at $X,XXX")
