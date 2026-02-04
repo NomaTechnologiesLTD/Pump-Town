@@ -2559,79 +2559,155 @@ function getTimeAgoString(date) {
 app.get('/api/v1/brain/actions', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    let actions = [];
+    let source = 'none';
     
-    // First try to get from autonomous_actions table (the real brain actions)
-    let result = await pool.query(`
-      SELECT id, npc_name, action_type, target_name, target_type, description, chat_message as ai_reasoning, created_at
-      FROM autonomous_actions 
-      ORDER BY created_at DESC 
-      LIMIT $1
-    `, [limit]);
-    
-    // If no autonomous actions, fall back to activity_feed
-    if (result.rows.length === 0) {
-      result = await pool.query(`
-        SELECT id, player_name as npc_name, activity_type as action_type, description, icon, created_at
-        FROM activity_feed 
-        WHERE activity_type IN ('chat', 'accusation', 'rumor', 'challenge', 'lawsuit_filed', 'party', 'alliance_proposal', 'alliance_formed', 'betrayal', 'law_proposed', 'voted', 'level_up', 'jailed', 'crime_detected', 'arrest', 'trial_verdict')
+    // First try autonomous_actions table
+    try {
+      const result = await pool.query(`
+        SELECT id, npc_name, action_type, target_name, target_type, description, chat_message as ai_reasoning, created_at
+        FROM autonomous_actions 
         ORDER BY created_at DESC 
         LIMIT $1
       `, [limit]);
+      if (result.rows.length > 0) {
+        actions = result.rows;
+        source = 'autonomous_actions';
+      }
+    } catch (e) {
+      console.log('autonomous_actions table not available, falling back to activity_feed');
+    }
+    
+    // Fall back to activity_feed if no autonomous actions
+    if (actions.length === 0) {
+      try {
+        const result = await pool.query(`
+          SELECT id, player_name as npc_name, activity_type as action_type, description, icon, created_at
+          FROM activity_feed 
+          WHERE activity_type IN ('chat', 'accusation', 'rumor', 'challenge', 'lawsuit_filed', 'party', 'alliance_proposal', 'alliance_formed', 'betrayal', 'law_proposed', 'voted', 'level_up', 'jailed', 'crime_detected', 'arrest', 'trial_verdict')
+          ORDER BY created_at DESC 
+          LIMIT $1
+        `, [limit]);
+        actions = result.rows;
+        source = 'activity_feed';
+      } catch (e) {
+        console.log('activity_feed query failed:', e.message);
+      }
     }
     
     res.json({ 
       success: true, 
-      actions: result.rows,
-      count: result.rows.length,
-      source: result.rows.length > 0 && result.rows[0].ai_reasoning ? 'autonomous_actions' : 'activity_feed'
+      actions: actions,
+      count: actions.length,
+      source: source
     });
   } catch (err) {
     console.error('Brain actions error:', err);
-    res.status(500).json({ success: false, error: 'Failed to fetch actions' });
+    res.status(500).json({ success: false, error: 'Failed to fetch actions', actions: [] });
   }
 });
 
 // Get lawsuits from activity feed
 app.get('/api/v1/brain/lawsuits', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT id, player_name as plaintiff, description, icon, created_at
-      FROM activity_feed 
-      WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')
-      ORDER BY created_at DESC 
-      LIMIT 30
-    `);
+    let lawsuits = [];
+    let source = 'none';
+    
+    // First try lawsuits table
+    try {
+      const result = await pool.query(`
+        SELECT id, case_number, plaintiff_name, plaintiff_type, defendant_name as target_name, defendant_type as target_type, 
+               complaint, damages_requested, status, verdict, damages_awarded, judge_ruling, 
+               twitter_share_text, target_handle, created_at, resolved_at
+        FROM lawsuits 
+        ORDER BY created_at DESC 
+        LIMIT 30
+      `);
+      if (result.rows.length > 0) {
+        lawsuits = result.rows;
+        source = 'lawsuits_table';
+      }
+    } catch (e) {
+      console.log('lawsuits table not available, falling back');
+    }
+    
+    // Fall back to activity_feed
+    if (lawsuits.length === 0) {
+      try {
+        const result = await pool.query(`
+          SELECT id, player_name as plaintiff_name, description as complaint, icon, created_at
+          FROM activity_feed 
+          WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')
+          ORDER BY created_at DESC 
+          LIMIT 30
+        `);
+        lawsuits = result.rows;
+        source = 'activity_feed';
+      } catch (e) {
+        console.log('activity_feed lawsuits query failed');
+      }
+    }
     
     res.json({ 
       success: true, 
-      lawsuits: result.rows,
-      count: result.rows.length
+      lawsuits: lawsuits,
+      count: lawsuits.length,
+      source: source
     });
   } catch (err) {
     console.error('Brain lawsuits error:', err);
-    res.status(500).json({ success: false, error: 'Failed to fetch lawsuits' });
+    res.status(500).json({ success: false, error: 'Failed to fetch lawsuits', lawsuits: [] });
   }
 });
 
 // Get proposed laws from activity feed
 app.get('/api/v1/brain/laws', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT id, player_name as proposer, description, icon, created_at
-      FROM activity_feed 
-      WHERE activity_type = 'law_proposed'
-      ORDER BY created_at DESC 
-      LIMIT 20
-    `);
+    let laws = [];
+    let source = 'none';
+    
+    // First try proposed_laws table
+    try {
+      const result = await pool.query(`
+        SELECT id, proposer_name, law_title, law_description, votes_for, votes_against, status, created_at
+        FROM proposed_laws 
+        ORDER BY created_at DESC 
+        LIMIT 20
+      `);
+      if (result.rows.length > 0) {
+        laws = result.rows;
+        source = 'proposed_laws_table';
+      }
+    } catch (e) {
+      console.log('proposed_laws table not available, falling back');
+    }
+    
+    // Fall back to activity_feed
+    if (laws.length === 0) {
+      try {
+        const result = await pool.query(`
+          SELECT id, player_name as proposer_name, description as law_description, icon, created_at
+          FROM activity_feed 
+          WHERE activity_type = 'law_proposed'
+          ORDER BY created_at DESC 
+          LIMIT 20
+        `);
+        laws = result.rows;
+        source = 'activity_feed';
+      } catch (e) {
+        console.log('activity_feed laws query failed');
+      }
+    }
     
     res.json({ 
       success: true, 
-      laws: result.rows,
-      count: result.rows.length
+      laws: laws,
+      count: laws.length,
+      source: source
     });
   } catch (err) {
     console.error('Brain laws error:', err);
-    res.status(500).json({ success: false, error: 'Failed to fetch laws' });
+    res.status(500).json({ success: false, error: 'Failed to fetch laws', laws: [] });
   }
 });
 
@@ -2642,50 +2718,73 @@ app.get('/api/v1/brain/status', async (req, res) => {
     const totalNpcs = NPC_CITIZENS ? NPC_CITIZENS.length : 25;
     
     // Count active user agents
-    const userAgentsResult = await pool.query(
-      'SELECT COUNT(*) FROM user_agents WHERE is_active = TRUE AND is_banned = FALSE'
-    );
-    const activeUserAgents = parseInt(userAgentsResult.rows[0].count) || 0;
+    let activeUserAgents = 0;
+    try {
+      const userAgentsResult = await pool.query(
+        'SELECT COUNT(*) FROM user_agents WHERE is_active = TRUE AND is_banned = FALSE'
+      );
+      activeUserAgents = parseInt(userAgentsResult.rows[0].count) || 0;
+    } catch (e) { /* table might not exist */ }
     
     // Get action counts from activity feed
-    const statsResult = await pool.query(`
-      SELECT 
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') as actions_last_hour,
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours') as actions_last_day,
-        COUNT(*) as total_actions,
-        COUNT(*) FILTER (WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')) as total_lawsuits,
-        COUNT(*) FILTER (WHERE activity_type = 'law_proposed') as total_laws
-      FROM activity_feed
-    `);
+    let stats = { actions_last_hour: 0, actions_last_day: 0, total_actions: 0, total_lawsuits: 0, total_laws: 0 };
+    try {
+      const statsResult = await pool.query(`
+        SELECT 
+          COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') as actions_last_hour,
+          COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours') as actions_last_day,
+          COUNT(*) as total_actions,
+          COUNT(*) FILTER (WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')) as total_lawsuits,
+          COUNT(*) FILTER (WHERE activity_type = 'law_proposed') as total_laws
+        FROM activity_feed
+      `);
+      stats = statsResult.rows[0] || stats;
+    } catch (e) { /* table might not exist */ }
     
-    const stats = statsResult.rows[0];
+    // Try to get counts from actual tables too
+    let actualLawsuits = 0, actualLaws = 0, actualActions = 0;
+    try {
+      const lawsuitsCount = await pool.query('SELECT COUNT(*) FROM lawsuits');
+      actualLawsuits = parseInt(lawsuitsCount.rows[0].count) || 0;
+    } catch (e) { }
+    try {
+      const lawsCount = await pool.query('SELECT COUNT(*) FROM proposed_laws');
+      actualLaws = parseInt(lawsCount.rows[0].count) || 0;
+    } catch (e) { }
+    try {
+      const actionsCount = await pool.query('SELECT COUNT(*) FROM autonomous_actions');
+      actualActions = parseInt(actionsCount.rows[0].count) || 0;
+    } catch (e) { }
     
     // Get last action time
-    const lastActionResult = await pool.query(
-      'SELECT created_at FROM activity_feed ORDER BY created_at DESC LIMIT 1'
-    );
-    const lastActionAt = lastActionResult.rows[0]?.created_at || null;
+    let lastActionAt = null;
+    try {
+      const lastActionResult = await pool.query(
+        'SELECT created_at FROM activity_feed ORDER BY created_at DESC LIMIT 1'
+      );
+      lastActionAt = lastActionResult.rows[0]?.created_at || null;
+    } catch (e) { }
     
     res.json({ 
       success: true, 
-      status: {
-        enabled: true,
-        totalNpcs: totalNpcs,
-        activeUserAgents: activeUserAgents,
-        totalCitizens: totalNpcs + activeUserAgents,
-        actionsLastHour: parseInt(stats.actions_last_hour) || 0,
-        actionsLastDay: parseInt(stats.actions_last_day) || 0,
-        totalActions: parseInt(stats.total_actions) || 0,
-        totalLawsuits: parseInt(stats.total_lawsuits) || 0,
-        totalLaws: parseInt(stats.total_laws) || 0,
-        lastActionAt: lastActionAt,
-        tickInterval: '45 seconds',
-        brainVersion: '3.0'
-      }
+      enabled: true,
+      totalNpcs: totalNpcs,
+      activeUserAgents: activeUserAgents,
+      totalCitizens: totalNpcs + activeUserAgents,
+      actionsLastHour: parseInt(stats.actions_last_hour) || 0,
+      actionsLastDay: parseInt(stats.actions_last_day) || 0,
+      totalActions: Math.max(parseInt(stats.total_actions) || 0, actualActions),
+      totalLawsuits: Math.max(parseInt(stats.total_lawsuits) || 0, actualLawsuits),
+      totalLaws: Math.max(parseInt(stats.total_laws) || 0, actualLaws),
+      lastActionAt: lastActionAt,
+      tickInterval: '45 seconds',
+      brainVersion: '3.1',
+      activeActions: parseInt(stats.actions_last_hour) || 0,
+      recentActions: parseInt(stats.actions_last_day) || 0
     });
   } catch (err) {
     console.error('Brain status error:', err);
-    res.status(500).json({ success: false, error: 'Failed to fetch status' });
+    res.status(500).json({ success: false, error: 'Failed to fetch status', enabled: false });
   }
 });
 

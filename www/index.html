@@ -36764,7 +36764,8 @@ Play at degenscity.com
                     if (actionsData.success) setActions(actionsData.actions || []);
                     if (lawsuitsData.success) setLawsuits(lawsuitsData.lawsuits || []);
                     if (lawsData.success) setLaws(lawsData.laws || []);
-                    if (statusData.success) setBrainStatus(statusData.status || null);
+                    // Handle both old format (statusData.status) and new format (statusData directly)
+                    if (statusData.success) setBrainStatus(statusData.status || statusData);
                 } catch (err) {
                     console.error('Brain fetch error:', err);
                 }
