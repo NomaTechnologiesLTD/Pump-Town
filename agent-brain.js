@@ -446,7 +446,7 @@ function buildNpcContext(npcName) {
 
   if (life) {
     context += `\nYour current state:\n`;
-    context += `- Wealth: ${life.wealth} TOWN coins\n`;
+    context += `- Wealth: ${life.wealth} dollars\n`;
     context += `- Status: ${life.status}\n`;
     context += `- Location: ${life.location}\n`;
     context += `- Energy: ${life.energy}/100\n`;
@@ -676,7 +676,7 @@ async function executeSue(decision) {
     // News announcement
     await _pool.query(
       `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-      ['⚖️ COURT NEWS', `📋 NEW LAWSUIT FILED: ${decision.npc_name} is suing ${decision.target}${targetHandle ? ` (${targetHandle})` : ''} for $${damages.toLocaleString()} TOWN! Case #${caseNumber}. 🍿`]
+      ['⚖️ COURT NEWS', `📋 NEW LAWSUIT FILED: ${decision.npc_name} is suing ${decision.target}${targetHandle ? ` (${targetHandle})` : ''} for $${damages.toLocaleString()} USD! Case #${caseNumber}. 🍿`]
     );
 
     // Also add to activity feed with share data
@@ -744,7 +744,7 @@ async function resolveLawsuit(caseNumber) {
       system: `You are Judge McChain of Degens City. You're delivering a verdict on a lawsuit. Be dramatic, funny, and entertaining. This is a game - keep it absurd and fun. Respond with ONLY JSON, no markdown: {"verdict": "sustained|dismissed|settled", "ruling": "your dramatic ruling in 1-2 sentences", "damages_awarded": number_or_0, "chat_announcement": "dramatic court announcement with emojis, max 200 chars"}`,
       messages: [{
         role: 'user',
-        content: `Case ${caseNumber}: ${lawsuit.plaintiff_name} (${lawsuit.plaintiff_type}) is suing ${lawsuit.defendant_name} (${lawsuit.defendant_type}) for ${lawsuit.damages_requested} TOWN.\nComplaint: ${lawsuit.complaint}\nDeliver your verdict!`
+        content: `Case ${caseNumber}: ${lawsuit.plaintiff_name} (${lawsuit.plaintiff_type}) is suing ${lawsuit.defendant_name} (${lawsuit.defendant_type}) for ${lawsuit.damages_requested} USD.\nComplaint: ${lawsuit.complaint}\nDeliver your verdict!`
       }]
     });
 
@@ -845,7 +845,7 @@ async function executeChallenge(decision) {
               try {
                 await _pool.query(
                   `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-                  ['🏟️ DUEL ARENA', `🏆 DUEL RESULT: ${winner} DESTROYS ${loser}! ${winner} wins ${prize} TOWN! The crowd goes WILD! 🎉🔥`]
+                  ['🏟️ DUEL ARENA', `🏆 DUEL RESULT: ${winner} DESTROYS ${loser}! ${winner} wins ${prize} USD! The crowd goes WILD! 🎉🔥`]
                 );
                 await _pool.query(
                   `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,

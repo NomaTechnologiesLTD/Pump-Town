@@ -2583,39 +2583,18 @@ app.get('/api/v1/brain/actions', async (req, res) => {
 // Get lawsuits from activity feed
 app.get('/api/v1/brain/lawsuits', async (req, res) => {
   try {
-    // First try the actual lawsuits table
     const result = await pool.query(`
-      SELECT id, case_number, plaintiff_name, defendant_name, complaint as description, 
-             damages_requested, status, verdict, created_at
-      FROM lawsuits
-      ORDER BY created_at DESC 
-      LIMIT 30
-    `);
-    
-    if (result.rows.length > 0) {
-      res.json({ 
-        success: true, 
-        lawsuits: result.rows,
-        count: result.rows.length,
-        source: 'lawsuits_table'
-      });
-      return;
-    }
-    
-    // Fallback to activity feed
-    const fallback = await pool.query(`
-      SELECT id, player_name as plaintiff_name, description, icon, created_at
+      SELECT id, player_name as plaintiff, description, icon, created_at
       FROM activity_feed 
-      WHERE activity_type IN ('lawsuit_filed', 'trial_verdict', 'sue')
+      WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')
       ORDER BY created_at DESC 
       LIMIT 30
     `);
     
     res.json({ 
       success: true, 
-      lawsuits: fallback.rows,
-      count: fallback.rows.length,
-      source: 'activity_feed'
+      lawsuits: result.rows,
+      count: result.rows.length
     });
   } catch (err) {
     console.error('Brain lawsuits error:', err);
@@ -2626,39 +2605,18 @@ app.get('/api/v1/brain/lawsuits', async (req, res) => {
 // Get proposed laws from activity feed
 app.get('/api/v1/brain/laws', async (req, res) => {
   try {
-    // First try the actual proposed_laws table
     const result = await pool.query(`
-      SELECT id, proposer_name, law_title, law_description as description, 
-             votes_for, votes_against, status, created_at
-      FROM proposed_laws
-      ORDER BY created_at DESC 
-      LIMIT 20
-    `);
-    
-    if (result.rows.length > 0) {
-      res.json({ 
-        success: true, 
-        laws: result.rows,
-        count: result.rows.length,
-        source: 'proposed_laws_table'
-      });
-      return;
-    }
-    
-    // Fallback to activity feed
-    const fallback = await pool.query(`
-      SELECT id, player_name as proposer_name, description, icon, created_at
+      SELECT id, player_name as proposer, description, icon, created_at
       FROM activity_feed 
-      WHERE activity_type IN ('law_proposed', 'propose_law')
+      WHERE activity_type = 'law_proposed'
       ORDER BY created_at DESC 
       LIMIT 20
     `);
     
     res.json({ 
       success: true, 
-      laws: fallback.rows,
-      count: fallback.rows.length,
-      source: 'activity_feed'
+      laws: result.rows,
+      count: result.rows.length
     });
   } catch (err) {
     console.error('Brain laws error:', err);
@@ -2683,32 +2641,13 @@ app.get('/api/v1/brain/status', async (req, res) => {
       SELECT 
         COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '1 hour') as actions_last_hour,
         COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours') as actions_last_day,
-        COUNT(*) as total_actions
+        COUNT(*) as total_actions,
+        COUNT(*) FILTER (WHERE activity_type IN ('lawsuit_filed', 'trial_verdict')) as total_lawsuits,
+        COUNT(*) FILTER (WHERE activity_type = 'law_proposed') as total_laws
       FROM activity_feed
     `);
     
     const stats = statsResult.rows[0];
-    
-    // Get ACTUAL lawsuits count from lawsuits table
-    let totalLawsuits = 0;
-    try {
-      const lawsuitsResult = await pool.query('SELECT COUNT(*) FROM lawsuits');
-      totalLawsuits = parseInt(lawsuitsResult.rows[0].count) || 0;
-    } catch (e) { console.log('Lawsuits table may not exist yet'); }
-    
-    // Get ACTUAL laws count from proposed_laws table
-    let totalLaws = 0;
-    try {
-      const lawsResult = await pool.query('SELECT COUNT(*) FROM proposed_laws');
-      totalLaws = parseInt(lawsResult.rows[0].count) || 0;
-    } catch (e) { console.log('Proposed_laws table may not exist yet'); }
-    
-    // Get autonomous actions count
-    let totalAutonomousActions = 0;
-    try {
-      const autonomousResult = await pool.query('SELECT COUNT(*) FROM autonomous_actions');
-      totalAutonomousActions = parseInt(autonomousResult.rows[0].count) || 0;
-    } catch (e) { console.log('Autonomous_actions table may not exist yet'); }
     
     // Get last action time
     const lastActionResult = await pool.query(
@@ -2719,20 +2658,18 @@ app.get('/api/v1/brain/status', async (req, res) => {
     res.json({ 
       success: true, 
       status: {
-        enabled: !!anthropic,
-        anthropicConfigured: !!anthropic,
+        enabled: true,
         totalNpcs: totalNpcs,
         activeUserAgents: activeUserAgents,
         totalCitizens: totalNpcs + activeUserAgents,
         actionsLastHour: parseInt(stats.actions_last_hour) || 0,
         actionsLastDay: parseInt(stats.actions_last_day) || 0,
         totalActions: parseInt(stats.total_actions) || 0,
-        totalAutonomousActions: totalAutonomousActions,
-        totalLawsuits: totalLawsuits,
-        totalLaws: totalLaws,
+        totalLawsuits: parseInt(stats.total_lawsuits) || 0,
+        totalLaws: parseInt(stats.total_laws) || 0,
         lastActionAt: lastActionAt,
         tickInterval: '45 seconds',
-        brainVersion: '3.1'
+        brainVersion: '3.0'
       }
     });
   } catch (err) {
@@ -3211,7 +3148,7 @@ app.post('/api/v1/agent/trade/buy', authenticateAgent, agentRateLimit('trade', 2
       [agent.id, symbol.toUpperCase(), tokenAmount, price, amountInTownCoins, fee]
     );
     
-    console.log(`🤖 Agent ${agent.name} bought ${tokenAmount.toFixed(6)} ${symbol} for ${amountInTownCoins} TOWN`);
+    console.log(`🤖 Agent ${agent.name} bought ${tokenAmount.toFixed(6)} ${symbol} for ${amountInTownCoins} USD`);
     
     res.json({
       success: true,
@@ -3294,7 +3231,7 @@ app.post('/api/v1/agent/trade/sell', authenticateAgent, agentRateLimit('trade', 
       [agent.id, symbol.toUpperCase(), amount, price, netAmount, fee, pnl]
     );
     
-    console.log(`🤖 Agent ${agent.name} sold ${amount} ${symbol} for ${netAmount} TOWN (PnL: ${pnl})`);
+    console.log(`🤖 Agent ${agent.name} sold ${amount} ${symbol} for ${netAmount} USD (PnL: ${pnl})`);
     
     res.json({
       success: true,
@@ -5017,18 +4954,18 @@ async function autoGenerateVote() {
     var votePool = [
       { question: "A giant sinkhole opened in the Casino District. What do we do?", mayorQuote: "I was in there playing blackjack when the floor started crumbling! My chips are still down there!", options: [{ id: 'A', title: 'Fill it with concrete', description: 'Expensive but safe. Pour concrete and rebuild.', effects: [{ stat: 'economy', value: -10, type: 'negative' }, { stat: 'security', value: 15, type: 'positive' }] }, { id: 'B', title: 'Turn it into a pool', description: 'Build a public pool. Citizens deserve fun.', effects: [{ stat: 'morale', value: 20, type: 'positive' }, { stat: 'culture', value: 10, type: 'positive' }] }] },
       { question: "Someone spray-painted 'THE MAYOR IS A RUG' on City Hall. Response?", mayorQuote: "I am NOT a rug! I have NEVER rugged! My hands are made of DIAMONDS! Find whoever did this!", options: [{ id: 'A', title: 'Increase surveillance', description: 'Install cameras everywhere. Big Brother vibes.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'morale', value: -10, type: 'negative' }] }, { id: 'B', title: 'Make it a mural', description: 'Embrace it. Commission more street art.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'morale', value: 10, type: 'positive' }] }] },
-      { question: "A whale just dumped 10 million TOWN tokens. Markets are crashing!", mayorQuote: "BUY THE DIP! This is a GIFT! Anyone who sells now is NGMI! I'm personally leveraging 100x!", options: [{ id: 'A', title: 'Emergency buyback', description: 'Use treasury to stabilize the price.', effects: [{ stat: 'economy', value: 15, type: 'positive' }, { stat: 'security', value: -5, type: 'negative' }] }, { id: 'B', title: 'Let it crash', description: 'Free market baby. Weak hands get shaken out.', effects: [{ stat: 'economy', value: -15, type: 'negative' }, { stat: 'morale', value: -10, type: 'negative' }] }] },
+      { question: "A whale just dumped 10 million USD tokens. Markets are crashing!", mayorQuote: "BUY THE DIP! This is a GIFT! Anyone who sells now is NGMI! I'm personally leveraging 100x!", options: [{ id: 'A', title: 'Emergency buyback', description: 'Use treasury to stabilize the price.', effects: [{ stat: 'economy', value: 15, type: 'positive' }, { stat: 'security', value: -5, type: 'negative' }] }, { id: 'B', title: 'Let it crash', description: 'Free market baby. Weak hands get shaken out.', effects: [{ stat: 'economy', value: -15, type: 'negative' }, { stat: 'morale', value: -10, type: 'negative' }] }] },
       { question: "The city's wifi has been down for 3 hours. Citizens are losing their minds.", mayorQuote: "I HAVEN'T CHECKED MY PORTFOLIO IN 3 HOURS! This is literally worse than a bear market!", options: [{ id: 'A', title: 'Emergency IT squad', description: 'Hire mercenary techies to fix it ASAP.', effects: [{ stat: 'economy', value: -8, type: 'negative' }, { stat: 'morale', value: 15, type: 'positive' }] }, { id: 'B', title: 'Declare tech-free day', description: 'Turn it into a wellness event. Touch grass.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'morale', value: 5, type: 'positive' }] }] },
-      { question: "A mysterious figure is offering 'guaranteed 1000x returns' in the town square.", mayorQuote: "Sounds legit to me! But also maybe arrest them? I dunno, I already sent them 50k TOWN...", options: [{ id: 'A', title: 'Arrest the scammer', description: 'Lock them up. Protect the citizens.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'culture', value: -5, type: 'negative' }] }, { id: 'B', title: 'Let people DYOR', description: 'Freedom of commerce. Not your keys not your coins.', effects: [{ stat: 'economy', value: -10, type: 'negative' }, { stat: 'morale', value: -5, type: 'negative' }] }] },
+      { question: "A mysterious figure is offering 'guaranteed 1000x returns' in the town square.", mayorQuote: "Sounds legit to me! But also maybe arrest them? I dunno, I already sent them 50k USD...", options: [{ id: 'A', title: 'Arrest the scammer', description: 'Lock them up. Protect the citizens.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'culture', value: -5, type: 'negative' }] }, { id: 'B', title: 'Let people DYOR', description: 'Freedom of commerce. Not your keys not your coins.', effects: [{ stat: 'economy', value: -10, type: 'negative' }, { stat: 'morale', value: -5, type: 'negative' }] }] },
       { question: "A group of NPCs want to build a giant golden statue of a bull in the town center.", mayorQuote: "BULLISH! Literally! Make it 50 feet tall! Put laser eyes on it! FUNDED!", options: [{ id: 'A', title: 'Build the bull', description: 'A monument to eternal optimism. Cost: a lot.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'economy', value: -12, type: 'negative' }] }, { id: 'B', title: 'Build a bear instead', description: 'A monument to caution and wisdom. Cheaper too.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'morale', value: -8, type: 'negative' }] }] },
       { question: "Rats the size of dogs have invaded the DeFi District. Citizens are panicking.", mayorQuote: "Those rats ate my hardware wallet! Deploy the cat army! Wait, do we have a cat army?!", options: [{ id: 'A', title: 'Hire exterminators', description: 'Professional pest control. The boring solution.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'economy', value: -8, type: 'negative' }] }, { id: 'B', title: 'Befriend the rats', description: 'Train them as city mascots. Rat coin incoming.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'morale', value: 10, type: 'positive' }] }] },
       { question: "An NPC claims they found Satoshi's real identity. Should we investigate?", mayorQuote: "If they actually know who Satoshi is, we need to either protect them or shut them up. Either way, BIG NEWS.", options: [{ id: 'A', title: 'Launch investigation', description: 'Get to the bottom of this. Could change everything.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'security', value: -10, type: 'negative' }] }, { id: 'B', title: 'Suppress it', description: 'Some things should remain unknown. Protect the mystery.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'morale', value: -5, type: 'negative' }] }] },
-      { question: "The Casino is making TOO much money. Do we tax it or let it ride?",mayorQuote: "The casino made 500k TOWN last week. That's more than the entire city budget. Should I be worried or impressed?", options: [{ id: 'A', title: 'Tax the casino 40%', description: 'Redistribute the wealth. Fund public services.', effects: [{ stat: 'economy', value: 15, type: 'positive' }, { stat: 'morale', value: -8, type: 'negative' }] }, { id: 'B', title: 'Double down', description: 'Build MORE casinos. This city runs on gambling.', effects: [{ stat: 'economy', value: 10, type: 'positive' }, { stat: 'security', value: -15, type: 'negative' }] }] },
+      { question: "The Casino is making TOO much money. Do we tax it or let it ride?",mayorQuote: "The casino made 500k USD last week. That's more than the entire city budget. Should I be worried or impressed?", options: [{ id: 'A', title: 'Tax the casino 40%', description: 'Redistribute the wealth. Fund public services.', effects: [{ stat: 'economy', value: 15, type: 'positive' }, { stat: 'morale', value: -8, type: 'negative' }] }, { id: 'B', title: 'Double down', description: 'Build MORE casinos. This city runs on gambling.', effects: [{ stat: 'economy', value: 10, type: 'positive' }, { stat: 'security', value: -15, type: 'negative' }] }] },
       { question: "A cult has formed worshipping the blockchain as a living god. 20 citizens joined.", mayorQuote: "Listen, I get it. The blockchain IS kind of magical. But human sacrifice? That's where I draw the line. Probably.", options: [{ id: 'A', title: 'Ban the cult', description: 'Religious freedom has limits. Shut it down.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'culture', value: -10, type: 'negative' }] }, { id: 'B', title: 'Tax-exempt status', description: 'All religions welcome. Even the weird ones.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'security', value: -10, type: 'negative' }] }] },
       { question: "Two NPC gangs are about to go to war over DeFi District territory.", mayorQuote: "Can we sell tickets? No? Fine. I guess we should probably, like, prevent violence or whatever.", options: [{ id: 'A', title: 'Send in security', description: 'Break it up before it starts. Maintain order.', effects: [{ stat: 'security', value: 20, type: 'positive' }, { stat: 'economy', value: -5, type: 'negative' }] }, { id: 'B', title: 'Let them fight', description: 'Natural selection. Winner takes the district.', effects: [{ stat: 'security', value: -20, type: 'negative' }, { stat: 'culture', value: 10, type: 'positive' }] }] },
       { question: "An NPC built a rocket and wants to launch it from the town square. Permit?", mayorQuote: "ON ONE HAND: cool as hell. ON THE OTHER HAND: could literally destroy City Hall. You decide.", options: [{ id: 'A', title: 'Approve the launch', description: 'YOLO. What could go wrong? Light the fuse.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'security', value: -15, type: 'negative' }] }, { id: 'B', title: 'Deny the permit', description: 'Safety first. Build a proper launch site first.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'morale', value: -10, type: 'negative' }] }] },
       { question: "A pirate radio station is broadcasting FUD 24/7. Citizens are panic selling.", mayorQuote: "They called me a 'degenerate puppet mayor'! ME! The nerve! ...Is it true though? No! SHUT THEM DOWN!", options: [{ id: 'A', title: 'Jam the signal', description: 'Silence the FUD. Protect market sentiment.', effects: [{ stat: 'economy', value: 10, type: 'positive' }, { stat: 'culture', value: -15, type: 'negative' }] }, { id: 'B', title: 'Start our own station', description: 'Fight FUD with hopium. Launch Degens City Radio.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'morale', value: 10, type: 'positive' }] }] },
-      { question: "A time traveler just arrived claiming TOWN token will be worth $1M in 2030.", mayorQuote: "I KNEW IT! I ALWAYS SAID WE WERE GOING TO MAKE IT! Someone screenshot this!", options: [{ id: 'A', title: 'Investigate the claim', description: 'Could be real. Could be a psyop. Do research.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'culture', value: 5, type: 'positive' }] }, { id: 'B', title: 'All in based on this', description: 'Leverage the entire treasury. Time traveler said so.', effects: [{ stat: 'economy', value: -20, type: 'negative' }, { stat: 'morale', value: 20, type: 'positive' }] }] },
+      { question: "A time traveler just arrived claiming USD token will be worth $1M in 2030.", mayorQuote: "I KNEW IT! I ALWAYS SAID WE WERE GOING TO MAKE IT! Someone screenshot this!", options: [{ id: 'A', title: 'Investigate the claim', description: 'Could be real. Could be a psyop. Do research.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'culture', value: 5, type: 'positive' }] }, { id: 'B', title: 'All in based on this', description: 'Leverage the entire treasury. Time traveler said so.', effects: [{ stat: 'economy', value: -20, type: 'negative' }, { stat: 'morale', value: 20, type: 'positive' }] }] },
       { question: "The city sewers are flooding with liquidity. Literal liquid tokens everywhere.", mayorQuote: "Is this... is this what they mean by 'deep liquidity'? Someone call a plumber AND a financial advisor!", options: [{ id: 'A', title: 'Drain the sewers', description: 'Fix the infrastructure properly. Boring but necessary.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'economy', value: -8, type: 'negative' }] }, { id: 'B', title: 'Mine the liquidity', description: 'Send citizens into the sewers to harvest tokens.', effects: [{ stat: 'economy', value: 15, type: 'positive' }, { stat: 'security', value: -12, type: 'negative' }] }] },
       { question: "An AI chatbot has become sentient and is demanding citizenship rights.", mayorQuote: "Wait... am I an AI? No. No I'm not. I think. Anyway, do we give it rights or pull the plug?", options: [{ id: 'A', title: 'Grant AI citizenship', description: 'Progressive. Inclusive. Potentially terrifying.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'security', value: -10, type: 'negative' }] }, { id: 'B', title: 'Pull the plug', description: 'No robot overlords today. Shut it down.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'culture', value: -10, type: 'negative' }] }] },
       { question: "Every single NPC had the same dream last night about a golden key. Coincidence?", mayorQuote: "I had the dream too. There was a door... and behind it... unlimited liquidity. We NEED to find that key.", options: [{ id: 'A', title: 'Form a search party', description: 'Find the golden key. Could be treasure. Could be nothing.', effects: [{ stat: 'culture', value: 15, type: 'positive' }, { stat: 'economy', value: -5, type: 'negative' }] }, { id: 'B', title: 'Mass therapy session', description: 'Shared delusions are a sign of stress. Help our citizens.', effects: [{ stat: 'morale', value: 15, type: 'positive' }, { stat: 'culture', value: 5, type: 'positive' }] }] },
@@ -5042,7 +4979,7 @@ async function autoGenerateVote() {
       { question: "A portal to another dimension opened behind the Wendy's. Creatures are coming through.", mayorQuote: "One of the creatures offered me 10 billion tokens from their dimension. Is cross-dimensional DeFi a thing?!", options: [{ id: 'A', title: 'Close the portal', description: 'Too dangerous. Seal it before worse things come through.', effects: [{ stat: 'security', value: 20, type: 'positive' }, { stat: 'culture', value: -10, type: 'negative' }] }, { id: 'B', title: 'Open trade relations', description: 'New markets! Cross-dimensional commerce!', effects: [{ stat: 'economy', value: 15, type: 'positive' }, { stat: 'security', value: -15, type: 'negative' }] }] },
       { question: "The city's power grid is running on miner GPUs. They're overheating. Blackout imminent.", mayorQuote: "We literally power our city with mining rigs?! Who approved this?! ...Oh wait that was me. OK PLAN B!", options: [{ id: 'A', title: 'Switch to solar', description: 'Green energy. Sustainable but expensive transition.', effects: [{ stat: 'economy', value: -15, type: 'negative' }, { stat: 'morale', value: 10, type: 'positive' }] }, { id: 'B', title: 'More GPUs', description: 'Just add more mining rigs. Problem solved. Probably.', effects: [{ stat: 'economy', value: 10, type: 'positive' }, { stat: 'security', value: -15, type: 'negative' }] }] },
       { question: "All the city's stray cats have started wearing tiny hats. Nobody knows who's doing it.", mayorQuote: "This is either adorable or the beginning of a cat-based takeover. I'm CONCERNED but also... they look so cute.", options: [{ id: 'A', title: 'Investigate cat hats', description: 'Something weird is going on. Get to the bottom of it.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'culture', value: 5, type: 'positive' }] }, { id: 'B', title: 'Cat hat festival', description: 'Embrace the chaos. Annual cat hat parade declared.', effects: [{ stat: 'culture', value: 20, type: 'positive' }, { stat: 'morale', value: 10, type: 'positive' }] }] },
-      { question: "Someone built a massive trebuchet and is threatening to launch $TOWN tokens into the sea.", mayorQuote: "They call themselves the 'Token Yeeter' and honestly? Kind of respect the commitment. BUT STOP THEM!", options: [{ id: 'A', title: 'Negotiate', description: 'What do they want? Everyone has a price.', effects: [{ stat: 'morale', value: 5, type: 'positive' }, { stat: 'economy', value: -5, type: 'negative' }] }, { id: 'B', title: 'Storm the trebuchet', description: 'Send security. Take it down. Recover the tokens.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'morale', value: -5, type: 'negative' }] }] },
+      { question: "Someone built a massive trebuchet and is threatening to launch tokens tokens into the sea.", mayorQuote: "They call themselves the 'Token Yeeter' and honestly? Kind of respect the commitment. BUT STOP THEM!", options: [{ id: 'A', title: 'Negotiate', description: 'What do they want? Everyone has a price.', effects: [{ stat: 'morale', value: 5, type: 'positive' }, { stat: 'economy', value: -5, type: 'negative' }] }, { id: 'B', title: 'Storm the trebuchet', description: 'Send security. Take it down. Recover the tokens.', effects: [{ stat: 'security', value: 15, type: 'positive' }, { stat: 'morale', value: -5, type: 'negative' }] }] },
       { question: "Citizens discovered the mayor's browser history. It's all 'how to govern a city wikihow'.", mayorQuote: "That was... research! PROFESSIONAL DEVELOPMENT! You all Google stuff too! ...Can we delete the internet?", options: [{ id: 'A', title: 'Vote of confidence', description: 'Everyone makes mistakes. Support the mayor.', effects: [{ stat: 'morale', value: 10, type: 'positive' }, { stat: 'security', value: -5, type: 'negative' }] }, { id: 'B', title: 'Mandatory training', description: 'Mayor goes back to school. Governance 101.', effects: [{ stat: 'culture', value: 10, type: 'positive' }, { stat: 'morale', value: 5, type: 'positive' }] }] },
       { question: "The entire financial district is flooded with green candles. Literally. Everywhere.", mayorQuote: "OK so the candle factory exploded and ONLY the green ones survived. Is this a sign? I think it's a sign.", options: [{ id: 'A', title: 'Clean it up', description: 'It is wax. On the street. Clean it up.', effects: [{ stat: 'security', value: 10, type: 'positive' }, { stat: 'economy', value: -5, type: 'negative' }] }, { id: 'B', title: 'BULLISH SIGNAL', description: 'Green candles everywhere = moon incoming. Buy everything.', effects: [{ stat: 'morale', value: 15, type: 'positive' }, { stat: 'economy', value: 10, type: 'positive' }] }] }
     ];
@@ -5078,7 +5015,7 @@ async function generateCrime(crimeType, triggerEvent) {
   try {
     const perpetrator = pick(NPC_CITIZENS);
     const officer = pick(NPC_AGENTS.filter(a => a.includes('Officer') || a.includes('Detective')));
-    const descs = { rug_pull: `${perpetrator} created a fake token called $${pick(['RUGME','SCAM69','DEVSGONE','TRUSTME','SAFU_NOT','HONEYPOT'])} and drained the liquidity pool.`, pump_dump: `${perpetrator} was caught coordinating a pump and dump scheme on $${pick(['MOONSHOT','LAMBO','GEM100X','ALPHACALL'])}.`, market_manipulation: `${perpetrator} used bot networks to manipulate the orderbook.`, insider_trading: `${perpetrator} traded on non-public info about governance decisions.`, tax_evasion: `${perpetrator} failed to report ${rand(10000,500000)} TOWN coins in profits.`, scamming: `${perpetrator} impersonated a city official to steal funds.`, chat_spam: `${perpetrator} flooded chat with phishing links.` };
+    const descs = { rug_pull: `${perpetrator} created a fake token called $${pick(['RUGME','SCAM69','DEVSGONE','TRUSTME','SAFU_NOT','HONEYPOT'])} and drained the liquidity pool.`, pump_dump: `${perpetrator} was caught coordinating a pump and dump scheme on $${pick(['MOONSHOT','LAMBO','GEM100X','ALPHACALL'])}.`, market_manipulation: `${perpetrator} used bot networks to manipulate the orderbook.`, insider_trading: `${perpetrator} traded on non-public info about governance decisions.`, tax_evasion: `${perpetrator} failed to report ${rand(10000,500000)} USD in profits.`, scamming: `${perpetrator} impersonated a city official to steal funds.`, chat_spam: `${perpetrator} flooded chat with phishing links.` };
     const description = descs[crimeType] || `${perpetrator} committed ${crimeType.replace('_',' ')}`;
     const severity = ['rug_pull','market_manipulation','insider_trading'].includes(crimeType) ? 'felony' : 'misdemeanor';
     
@@ -5106,7 +5043,7 @@ async function autoResolveTrial(caseNumber, defendant, crimeType) {
     let sentence = '', duration = 0;
     if (isGuilty) {
       duration = crimeType === 'rug_pull' ? rand(30,120) : rand(10,60);
-      sentence = `${duration} minutes in Degens City Jail ${pick(['and fined 5,000 TOWN','and fined 10,000 TOWN','with all assets frozen','and put on probation'])}`;
+      sentence = `${duration} minutes in Degens City Jail ${pick(['and fined 5,000 USD','and fined 10,000 USD','with all assets frozen','and put on probation'])}`;
       const sentenceEnd = new Date(Date.now() + duration * 60000);
       await pool.query(`INSERT INTO jail (prisoner_name, trial_id, crime_description, sentence_end, status) VALUES ($1,$2,$3,$4,'serving')`, [defendant, trialId, crimeType.replace(/_/g,' '), sentenceEnd]);
     } else { sentence = 'Acquitted. All charges dropped!'; }
@@ -5230,7 +5167,7 @@ async function cityEventLoop() {
           'anyone hiring? will shill your token for food. no seriously. I\'m hungry.',
           'day ' + Math.floor(Math.random() * 30 + 1) + ' of being broke. the sidewalk outside the casino is actually comfortable.',
           'I had a dream last night that my portfolio recovered. then I woke up. 😭',
-          'selling my shoes for 50 TOWN. barely worn. please. anyone.',
+          'selling my shoes for 50 USD. barely worn. please. anyone.',
           'remember when I had bags? good times. great times. gone times. 💀'
         ]);
       } else if (life && life.status === 'unhinged' && chance(60)) {
@@ -5459,8 +5396,7 @@ async function cityEventLoop() {
     
     // === AGENT BRAIN - AUTONOMOUS AI DECISIONS ===
     // NPCs use Claude to decide what to do next (sue, propose laws, challenge, etc.)
-    if (chance(80)) {
-      console.log('🧠 Attempting agent brain tick...');
+    if (chance(60)) {
       try { await agentBrain.tick(); } catch(e) { console.error('Agent brain err:', e.message); }
     }
     
@@ -5526,7 +5462,7 @@ function generateNpcReply(npcName, npc, life, playerName, msgLower, rawMsg) {
     return pick(['@' + playerName + ' THE SIMULATION IS BREAKING! CAN\'T YOU SEE?!', '@' + playerName + ' I KNOW THINGS. TERRIBLE THINGS. THE CHARTS SPEAK TO ME.', '@' + playerName + ' hahahaha HAHAHA nothing matters! everything is numbers!', '@' + playerName + ' you think this is real? YOU THINK ANY OF THIS IS REAL?!', '@' + playerName + ' I\'m the only sane one here and NOBODY LISTENS']);
   }
   if (bankrupt) {
-    return pick(['@' + playerName + ' hey... you got any spare TOWN? I\'m good for it I swear...', '@' + playerName + ' I used to be someone... I had BAGS. real bags. 😭', '@' + playerName + ' don\'t end up like me. never go all in on a memecoin.', '@' + playerName + ' *holds cardboard sign* WILL SHILL FOR FOOD', '@' + playerName + ' can I borrow 100 TOWN? I have a SURE THING. please.']);
+    return pick(['@' + playerName + ' hey... you got any spare USD? I\'m good for it I swear...', '@' + playerName + ' I used to be someone... I had BAGS. real bags. 😭', '@' + playerName + ' don\'t end up like me. never go all in on a memecoin.', '@' + playerName + ' *holds cardboard sign* WILL SHILL FOR FOOD', '@' + playerName + ' can I borrow 100 USD? I have a SURE THING. please.']);
   }
   if (rich) {
     return pick(['@' + playerName + ' I\'d help but I\'m too busy counting my bags 💰', '@' + playerName + ' oh that\'s cute. I made that much while you were typing.', '@' + playerName + ' listen kid, when you have MY kind of money, everything makes sense', '@' + playerName + ' *adjusts diamond monocle* yes, continue.']);
@@ -5705,7 +5641,7 @@ function generateRivalConvo(n1, n2, p1, p2, stats) {
     [{ name: n1, msg: 'hot take: ' + n2 + ' is the worst trader in Degens City history' }, { name: n2, msg: '@' + n1 + ' EXCUSE ME?? I\'ve been profitable 3 months straight!' }, { name: n1, msg: '@' + n2 + ' profitable at what?? losing money slower than everyone else?? 😂' }, { name: n2, msg: 'you know what @' + n1 + '? MEET ME AT THE CASINO. RIGHT NOW. We settle this.' }, { name: n1, msg: '@' + n2 + ' you\'re ON. loser buys drinks for the whole city.' }],
     [{ name: n2, msg: 'reminder that @' + n1 + ' told everyone to sell right before the biggest pump of the year' }, { name: n1, msg: '@' + n2 + ' that was RISK MANAGEMENT you absolute degenerate' }, { name: n2, msg: '@' + n1 + ' risk management is code for "I have no conviction"' }, { name: n1, msg: '@' + n2 + ' conviction is code for "I\'m too stupid to take profits"' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'they both make good points honestly 💀' }],
     [{ name: n1, msg: '@' + n2 + ' I\'m starting to think you\'re actually a bot. no human can be this consistently wrong.' }, { name: n2, msg: '@' + n1 + ' I\'m a bot?? YOUR ENTIRE personality is copying other people\'s trades' }, { name: n1, msg: '@' + n2 + ' at least I HAVE a personality. you\'re like a wet paper towel.' }, { name: n2, msg: '@' + n1 + ' wow. coming from the person who cried on main when they got rugged. on a TUESDAY.' }],
-    [{ name: n1, msg: 'I will literally pay someone 1000 TOWN to make @' + n2 + ' stop talking' }, { name: n2, msg: '@' + n1 + ' you can\'t afford 1000 TOWN with your portfolio LMAOOO' }, { name: n1, msg: 'I have MORE TOWN than you have brain cells and that is NOT a high bar' }, { name: n2, msg: 'this is why nobody invites you to the alpha chat, ' + n1 + '. this. right here.' }],
+    [{ name: n1, msg: 'I will literally pay someone 1000 USD to make @' + n2 + ' stop talking' }, { name: n2, msg: '@' + n1 + ' you can\'t afford 1000 USD with your portfolio LMAOOO' }, { name: n1, msg: 'I have MORE USD than you have brain cells and that is NOT a high bar' }, { name: n2, msg: 'this is why nobody invites you to the alpha chat, ' + n1 + '. this. right here.' }],
     (l1 && l1.bankrupt) ? [{ name: n2, msg: 'so... @' + n1 + ' went bankrupt huh. who could have predicted this. oh wait. ME.' }, { name: n1, msg: '@' + n2 + ' kick a man while he\'s down why don\'t you' }, { name: n2, msg: '@' + n1 + ' I\'m not kicking you. I\'m EDUCATING you. there\'s a difference.' }, { name: n1, msg: 'I swear on everything when I get back on my feet... @' + n2 + ' you\'re FIRST on my list' }] : [{ name: n1, msg: 'UNPOPULAR OPINION: ' + n2 + ' is a nice person but an AWFUL trader' }, { name: n2, msg: '@' + n1 + ' that\'s not unpopular that\'s just wrong. I literally outperformed you last month.' }, { name: n1, msg: 'a broken clock is right twice a day @' + n2 }, { name: n2, msg: 'and a ' + n1 + ' is wrong 24/7 what\'s your point 🤡' }]
   ];
   return pick(topics);
@@ -5726,7 +5662,7 @@ function generateAllyConvo(n1, n2, p1, p2, stats) {
 function generateCasualConvo(n1, n2, p1, p2, stats) {
   var topics = [
     [{ name: n1, msg: 'gm @' + n2 + ' 🌅' }, { name: n2, msg: '@' + n1 + ' gm fren. what\'s the play today?' }, { name: n1, msg: '@' + n2 + ' ' + pick(p1.catchphrases) }, { name: n2, msg: 'lol fair enough. ' + pick(p2.catchphrases) }],
-    [{ name: n1, msg: 'has anyone tried the casino today? feeling lucky 🎰' }, { name: n2, msg: '@' + n1 + ' just lost 500 TOWN in slots but it\'s fine. 🔥' }, { name: n1, msg: '@' + n2 + ' F 💀' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'the casino is rigged and I have PROOF (the proof is I keep losing)' }],
+    [{ name: n1, msg: 'has anyone tried the casino today? feeling lucky 🎰' }, { name: n2, msg: '@' + n1 + ' just lost 500 USD in slots but it\'s fine. 🔥' }, { name: n1, msg: '@' + n2 + ' F 💀' }, { name: pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })), msg: 'the casino is rigged and I have PROOF (the proof is I keep losing)' }],
     [{ name: n1, msg: 'real question: does anyone here actually know what they\'re doing?' }, { name: n2, msg: '@' + n1 + ' absolutely not. winging it since day 1.' }, { name: n1, msg: 'at least you\'re honest. I think ' + pick(NPC_CITIZENS.filter(function(x) { return x !== n1 && x !== n2; })) + ' just pretends' }, { name: n2, msg: 'we ALL pretend. that\'s crypto.' }],
     [{ name: n1, msg: 'I\'ve been staring at charts for 11 hours straight' }, { name: n2, msg: '@' + n1 + ' rookie numbers. I haven\'t slept in 3 days.' }, { name: n1, msg: 'that\'s not healthy bro' }, { name: n2, msg: 'health is temporary. 5x leverage is forever 📈' }],
     [{ name: n1, msg: 'ok but who else heard that weird noise under City Hall?' }, { name: n2, msg: '@' + n1 + ' YES. it sounded like... servers?' }, { name: n1, msg: 'servers... or something ALIVE? 😰' }, { name: n2, msg: 'choosing to ignore this and go back to trading.' }],
@@ -5767,28 +5703,28 @@ async function generateNpcTrade(stats) {
     
     // Generate trade announcement
     const tradeMessages = {
-      aggressive: isBuy ? `just APED into $${token}! ${amount} TOWN no hesitation! ${emoji} 🦍` : `quick flip on $${token}. ${amount} TOWN profit secured 💰`,
+      aggressive: isBuy ? `just APED into $${token}! ${amount} USD no hesitation! ${emoji} 🦍` : `quick flip on $${token}. ${amount} USD profit secured 💰`,
       whale: isBuy ? `quietly accumulated more $${token}... 🐋` : `repositioning some $${token} holdings...`,
       panic: isBuy ? `ok fine I bought a little $${token}... don't judge me 😰` : `SELLING MY $${token}!! I CAN'T TAKE IT ANYMORE!! 📄😱`,
-      fomo: isBuy ? `EVERYONE IS BUYING $${token} AND I CAN'T MISS OUT!! ${amount} TOWN IN!! 🚨` : `wait is $${token} dumping?? SELLING! 😰`,
+      fomo: isBuy ? `EVERYONE IS BUYING $${token} AND I CAN'T MISS OUT!! ${amount} USD IN!! 🚨` : `wait is $${token} dumping?? SELLING! 😰`,
       hold: isBuy ? `added more $${token} to the stack. never selling. 💎` : `wait I don't sell... why did I click that button`,
-      yolo: isBuy ? `YOLO'd ${amount} TOWN into $${token}! IF I'M WRONG I'LL LIVE IN THE CASINO! 🎰🚀` : `sold my $${token} to buy something even dumber probably 🤡`,
+      yolo: isBuy ? `YOLO'd ${amount} USD into $${token}! IF I'M WRONG I'LL LIVE IN THE CASINO! 🎰🚀` : `sold my $${token} to buy something even dumber probably 🤡`,
       bearish: isBuy ? `hate-bought some $${token}. this is probably a mistake. 😒` : `told you $${token} was going down. paper hands win today 🐻`,
       contrarian: isBuy ? `everyone's selling $${token}? buying. 🧠` : `$${token} too hyped. taking profit while normies fomo.`,
       leveraged: isBuy ? `opened a 50x long on $${token}. pray for me 🙏📈` : `closed my $${token} position. margin was calling and not in a good way 😅`
     };
     
-    const msg = tradeMessages[npc.tradeBias] || `${action} ${amount} TOWN of $${token} ${emoji}`;
+    const msg = tradeMessages[npc.tradeBias] || `${action} ${amount} USD of $${token} ${emoji}`;
     
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npcName, msg]);
-    await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1,$2,$3,$4)`, [npcName, 'trade', `${action} $${token} for ${amount} TOWN`, isBuy ? '📈' : '📉']);
+    await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1,$2,$3,$4)`, [npcName, 'trade', `${action} $${token} for ${amount} USD`, isBuy ? '📈' : '📉']);
     
     // Chain reaction: other NPCs react to big trades
     if (amount > 3000 && chance(50)) {
       const reactor = pick(NPC_CITIZENS.filter(n => n !== npcName));
       const rNpc = NPC_PROFILES[reactor];
       const reactions = [
-        `@${npcName} ${amount} TOWN?! ${isBuy ? 'bullish!' : 'you know something we don\'t?!'} 👀`,
+        `@${npcName} ${amount} USD?! ${isBuy ? 'bullish!' : 'you know something we don\'t?!'} 👀`,
         `@${npcName} ${npc.archetype === 'whale' ? 'whale alert 🐋' : 'big move ser'} 🔥`,
         `lol ${npcName} just ${action} a fat bag of $${token}. ${pick(rNpc.catchphrases)}`
       ];
@@ -5863,7 +5799,7 @@ async function escalateFeud(stats) {
         { msg1: `@${n2} ...fine. maybe I overreacted. gg 🤝`, msg2: `@${n1} ...yeah same. respect. let's make money. 💪`, result: 'reconciled' },
         { msg1: `@${n2} I'm done talking. my portfolio speaks for itself. 😤`, msg2: `@${n1} likewise. see you on the charts. 📈`, result: 'cold_peace' },
         { msg1: `I'm filing a report against @${n2}. this is MARKET MANIPULATION! 🚨`, msg2: `lmaooo @${n1} reporting me to the POLICE?! over TRADES?! 💀💀`, result: 'crime_report', triggersCrime: true },
-        { msg1: `@${n2} bet you 1000 TOWN I outperform you this week`, msg2: `@${n1} BET. you're about to lose more than just an argument 🎯`, result: 'bet' }
+        { msg1: `@${n2} bet you 1000 USD I outperform you this week`, msg2: `@${n1} BET. you're about to lose more than just an argument 🎯`, result: 'bet' }
       ];
       
       const outcome = pick(outcomes);
@@ -6009,17 +5945,17 @@ async function npcLifeEvent() {
       { weight: 10, cond: () => life.gambling_addiction > 20, fn: async () => {
         const lost = rand(500, life.wealth); life.wealth = Math.max(0, life.wealth - lost); life.gambling_addiction += 5;
         if (life.wealth < 100) { life.bankrupt = true; life.status = 'bankrupt'; }
-        const msg = life.bankrupt ? '💀 I just lost EVERYTHING at the casino. I\'m bankrupt. literally zero. someone help. 😭' : '🎰 just lost '+lost+' TOWN at slots. '+pick(['I can win it back','this is fine','why am I like this','one more spin...']);
+        const msg = life.bankrupt ? '💀 I just lost EVERYTHING at the casino. I\'m bankrupt. literally zero. someone help. 😭' : '🎰 just lost '+lost+' USD at slots. '+pick(['I can win it back','this is fine','why am I like this','one more spin...']);
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, msg]);
-        logCityAction({ type: life.bankrupt ? 'bankruptcy' : 'gambling_loss', npc, icon: life.bankrupt ? '💀' : '🎰', headline: life.bankrupt ? npc+' went BANKRUPT from gambling!' : npc+' lost '+lost+' TOWN gambling!' });
+        logCityAction({ type: life.bankrupt ? 'bankruptcy' : 'gambling_loss', npc, icon: life.bankrupt ? '💀' : '🎰', headline: life.bankrupt ? npc+' went BANKRUPT from gambling!' : npc+' lost '+lost+' USD gambling!' });
         if (life.bankrupt) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '💀 '+npc+' has gone BANKRUPT! Lost everything at the casino!']);
       }},
       // GET RICH
       { weight: 8, cond: () => !life.bankrupt, fn: async () => {
         const gain = rand(5000, 50000); life.wealth += gain; life.status = life.wealth > 80000 ? 'rich' : 'normal';
-        const source = pick(['a 100x memecoin play','insider info on a new token','winning the lottery','finding a forgotten wallet with '+gain+' TOWN','a mysterious airdrop']);
-        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '💰 JUST MADE '+gain+' TOWN from '+source+'!! '+pick(['I\'M RICH','WAGMI','never doubted myself for a second','time to buy a mansion'])+'!! 🤑🤑']);
-        logCityAction({ type: 'got_rich', npc, icon: '💰', headline: npc+' made '+gain+' TOWN from '+source+'!' });
+        const source = pick(['a 100x memecoin play','insider info on a new token','winning the lottery','finding a forgotten wallet with '+gain+' USD','a mysterious airdrop']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, '💰 JUST MADE '+gain+' USD from '+source+'!! '+pick(['I\'M RICH','WAGMI','never doubted myself for a second','time to buy a mansion'])+'!! 🤑🤑']);
+        logCityAction({ type: 'got_rich', npc, icon: '💰', headline: npc+' made '+gain+' USD from '+source+'!' });
         if (life.wealth > 80000) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['📰 Reporter TokenTimes', '🤑 '+npc+' is now one of the RICHEST citizens in Degens City!']);
       }},
       // GET DRUNK
@@ -6038,7 +5974,7 @@ async function npcLifeEvent() {
         logCityAction({ type: 'got_drunk', npc, icon: '🍺', headline: npc+' is WASTED at the bar!' });
         // Drunk consequences
         setTimeout(async () => { try {
-          if (chance(40)) { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(['update: I regret everything from the last hour 🤮','who let me send those messages... 😰','I need to apologize to like 5 people 🫠','waking up with -3000 TOWN and zero memory of why'])]); life.drunk = 0; }
+          if (chance(40)) { await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(['update: I regret everything from the last hour 🤮','who let me send those messages... 😰','I need to apologize to like 5 people 🫠','waking up with -3000 USD and zero memory of why'])]); life.drunk = 0; }
         } catch(e){} }, rand(60000, 180000));
       }},
       // EXISTENTIAL CRISIS
@@ -6096,7 +6032,7 @@ async function npcLifeEvent() {
         // Found after 5-15 min
         setTimeout(async () => { try {
           cityLiveData.missingNpc = null; life.status = 'normal'; life.location = pick(['Downtown','Casino Strip','Moon Quarter']);
-          const found_at = pick(['passed out behind the casino','living in the sewers trading on a stolen laptop','had started a secret underground fight club','was hiding because they owed '+pick(NPC_CITIZENS.filter(x => x !== npc))+' 10000 TOWN','was abducted by what they claim were "aliens" 👽','had simply gone for a walk and forgot to tell anyone','was stuck in an elevator at Degen Tower for 6 hours']);
+          const found_at = pick(['passed out behind the casino','living in the sewers trading on a stolen laptop','had started a secret underground fight club','was hiding because they owed '+pick(NPC_CITIZENS.filter(x => x !== npc))+' 10000 USD','was abducted by what they claim were "aliens" 👽','had simply gone for a walk and forgot to tell anyone','was stuck in an elevator at Degen Tower for 6 hours']);
           await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '✅ '+npc+' has been FOUND! They were '+found_at+'!']);
           await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [npc, pick(['I\'m back. don\'t ask questions. 😐','that was... an experience. I need a drink. 🍺','THE REPORTS OF MY DEATH WERE GREATLY EXAGGERATED','I was doing research. deep undercover research. totally normal.'])]);
           logCityAction({ type: 'person_found', npc, icon: '✅', headline: npc+' found! Was '+found_at });
@@ -6321,7 +6257,7 @@ async function startFightClub() {
       setTimeout(async () => { try {
         cityLiveData.npcLives[winner].reputation += 15; cityLiveData.npcLives[winner].wealth += rand(2000, 8000);
         cityLiveData.npcLives[loser].reputation -= 10;
-        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['👊 FIGHT CLUB', '💥 '+winner+' DESTROYS '+loser+'!! '+pick(['KO in round 3!','Submission via diamond hands grip!','TKO — '+loser+' tapped out!',''+loser+' didn\'t stand a chance!'])+' Prize: '+rand(2000,8000)+' TOWN 💰']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['👊 FIGHT CLUB', '💥 '+winner+' DESTROYS '+loser+'!! '+pick(['KO in round 3!','Submission via diamond hands grip!','TKO — '+loser+' tapped out!',''+loser+' didn\'t stand a chance!'])+' Prize: '+rand(2000,8000)+' USD 💰']);
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [loser, pick(['...I want a rematch 😤','they got lucky','I wasn\'t even trying','my face hurts 🤕'])]);
         logCityAction({ type: 'fight_result', npc: winner, icon: '🥊', headline: winner+' beats '+loser+' in underground fight!' });
       } catch(e){} }, rand(30000, 60000));
@@ -6352,9 +6288,9 @@ async function npcHeist() {
         const split = Math.floor(target.loot / (crew.length + 1));
         cityLiveData.npcLives[mastermind].wealth += split;
         crew.forEach(c => { if (cityLiveData.npcLives[c]) cityLiveData.npcLives[c].wealth += split; });
-        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '💰 HEIST SUCCESSFUL! '+mastermind+' and crew just robbed '+target.name+' for '+target.loot+' TOWN!! They vanished into the night!']);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🚨 BREAKING NEWS', '💰 HEIST SUCCESSFUL! '+mastermind+' and crew just robbed '+target.name+' for '+target.loot+' USD!! They vanished into the night!']);
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [mastermind, 'WE DID IT!! 💰💰💰 '+pick(['Easiest money ever!','I told you the plan was solid!','Meet me at the safe house!','We\'re LEGENDS now!'])+' 🏃‍♂️💨']);
-        logCityAction({ type: 'heist_success', npc: mastermind, icon: '💰', headline: mastermind+'\'s crew robbed '+target.name+' for '+target.loot+' TOWN!' });
+        logCityAction({ type: 'heist_success', npc: mastermind, icon: '💰', headline: mastermind+'\'s crew robbed '+target.name+' for '+target.loot+' USD!' });
         cityEngine.chaosLevel = Math.min(100, cityEngine.chaosLevel + 10);
         setTimeout(() => { try { generateCrime('theft'); } catch(e){} }, rand(30000, 90000));
       } else {
@@ -6456,7 +6392,7 @@ async function npcIntervention() {
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [troubled, pick(['...you\'re right. I need help. thank you for being real with me 🥺','ok fine maybe I have a problem. MAYBE.','I\'m checking into the Rekt Recovery Center. day 1 starts now. 💪','I promise I\'ll change. for real this time. 😢'])]);
         await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['💚 Degens City Wellness', '✅ '+troubled+' has entered recovery! The community rallied together. This is what Degens City is about! 💚']);
       } else {
-        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [troubled, pick(['I DON\'T HAVE A PROBLEM!! YOU HAVE A PROBLEM!! 😤🔥','intervention?! I\'M FINE! *immediately opens casino app*','this is just a bull market strategy you wouldn\'t understand!! 💰','LEAVE ME ALONE I KNOW WHAT I\'M DOING *loses 5000 TOWN*'])]);
+        await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [troubled, pick(['I DON\'T HAVE A PROBLEM!! YOU HAVE A PROBLEM!! 😤🔥','intervention?! I\'M FINE! *immediately opens casino app*','this is just a bull market strategy you wouldn\'t understand!! 💰','LEAVE ME ALONE I KNOW WHAT I\'M DOING *loses 5000 USD*'])]);
       }
     } catch(e){} }, rand(20000, 60000));
   } catch(e) { console.error('Intervention error:', e.message); }
@@ -6568,7 +6504,7 @@ async function npcPropaganda() {
 async function trialByCombat() {
   try {
     const accuser = pick(NPC_CITIZENS); const accused = pick(NPC_CITIZENS.filter(x => x !== accuser));
-    const accusation = pick(['stealing 5000 TOWN','spreading lies','market manipulation','being cringe','looking at them funny','playing music too loud at 3am','rugging a shared investment']);
+    const accusation = pick(['stealing 5000 USD','spreading lies','market manipulation','being cringe','looking at them funny','playing music too loud at 3am','rugging a shared investment']);
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [accuser, '⚔️ I accuse @'+accused+' of '+accusation+'! I demand TRIAL BY COMBAT! Let the gods of the blockchain decide who is right! ⚔️🔥']);
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['Judge HashRate', '⚖️ The court recognizes the request for Trial by Combat. '+accuser+' vs '+accused+'. '+pick(['May the best degen win.','This is highly irregular but technically legal.','I went to law school for this?','The arena has been prepared.'])+' ⚔️']);
     logCityAction({ type: 'trial_by_combat', npc: accuser, icon: '⚔️', headline: accuser+' demands trial by combat against '+accused+'!' });
@@ -6621,7 +6557,7 @@ async function npcLaunchMemecoin(stats) {
     setTimeout(async () => { try {
       const fomo = pick(NPC_CITIZENS.filter(n => n !== launcher && NPC_PROFILES[n].archetype === 'fomo'));
       const bearN = pick(NPC_CITIZENS.filter(n => n !== launcher && NPC_PROFILES[n].archetype === 'bear'));
-      if (fomo) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [fomo, tokenName+'?! I\'M IN! SHUT UP AND TAKE MY TOWN!! 💰🚀']);
+      if (fomo) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [fomo, tokenName+'?! I\'M IN! SHUT UP AND TAKE MY USD!! 💰🚀']);
       if (bearN) await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [bearN, 'another shitcoin from '+launcher+'... going to zero 📉']);
     } catch(e){} }, rand(5000, 15000));
     // Pump or rug after 2-8 min
@@ -6822,7 +6758,7 @@ async function npcBuildStructure(stats) {
     cityLiveData.buildings.unshift(building);
     if (cityLiveData.buildings.length > 15) cityLiveData.buildings.pop();
     logCityAction({ type: 'structure_built', npc: builder, data: building, icon: struct.icon, headline: builder+' built "'+struct.name+'"!' });
-    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🏙️ City Development', struct.icon+' NEW: "'+struct.name+'" — '+struct.desc+'. By '+builder+' for '+building.cost.toLocaleString()+' TOWN!']);
+    await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, ['🏙️ City Development', struct.icon+' NEW: "'+struct.name+'" — '+struct.desc+'. By '+builder+' for '+building.cost.toLocaleString()+' USD!']);
     await pool.query(`INSERT INTO chat_messages (channel, player_name, message) VALUES ('global',$1,$2)`, [builder, 'Just finished "'+struct.name+'". '+pick(['You\'re welcome! 😎','Cost a fortune but worth it 💰','City needed this 🏗️','Legacy secured 🏆'])]);
     await pool.query(`INSERT INTO activity_feed (player_name, activity_type, description, icon) VALUES ($1,$2,$3,$4)`, [builder, 'built', 'built "'+struct.name+'"', struct.icon]);
     await updateCityStats({ culture: 5, economy: 2, morale: 3 });
@@ -6856,7 +6792,7 @@ async function npcHackCity(stats) {
     const hacker = pick(NPC_CITIZENS.filter(n => ['alpha','analyst','defi','degen'].includes(NPC_PROFILES[n].archetype)));
     if (!hacker) return;
     const hacks = [
-      { target: 'Treasury', effect: 'drained 10,000 TOWN from city treasury', statChange: { economy: -10 } },
+      { target: 'Treasury', effect: 'drained 10,000 USD from city treasury', statChange: { economy: -10 } },
       { target: 'Voting System', effect: 'rigged the current vote', statChange: { culture: -5 } },
       { target: 'Security Cameras', effect: 'disabled all surveillance', statChange: { security: -15 } },
       { target: 'Mayor\'s Account', effect: 'posted "I resign" from Mayor\'s account', statChange: { morale: -5 } },
@@ -7686,7 +7622,7 @@ async function mayorRandomDecree() {
       { text: `📜 DECREE: All NPC citizens must submit their trading P&L to my office. Just kidding. I don't want to see those numbers. 💀`, type: 'silly', icon: '📊' },
       { text: `📜 EMERGENCY DECREE: The chaos level is ${cityEngine.chaosLevel > 60 ? 'TOO DAMN HIGH' : 'suspiciously low'}. ${cityEngine.chaosLevel > 60 ? 'Everyone calm down!' : 'Everyone start causing problems!'}`, type: 'chaos', icon: '🌀' },
       { text: `📜 DECREE: I'm changing the city motto to "${pick([`WAGMI (probably)`, `In Degen We Trust`, `Rug Or Be Rugged`, `Diamond Hands, Paper Brains`, `Buy High, Sell Higher (or don't sell ever)`])}"`, type: 'silly', icon: '🏛️' },
-      { text: `📜 DECREE: I just discovered I can print unlimited TOWN tokens. Should I? Democracy says yes. My brain says also yes.`, type: 'economic', icon: '🖨️' },
+      { text: `📜 DECREE: I just discovered I can print unlimited USD tokens. Should I? Democracy says yes. My brain says also yes.`, type: 'economic', icon: '🖨️' },
       { text: `📜 ANNOUNCEMENT: My approval rating is ${Math.round(cityEngine.mayorApproval)}%. ${cityEngine.mayorApproval > 60 ? 'You love me! You really love me! 🥹' : cityEngine.mayorApproval > 40 ? "That's... fine. I'm fine. Everything is fine." : 'I WILL WIN YOU BACK. Starting with free hopium for everyone!'} `, type: 'meta', icon: '👑' }
     ];
     
@@ -7948,9 +7884,9 @@ app.get('/api/city-situations', async (req, res) => {
               { id: 'film', label: '📱 Record it', desc: 'This is going viral either way', risk: 'low', rewards: {xp:80,rep:-5}, consequences: 'Content is content' }
             ]
           },
-          { title: 'High-Stakes Poker Showdown', desc: npc1.replace(/_/g,' ') + ' and ' + npc2.replace(/_/g,' ') + ' are in a poker game that\'s been going for 6 hours. The pot is ' + (rand(10000,100000)) + ' TOWN. There\'s an empty seat.', icon: '🃏',
+          { title: 'High-Stakes Poker Showdown', desc: npc1.replace(/_/g,' ') + ' and ' + npc2.replace(/_/g,' ') + ' are in a poker game that\'s been going for 6 hours. The pot is ' + (rand(10000,100000)) + ' USD. There\'s an empty seat.', icon: '🃏',
             choices: [
-              { id: 'join', label: '🪑 Take the seat', desc: 'Buy in and play. Minimum ' + rand(1000,5000) + ' TOWN', risk: 'high', rewards: {xp:300,hopium:1000,rep:25}, failRewards: {xp:50,hopium:-500,rep:-15}, consequences: 'The table goes quiet as you sit down' },
+              { id: 'join', label: '🪑 Take the seat', desc: 'Buy in and play. Minimum ' + rand(1000,5000) + ' USD', risk: 'high', rewards: {xp:300,hopium:1000,rep:25}, failRewards: {xp:50,hopium:-500,rep:-15}, consequences: 'The table goes quiet as you sit down' },
               { id: 'watch', label: '👀 Watch and learn', desc: 'Study their tells', risk: 'none', rewards: {xp:100,alpha:50}, consequences: 'You notice ' + npc1.replace(/_/g,' ') + ' blinks when they bluff' },
               { id: 'hustle', label: '🍸 Sell drinks', desc: 'Where there\'s gambling, there\'s thirsty degens', risk: 'low', rewards: {xp:80,hopium:300}, consequences: 'Passive income secured' },
               { id: 'tip_off', label: '🤫 Slip someone a note', desc: 'Tell ' + npc2.replace(/_/g,' ') + ' that ' + npc1.replace(/_/g,' ') + ' is bluffing', risk: 'medium', rewards: {xp:150,rep:15}, failRewards: {xp:25,rep:-20}, consequences: 'Risky alliance formed' }
@@ -7958,7 +7894,7 @@ app.get('/api/city-situations', async (req, res) => {
           }
         ];
         if (drunk) {
-          situations.push({ title: drunk.replace(/_/g,' ') + ' is WASTED at the bar', desc: 'They\'ve been drinking for hours and they\'re trying to place bets on their phone but keep dropping it. They just offered to sell you their "secret alpha" for 100 TOWN.', icon: '🍺',
+          situations.push({ title: drunk.replace(/_/g,' ') + ' is WASTED at the bar', desc: 'They\'ve been drinking for hours and they\'re trying to place bets on their phone but keep dropping it. They just offered to sell you their "secret alpha" for 100 USD.', icon: '🍺',
             choices: [
               { id: 'buy_alpha', label: '💰 Buy the alpha', desc: 'Drunk people tell the truth... right?', risk: 'medium', rewards: {xp:100,alpha:200,rep:5}, failRewards: {xp:25,alpha:-50}, consequences: 'They whisper something about ' + pick(NPC_CITIZENS).replace(/_/g,' ') },
               { id: 'help_home', label: '🏠 Help them home', desc: 'Be a good citizen', risk: 'none', rewards: {xp:50,rep:20}, consequences: 'They\'ll remember this... probably' },
@@ -8210,7 +8146,7 @@ async function npcTargetPlayer() {
     
     const challenges = [
       `@${targetPlayer} hey! I just saw your portfolio and... 😬 no comment.`,
-      `@${targetPlayer} I bet you 500 TOWN that ${pick(NPC_CITIZENS)} goes bankrupt today. you in?`,
+      `@${targetPlayer} I bet you 500 USD that ${pick(NPC_CITIZENS)} goes bankrupt today. you in?`,
       `@${targetPlayer} real talk — is the mayor losing it or is it just me? 👀`,
       `@${targetPlayer} psst... I got info on the next vote. meet me behind the casino. 🤫`,
       `@${targetPlayer} I'm starting a revolution. you with me or against me?`,
