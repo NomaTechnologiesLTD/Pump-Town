@@ -13832,6 +13832,53 @@
             const [showUpgradeModal, setShowUpgradeModal] = useState(false);
             const [guestBannerDismissed, setGuestBannerDismissed] = useState(false);
             
+            // Player reputation state - synced with localStorage
+            const [playerReputation, setPlayerReputation] = useState(() => {
+                return parseInt(localStorage.getItem('dc_city_rep') || '0');
+            });
+            
+            // Sync reputation to localStorage
+            useEffect(() => {
+                localStorage.setItem('dc_city_rep', playerReputation.toString());
+            }, [playerReputation]);
+            
+            // Expose global reputation functions IMMEDIATELY (empty deps = runs once on mount)
+            useEffect(() => {
+                // Global function to add reputation from anywhere
+                window.addReputation = (amount) => {
+                    setPlayerReputation(prev => {
+                        const newRep = prev + amount;
+                        localStorage.setItem('dc_city_rep', newRep.toString());
+                        console.log('🌟 Reputation changed: ' + prev + ' → ' + newRep + ' (' + (amount >= 0 ? '+' : '') + amount + ')');
+                        return newRep;
+                    });
+                };
+                window.setReputation = (value) => {
+                    setPlayerReputation(value);
+                    localStorage.setItem('dc_city_rep', value.toString());
+                };
+                window.getReputation = () => parseInt(localStorage.getItem('dc_city_rep') || '0');
+                
+                console.log('✅ Global reputation functions registered');
+            }, []); // Empty deps = only runs once on mount
+            
+            // Listen for reputation changes from other components (same tab)
+            useEffect(() => {
+                // Poll localStorage every second for same-tab changes from ExploreCity
+                const pollInterval = setInterval(() => {
+                    const storedRep = parseInt(localStorage.getItem('dc_city_rep') || '0');
+                    setPlayerReputation(prev => {
+                        if (storedRep !== prev) {
+                            console.log('📊 Reputation synced from localStorage: ' + storedRep);
+                            return storedRep;
+                        }
+                        return prev;
+                    });
+                }, 1000);
+                
+                return () => clearInterval(pollInterval);
+            }, []);
+            
             // Toast notifications
             const [toasts, setToasts] = useState([]);
             const toastTimeoutRef = useRef(null);
@@ -15601,8 +15648,8 @@
             const renderPageContent = () => {
                 switch(currentPage) {
                     case 'dashboard':
-                        // Dashboard helper data
-                        var dashRep = parseInt(localStorage.getItem('dc_city_rep') || '0');
+                        // Dashboard helper data - use state instead of localStorage
+                        var dashRep = playerReputation;
                         var dashRepTier = dashRep >= 100 ? { name: 'LEGEND', emoji: '👑', color: '#ffd700' } : dashRep >= 50 ? { name: 'RESPECTED', emoji: '⭐', color: '#00ff88' } : dashRep >= 20 ? { name: 'KNOWN', emoji: '🟢', color: '#88ff00' } : dashRep >= -19 ? { name: 'NOBODY', emoji: '😐', color: '#888' } : dashRep >= -50 ? { name: 'SUSPICIOUS', emoji: '🟡', color: '#ff8800' } : { name: 'WANTED', emoji: '🔴', color: '#ff4444' };
                         var dashRepPercent = Math.min(100, Math.max(0, (dashRep + 100) / 2));
                         var dashStatRing = function(value, color, label, icon) {
@@ -17495,7 +17542,17 @@
                     typeText(data.narrative || (success ? 'It worked!' : 'Didn\'t go as planned...'));
                     var xpGain = rewards.xp || 0; var repGain = rewards.rep || 0;
                     if (xpGain > 0 && window.addXP) window.addXP(xpGain);
-                    setReputation(function(prev) { return prev + repGain; });
+                    if (repGain !== 0) {
+                        // Update local state
+                        setReputation(function(prev) { return prev + repGain; });
+                        // Update localStorage directly for syncing
+                        var currentRep = parseInt(localStorage.getItem('dc_city_rep') || '0');
+                        var newRep = currentRep + repGain;
+                        localStorage.setItem('dc_city_rep', newRep.toString());
+                        console.log('⭐ REP UPDATE: ' + currentRep + ' → ' + newRep + ' (' + (repGain >= 0 ? '+' : '') + repGain + ')');
+                        // Also call global function if available
+                        if (window.addReputation) window.addReputation(repGain);
+                    }
                     if (situation?.title && window.updateNPCRelationship) {
                         var npcMatch = (situation.title + ' ' + (situation.description || '')).match(/(?:with|from|about|against|for|meet|help|betray|report|convince)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)/);
                         var npcName = npcMatch ? npcMatch[1] : situation.npc || null;
@@ -17503,11 +17560,11 @@
                         if (!npcName) { var lNPCs = { casino:'Casino Tony', dark_alley:'Shadow', mayors_office:'Secretary Mills', trading_floor:'Trader Wang', courthouse:'Bailiff Reed', town_square:'Old Pete', underground:'The Broker' }; npcName = lNPCs[currentLocation?.id] || 'A Stranger'; }
                         window.updateNPCRelationship(npcName, success ? (repGain > 0 ? 15 : 5) : (repGain < 0 ? -15 : -5), (success ? 'Helped with: ' : 'Failed at: ') + (situation.title || 'something').substring(0, 30));
                     }
-                    try { var am = JSON.parse(localStorage.getItem('dc_active_mission')); var me = parseInt(localStorage.getItem('dc_mission_expiry') || '0'); if (am && me > Date.now() && am.location === currentLocation?.id) { var mR = am.reward || { xp: 200, rep: 15 }; if (mR.xp && window.addXP) window.addXP(mR.xp); setReputation(function(p) { return p + (mR.rep || 0); }); localStorage.removeItem('dc_active_mission'); localStorage.removeItem('dc_mission_expiry'); showToast('🎯 MISSION COMPLETE! +' + (mR.xp || 0) + ' XP, +' + (mR.rep || 0) + ' REP', 'success'); } } catch(e) {}
+                    try { var am = JSON.parse(localStorage.getItem('dc_active_mission')); var me = parseInt(localStorage.getItem('dc_mission_expiry') || '0'); if (am && me > Date.now() && am.location === currentLocation?.id) { var mR = am.reward || { xp: 200, rep: 15 }; if (mR.xp && window.addXP) window.addXP(mR.xp); if (mR.rep && window.addReputation) window.addReputation(mR.rep); setReputation(function(p) { return p + (mR.rep || 0); }); localStorage.removeItem('dc_active_mission'); localStorage.removeItem('dc_mission_expiry'); showToast('🎯 MISSION COMPLETE! +' + (mR.xp || 0) + ' XP, +' + (mR.rep || 0) + ' REP', 'success'); } } catch(e) {}
                     setActionLog(function(prev) { return [{ location: currentLocation?.name, icon: currentLocation?.icon, situation: situation?.title, choice: choice.label, success: success, rewards: rewards, time: Date.now() }].concat(prev).slice(0, 30); });
                     var cd = Date.now() + (45000 + Math.floor(Math.random() * 45000)); setCooldownUntil(cd); localStorage.setItem('dc_explore_cooldown', cd.toString());
                     setResolving(false);
-                    showToast(success ? '🏆 Success! ' + (xpGain > 0 ? '+' + xpGain + ' XP' : '') : '💀 Failed... ' + (repGain < 0 ? repGain + ' REP' : ''), success ? 'success' : 'error');
+                    showToast(success ? '🏆 Success! ' + (xpGain > 0 ? '+' + xpGain + ' XP ' : '') + (repGain > 0 ? '+' + repGain + ' REP' : '') : '💀 Failed... ' + (repGain < 0 ? repGain + ' REP' : ''), success ? 'success' : 'error');
                 })
                 .catch(function() { setResolving(false); showToast('Something went wrong', 'error'); });
             };
