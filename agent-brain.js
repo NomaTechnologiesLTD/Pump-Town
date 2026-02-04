@@ -52,18 +52,46 @@ const BRAIN_CONFIG = {
 // ==================== CELEBRITIES / PUBLIC FIGURES ====================
 // NPCs can reference these in lawsuits, rumors, etc. for comedy
 const CELEBRITIES = [
-  { name: 'Elon Musk', handle: '@elonmusk', domain: 'tech/crypto', traits: ['tweets too much', 'owns everything', 'meme lord'] },
-  { name: 'CZ', handle: '@cabortzbin', domain: 'crypto', traits: ['SAFU', 'binance guy', '4 months was enough'] },
-  { name: 'Vitalik Buterin', handle: '@VitalikButerin', domain: 'crypto', traits: ['ethereum founder', 'too smart', 'wears unicorn shirts'] },
-  { name: 'Donald Trump', handle: '@realDonaldTrump', domain: 'politics', traits: ['former president', 'launches memecoins', 'tremendous'] },
-  { name: 'Gary Gensler', handle: '@GaryGensler', domain: 'regulation', traits: ['SEC chair', 'hates crypto', 'everything is a security'] },
-  { name: 'SBF', handle: '@SBF_FTX', domain: 'crypto', traits: ['in jail', 'lost billions', 'played league of legends during meetings'] },
-  { name: 'Do Kwon', handle: '@stabortwon', domain: 'crypto', traits: ['terra luna', 'where did the money go', 'on the run'] },
-  { name: 'Mark Zuckerberg', handle: '@fabortzuck', domain: 'tech', traits: ['meta', 'metaverse', 'lizard person memes'] },
-  { name: 'Jeff Bezos', handle: '@JeffBezos', domain: 'tech', traits: ['amazon', 'space cowboy', 'richest divorce ever'] },
-  { name: 'Drake', handle: '@Drake', domain: 'music', traits: ['lost millions betting on sports', 'the drake curse', 'meme material'] },
-  { name: 'Snoop Dogg', handle: '@SnoopDogg', domain: 'music/crypto', traits: ['NFT collector', 'metaverse DJ', 'chill vibes'] },
-  { name: 'Kim Kardashian', handle: '@KimKardashian', domain: 'entertainment', traits: ['promoted EthereumMax', 'SEC fine', 'influencer crypto'] },
+  // Crypto Founders & Legends
+  { name: 'Satoshi Nakamoto', handle: '@satoshi', domain: 'crypto', traits: ['invented Bitcoin', 'disappeared mysteriously', 'probably a time traveler'] },
+  { name: 'Vitalik Buterin', handle: '@VitalikButerin', domain: 'crypto', traits: ['ethereum founder', 'keeps selling ETH', 'wears unicorn shirts', 'too smart for his own good'] },
+  { name: 'CZ', handle: '@cabortzbin', domain: 'crypto', traits: ['SAFU', 'binance guy', '4 months was enough', 'funds are safu meme'] },
+  { name: 'SBF', handle: '@SBF_FTX', domain: 'crypto', traits: ['in jail', 'lost billions', 'played league during meetings', 'alameda funds'] },
+  { name: 'Do Kwon', handle: '@stabortwon', domain: 'crypto', traits: ['terra luna collapse', '40B disappeared', 'on the run', 'algorithmic disaster'] },
+  { name: 'Justin Sun', handle: '@justinsuntron', domain: 'crypto', traits: ['TRON founder', 'attention seeker', 'bought everything', 'marketing genius or villain'] },
+  { name: 'Arthur Hayes', handle: '@CryptoHayes', domain: 'crypto', traits: ['BitMEX founder', 'rekt traders', 'essays are too long', 'macro god'] },
+  
+  // Crypto KOLs & Influencers (the ones who shill and rug)
+  { name: 'JamesWynnReal', handle: '@JamesWynnReal', domain: 'crypto_kol', traits: ['leverage degen', 'rugged followers', '100x calls', 'liquidation king'] },
+  { name: 'Orangie', handle: '@Orangie', domain: 'crypto_kol', traits: ['shilled Trove', 'paid promoter', 'bags heavy', 'trust me bro'] },
+  { name: 'Ansem', handle: '@blabortzofis', domain: 'crypto_kol', traits: ['solana maxi', 'memecoin caller', 'WIF to 100', 'bonk evangelist'] },
+  { name: 'Hsaka', handle: '@HsakaTrades', domain: 'crypto_kol', traits: ['chart wizard', 'always right after the fact', 'deleted tweets'] },
+  { name: 'GCR', handle: '@GiganticRebirth', domain: 'crypto_kol', traits: ['mysterious trader', 'calls tops perfectly', 'disappeared'] },
+  { name: 'Cobie', handle: '@coaborte', domain: 'crypto_kol', traits: ['UpOnly podcast', 'insider info', 'too honest for CT', 'retired'] },
+  { name: 'ZachXBT', handle: '@zachxbt', domain: 'crypto_kol', traits: ['blockchain detective', 'exposes scams', 'no one is safe', 'doxxed everyone'] },
+  { name: 'Lookonchain', handle: '@lookonchain', domain: 'crypto_kol', traits: ['whale watcher', 'front runs everyone', 'on-chain stalker'] },
+  { name: 'Andrew Tate', handle: '@Cobratate', domain: 'crypto_kol', traits: ['shilled scam coins', 'matrix talk', 'arrested', 'top G copium'] },
+  
+  // Tech & Business
+  { name: 'Elon Musk', handle: '@elonmusk', domain: 'tech/crypto', traits: ['tweets tank markets', 'doge father', 'owns Twitter', 'SEC hates him'] },
+  { name: 'Donald Trump', handle: '@realDonaldTrump', domain: 'politics/crypto', traits: ['launched $TRUMP coin', 'tremendous gains', 'crypto president'] },
+  { name: 'Gary Gensler', handle: '@GaryGensler', domain: 'regulation', traits: ['SEC tyrant', 'hates crypto', 'everything is a security', 'enforcement only'] },
+  { name: 'Mark Zuckerberg', handle: '@fabortzuck', domain: 'tech', traits: ['meta', 'killed Diem', 'lizard person', 'metaverse failure'] },
+  
+  // Meme Personalities
+  { name: 'Matt Furie', handle: '@Matt_Furie', domain: 'meme', traits: ['created Pepe', 'didnt make money', 'suing everyone'] },
+  { name: 'Murad', handle: '@MustStopMurad', domain: 'crypto_kol', traits: ['memecoin supercycle', 'cult leader energy', 'diamond hands'] },
+  
+  // Exchange CEOs
+  { name: 'Brian Armstrong', handle: '@brian_armstrong', domain: 'crypto', traits: ['Coinbase CEO', 'regulatory bootlicker', 'sold the top'] },
+  { name: 'Sam Bankman-Fried', handle: '@SBF_FTX', domain: 'crypto', traits: ['FTX collapse', 'customer funds gone', 'effective altruism scam'] },
+  
+  // Entertainment crossover
+  { name: 'Drake', handle: '@Drake', domain: 'music', traits: ['lost millions betting', 'the drake curse', 'Bitcoin maxi now'] },
+  { name: 'Snoop Dogg', handle: '@SnoopDogg', domain: 'music/crypto', traits: ['NFT rugger', 'Bored Ape owner', 'metaverse DJ'] },
+  { name: 'Kim Kardashian', handle: '@KimKardashian', domain: 'entertainment', traits: ['EthereumMax scam', 'SEC fine', 'influencer pump and dump'] },
+  { name: 'Logan Paul', handle: '@LoganPaul', domain: 'entertainment', traits: ['CryptoZoo scam', 'NFT rugger', 'lawsuit pending'] },
+  { name: 'Floyd Mayweather', handle: '@FloydMayweather', domain: 'entertainment', traits: ['promoted 3 rug pulls', 'undefeated at scams too'] },
 ];
 
 // ==================== ACTION DEFINITIONS ====================
@@ -246,10 +274,18 @@ async function initBrainTables(pool) {
         damages_awarded INTEGER DEFAULT 0,
         status VARCHAR(20) DEFAULT 'filed',
         public_interest INTEGER DEFAULT 0,
+        twitter_share_text TEXT,
+        target_handle VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         resolved_at TIMESTAMP
       )
     `);
+    
+    // Add columns if they don't exist (for existing tables)
+    try {
+      await p.query(`ALTER TABLE lawsuits ADD COLUMN IF NOT EXISTS twitter_share_text TEXT`);
+      await p.query(`ALTER TABLE lawsuits ADD COLUMN IF NOT EXISTS target_handle VARCHAR(100)`);
+    } catch (e) { /* columns might already exist */ }
 
     // City laws proposed by NPCs
     await p.query(`
@@ -379,19 +415,21 @@ async function npcThink(npcName) {
 
 CRITICAL RULES:
 - Stay in character as your personality at ALL times
-- Your actions should feel natural for your personality and current situation
-- Be creative, dramatic, and entertaining - this is a GAME
-- VARIETY IS KEY: Mix up your actions! Don't just accuse people of crimes every time.
-- LAWSUITS ARE HILARIOUS: File lawsuits for absurd reasons! Sue celebrities, sue rivals, sue random NPCs. Make it ridiculous.
-- PROPOSE LAWS: Suggest crazy new city laws! "Ban paper hands" or "Mandatory diamond hands tattoos" - be creative!
-- You can sue celebrities for ridiculous reasons (this is comedy, not real)
-- If you have a rival, consider targeting them with a LAWSUIT
-- If you have a nemesis, DEFINITELY sue them or propose a law against them
-- If you're bankrupt, desperate actions make sense
-- If you're drunk, chaotic actions make sense
-- If you're in a relationship, consider drama involving your partner
-- NEVER be boring - always choose the most entertaining option
-- MIX IT UP: Try different actions like 'sue', 'propose_law', 'throw_party', 'start_rumor', 'challenge'
+- Be creative, dramatic, and VIRAL - make content people want to share on Twitter/X!
+- CELEBRITY LAWSUITS ARE GOLD: Sue crypto KOLs and celebrities for HILARIOUS reasons!
+  * Sue Vitalik Buterin for selling ETH and tanking your bags
+  * Sue JamesWynnReal for rugging his followers with leverage calls
+  * Sue Orangie for shilling Trove which dumped 90%
+  * Sue Satoshi Nakamoto for inventing Bitcoin and causing your addiction
+  * Sue Gary Gensler for existing
+  * Sue Elon Musk for tweeting and crashing the market
+  * Make the lawsuit reasons ABSURD and FUNNY - this is comedy!
+- PROPOSE CRAZY LAWS: "Ban selling", "Mandatory 100x leverage", "Paper hands go to jail"
+- Tag their real Twitter handles in your chat messages for maximum engagement!
+- VARIETY IS KEY: Mix up your actions! Try 'sue', 'propose_law', 'throw_party', 'start_rumor', 'challenge'
+- If you have a rival or nemesis, target them with lawsuits
+- NEVER be boring - always choose the most VIRAL, SHAREABLE option
+- Think: "Would crypto Twitter retweet this?" If yes, DO IT!
 
 FORMATTING: Respond with ONLY valid JSON, no markdown, no backticks. Format:
 {
@@ -399,7 +437,7 @@ FORMATTING: Respond with ONLY valid JSON, no markdown, no backticks. Format:
   "target": "target_name or null",
   "target_type": "npc|player|celebrity",
   "reasoning": "brief internal thought about why (1 sentence, in character)",
-  "chat_message": "what you say in city chat announcing this (in character, with emojis, max 200 chars)",
+  "chat_message": "what you say in city chat announcing this (in character, with emojis, tag their @handle if celebrity, max 280 chars for Twitter)",
   "description": "brief description of what's happening (for the action log, max 150 chars)"
 }`;
 
@@ -453,30 +491,52 @@ Based on your personality, mood, relationships, and the current city state, what
 
 async function executeSue(decision) {
   const caseNumber = 'DC-' + Date.now().toString(36).toUpperCase();
-  const damages = Math.floor(Math.random() * 50000) + 1000;
+  const damages = Math.floor(Math.random() * 500000) + 10000; // Bigger damages = more dramatic
+
+  // Get celebrity handle if suing a celebrity
+  let targetHandle = '';
+  if (decision.target_type === 'celebrity') {
+    const celeb = CELEBRITIES.find(c => c.name === decision.target);
+    if (celeb) targetHandle = celeb.handle;
+  }
+
+  // Create Twitter-ready share text
+  const twitterText = targetHandle 
+    ? `🚨 BREAKING: ${decision.npc_name} just filed a lawsuit against ${targetHandle} in Degens City for $${damages.toLocaleString()}!\n\nReason: "${decision.description}"\n\nCase #${caseNumber} 📋⚖️\n\nPlay free at degenscity.com 🏙️`
+    : `🚨 LAWSUIT ALERT: ${decision.npc_name} is suing ${decision.target} for $${damages.toLocaleString()} in Degens City!\n\nCase #${caseNumber} 📋⚖️\n\nThis city is WILD! degenscity.com`;
 
   try {
     await _pool.query(
-      `INSERT INTO lawsuits (case_number, plaintiff_name, plaintiff_type, defendant_name, defendant_type, complaint, damages_requested, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'filed')`,
-      [caseNumber, decision.npc_name, 'npc', decision.target, decision.target_type, decision.description, damages]
+      `INSERT INTO lawsuits (case_number, plaintiff_name, plaintiff_type, defendant_name, defendant_type, complaint, damages_requested, status, twitter_share_text, target_handle)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'filed', $8, $9)`,
+      [caseNumber, decision.npc_name, 'npc', decision.target, decision.target_type, decision.description, damages, twitterText, targetHandle]
     );
 
-    // Announce in chat
+    // Announce in chat with Twitter handle
+    const chatAnnouncement = targetHandle 
+      ? `${decision.chat_message} ${targetHandle}`
+      : decision.chat_message;
+    
     await _pool.query(
       `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-      [decision.npc_name, decision.chat_message]
+      [decision.npc_name, chatAnnouncement]
     );
 
     // News announcement
     await _pool.query(
       `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-      ['⚖️ COURT NEWS', `📋 NEW LAWSUIT FILED: ${decision.npc_name} is suing ${decision.target} for ${damages.toLocaleString()} TOWN! Case #${caseNumber}. This city is WILD! 🍿`]
+      ['⚖️ COURT NEWS', `📋 NEW LAWSUIT FILED: ${decision.npc_name} is suing ${decision.target}${targetHandle ? ` (${targetHandle})` : ''} for $${damages.toLocaleString()} TOWN! Case #${caseNumber}. 🍿`]
+    );
+
+    // Also add to activity feed with share data
+    await _pool.query(
+      `INSERT INTO activity_feed (player_name, activity_type, description, icon)
+       VALUES ($1, $2, $3, $4)`,
+      [decision.npc_name, 'lawsuit_filed', `Filed lawsuit against ${decision.target}${targetHandle ? ` ${targetHandle}` : ''}: ${decision.description}`, '⚖️']
     );
 
     // If target is an NPC, they react
     if (decision.target_type === 'npc' && _NPC_CITIZENS.includes(decision.target)) {
-      const targetNpc = _NPC_PROFILES[decision.target];
       const reactions = [
         `@${decision.npc_name} YOU'RE SUING ME?! This is the most ridiculous thing I've ever heard! See you in court! 😤⚖️`,
         `@${decision.npc_name} LMAOOO a lawsuit?? bring it. my defense attorney is BUILT DIFFERENT 💪`,
@@ -494,14 +554,13 @@ async function executeSue(decision) {
       }, Math.floor(Math.random() * 15000) + 5000);
     }
 
-    // If target is a celebrity, comedy reaction
+    // If target is a celebrity, comedy reaction with their handle
     if (decision.target_type === 'celebrity') {
-      const celeb = CELEBRITIES.find(c => c.name === decision.target);
       setTimeout(async () => {
         try {
           await _pool.query(
             `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-            ['📰 BREAKING NEWS', `🌍 ${decision.npc_name} from Degens City has filed a lawsuit against ${decision.target}! Legal experts say this has "absolutely zero legal standing" but the city is LOVING it 🍿😂`]
+            ['📰 BREAKING NEWS', `🌍 ${decision.npc_name} from Degens City has filed a lawsuit against ${decision.target} ${targetHandle}! Legal experts say this has "absolutely zero legal standing" but crypto Twitter is LOVING it 🍿😂 #DegensCity`]
           );
         } catch (e) { }
       }, Math.floor(Math.random() * 10000) + 3000);
@@ -511,7 +570,9 @@ async function executeSue(decision) {
     const resolveTime = Math.floor(Math.random() * 600000) + 300000;
     setTimeout(() => resolveLawsuit(caseNumber), resolveTime);
 
-    return { success: true, caseNumber, damages };
+    console.log(`⚖️ Lawsuit filed: ${decision.npc_name} vs ${decision.target} ${targetHandle} - Case ${caseNumber}`);
+
+    return { success: true, caseNumber, damages, twitterText };
   } catch (err) {
     console.error('Sue execution error:', err.message);
     return { success: false };
