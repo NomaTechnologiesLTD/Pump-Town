@@ -203,6 +203,10 @@ const CELEBRITIES = [
   // ============ MEME CREATORS ============
   { name: 'Matt Furie', handle: '@Matt_Furie', domain: 'meme', traits: ['created Pepe', 'didnt profit'] },
   { name: 'Beeple', handle: '@babortle', domain: 'nft', traits: ['69M NFT sale', 'everyday artist'] },
+  
+  // ============ EXTRA INFLUENTIAL ============
+  { name: 'J.P. Mullin', handle: '@jp_mullin888', domain: 'crypto', traits: ['Mantra CEO', 'RWA narrative', 'OM token'] },
+  { name: 'Jim Cramer', handle: '@jimcramer', domain: 'finance', traits: ['inverse Cramer', 'Mad Money', 'always wrong', 'sell indicator'] },
 ];
 
 // ==================== ACTION DEFINITIONS ====================

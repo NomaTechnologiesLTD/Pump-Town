@@ -1138,7 +1138,8 @@
         }
 
         .header-logo {
-            max-width: 320px;
+            max-width: 280px;
+            max-width: 280px;
             width: 100%;
             height: auto;
             border-radius: 15px;
@@ -30109,7 +30110,7 @@
                         src="degens-city-logo.png" 
                         alt="Degens City" 
                         className="header-logo"
-                        style={{ width: '320px', height: 'auto', borderRadius: '15px' }}
+                        style={{ width: '280px', height: 'auto', borderRadius: '15px' }}
                         onError={(e) => e.target.style.display = 'none'}
                     />
                     <div className="subtitle">Where degens live during memeseason</div>
@@ -36928,6 +36929,36 @@ Play at degenscity.com
                                                         <div style={{ color: '#ccc', fontSize: '0.85em', marginTop: '4px' }}>{suit.judge_ruling}</div>
                                                     </div>
                                                 )}
+                                                
+                                                {/* Share on X Button */}
+                                                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+                                                    <button
+                                                        onClick={() => {
+                                                            const tweetText = suit.twitter_share_text || 
+                                                                `🚨 LAWSUIT ALERT in Degens City!\n\n${suit.plaintiff_name} is suing ${suit.defendant_name}${suit.target_handle ? ` ${suit.target_handle}` : ''} for $${(suit.damages_requested || 0).toLocaleString()}!\n\nReason: "${suit.complaint || 'Undisclosed'}"\n\nCase #${suit.case_number} ⚖️\n\nPlay free at degenscity.com 🏙️`;
+                                                            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                                                            window.open(tweetUrl, '_blank', 'width=550,height=420');
+                                                        }}
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #1DA1F2, #0d8bd9)',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '20px',
+                                                            padding: '8px 16px',
+                                                            fontSize: '0.8em',
+                                                            fontWeight: 'bold',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                                                        onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                                                    >
+                                                        𝕏 Share on X
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -36972,10 +37003,36 @@ Play at degenscity.com
                                                     </span>
                                                 </div>
                                                 <div style={{ color: '#aaa', fontSize: '0.85em', marginBottom: '8px' }}>{law.law_description}</div>
-                                                <div style={{ display: 'flex', gap: '16px', fontSize: '0.82em' }}>
+                                                <div style={{ display: 'flex', gap: '16px', fontSize: '0.82em', alignItems: 'center' }}>
                                                     <span style={{ color: '#00ff88' }}>👍 {law.votes_for || 0} For</span>
                                                     <span style={{ color: '#ff4444' }}>👎 {law.votes_against || 0} Against</span>
-                                                    <span style={{ color: '#555', marginLeft: 'auto' }}>{timeAgo(law.created_at)}</span>
+                                                    <span style={{ color: '#555' }}>{timeAgo(law.created_at)}</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            const tweetText = `🏛️ NEW LAW PROPOSED in Degens City!\n\n📜 "${law.law_title}"\n\nProposed by ${law.proposer_name}\n\n"${law.law_description}"\n\n👍 ${law.votes_for || 0} For | 👎 ${law.votes_against || 0} Against\n\nVote now at degenscity.com ⚖️`;
+                                                            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                                                            window.open(tweetUrl, '_blank', 'width=550,height=420');
+                                                        }}
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #1DA1F2, #0d8bd9)',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '20px',
+                                                            padding: '6px 14px',
+                                                            fontSize: '0.75em',
+                                                            fontWeight: 'bold',
+                                                            cursor: 'pointer',
+                                                            marginLeft: 'auto',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '4px',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                                                        onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                                                    >
+                                                        𝕏 Share
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
