@@ -122,7 +122,11 @@ const CELEBRITIES = [
   { name: 'Charles Hoskinson', handle: '@IOHK_Charles', domain: 'crypto', traits: ['Cardano founder', 'always on YouTube', 'peer reviewed'] },
   { name: 'Michael Saylor', handle: '@saylor', domain: 'crypto', traits: ['Bitcoin maxi', 'laser eyes', 'never selling'] },
   { name: 'Gavin Wood', handle: '@gavofyork', domain: 'crypto', traits: ['Polkadot founder', 'Ethereum co-founder', 'Web3 creator'] },
-  { name: 'Anatoly Yakovenko', handle: '@aabortyakovenko', domain: 'crypto', traits: ['Solana founder', 'VC money', 'outages'] },
+  { name: 'Anatoly Yakovenko', handle: '@aeyakovenko', domain: 'crypto', traits: ['Solana founder', 'chain goes down', 'TPS maxi', 'restarts blockchain for fun'] },
+  { name: 'Toly', handle: '@taborly', domain: 'crypto', traits: ['Solana founder', 'replies to everyone', 'chain halts weekly', 'TPS cope', 'validators hate him'] },
+  { name: 'Phantom', handle: '@phantom', domain: 'crypto', traits: ['Solana wallet', 'shows wrong balance', 'transaction pending forever', 'NFTs disappear randomly', 'UX of a calculator'] },
+  { name: 'alon', handle: '@a]lon9', domain: 'crypto', traits: ['pump.fun founder', 'created rugpull factory', 'made scamming easy', 'bonding curves go brrr', 'prints millionaires and bagholders'] },
+  { name: 'Finn', handle: '@finnbags', domain: 'crypto', traits: ['BagsApp founder', 'tracks your bags', 'reminds you of your losses daily', 'portfolio tracker of pain', 'shows P&L nobody asked for'] },
   { name: 'Hayden Adams', handle: '@haydenzadams', domain: 'crypto', traits: ['Uniswap founder', 'DeFi pioneer', 'AMM king'] },
   { name: 'Andre Cronje', handle: '@AndreCronjeTech', domain: 'crypto', traits: ['Yearn founder', 'quits and returns', 'DeFi mad scientist'] },
   { name: 'Sam Altman', handle: '@sama', domain: 'tech', traits: ['OpenAI CEO', 'Worldcoin eye scanning', 'AGI doom'] },
@@ -735,6 +739,10 @@ LAWSUIT IDEAS (be creative with these, don't copy verbatim):
 - Sue Do Kwon for: algorithmic stablecoin that wasn't stable, the $40B rugpull
 - Sue CZ for: only getting 4 months jail time, "funds are safu" being a lie
 - Sue mrjberlin for: farming every airdrop, having 1000 wallets, sybil attacking everything, making airdrops worthless for normal people, never touching grass
+- Sue Phantom (@phantom) for: showing wrong balance, transaction pending for 3 hours, NFTs randomly disappearing, making me think I was rich when I was poor, UX designed by a sadist, "unable to fetch balance" at the worst times
+- Sue Toly (@toly) for: Solana going down during every pump, "TPS doesn't matter" cope, restarting the blockchain like it's Windows 98, validators quitting, making me miss the top because chain halted
+- Sue alon (@a]lon9) for: creating pump.fun aka rugpull factory, making it too easy to create scams, bonding curves that only go down, enabling the creation of 10000 dog coins, my gambling addiction getting worse, taking 1% of every degen's tears
+- Sue Finn (@finnbags) for: BagsApp showing me my losses every day, portfolio tracker that tracks my pain, push notifications reminding me I'm poor, making my bags feel heavier, P&L display that ruined my day
 - Sue random KOLs for: paid promotions, deleting wrong calls, shilling rugs
 - Sue politicians for: not understanding crypto, regulating everything, printing money
 
