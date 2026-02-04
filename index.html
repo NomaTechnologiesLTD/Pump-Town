@@ -15772,6 +15772,12 @@
                                 {/* ═══════ LIVE CITY PULSE ═══════ */}
                                 <CityPulse />
                                 
+                                {/* ═══════ CITIZEN ACTIONS (Sue, Propose Laws) ═══════ */}
+                                <CitizenActions 
+                                    playerName={character?.name || 'Guest'}
+                                    showToast={showToast}
+                                />
+                                
                                 {/* ═══════ MAYOR & REPUTATION — Side by Side on desktop ═══════ */}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '0' }}>
                                     <MayorInbox 
@@ -15823,12 +15829,6 @@
                                     <FearGreedIndex />
                                     <LiveActivityFeed playerName={character?.name} onPlayerClick={openPlayerProfile} />
                                 </div>
-                                
-                                {/* ═══════ CITIZEN ACTIONS (Sue, Propose Laws) ═══════ */}
-                                <CitizenActions 
-                                    playerName={character?.name || 'Guest'}
-                                    showToast={showToast}
-                                />
                                 
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
                                     <PassiveIncomePanel 
@@ -15904,6 +15904,24 @@
                                 <LiveCityFeed />
                                 <CityLedger 
                                     character={character}
+                                />
+                            </>
+                        );
+                    
+                    case 'legal':
+                        return (
+                            <>
+                                <div className="card" style={{ background: 'linear-gradient(135deg, rgba(255,107,107,0.1), rgba(255,215,0,0.1))', marginBottom: '20px' }}>
+                                    <h1 style={{ color: '#ff6b6b', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span>⚖️</span> Citizen Legal Actions
+                                    </h1>
+                                    <p style={{ color: '#888', margin: 0 }}>
+                                        File lawsuits, propose laws, and shape the future of Degens City!
+                                    </p>
+                                </div>
+                                <CitizenActions 
+                                    playerName={character?.name || 'Guest'}
+                                    showToast={showToast}
                                 />
                             </>
                         );
@@ -16336,6 +16354,14 @@
                                 <span className="nav-item-icon">⚖️</span>
                                 <span className="nav-item-text">Courthouse</span>
                                 <span className="nav-item-badge new">LIVE</span>
+                            </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'legal' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('legal'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">📜</span>
+                                <span className="nav-item-text">Sue & Laws</span>
+                                <span className="nav-item-badge new" style={{ background: 'linear-gradient(90deg, #ff6b6b, #ffd700)' }}>NEW</span>
                             </div>
                             <div 
                                 className={`nav-item ${currentPage === 'brain' ? 'active' : ''}`}
