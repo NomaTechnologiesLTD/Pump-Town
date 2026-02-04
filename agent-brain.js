@@ -207,6 +207,8 @@ const CELEBRITIES = [
   // ============ EXTRA INFLUENTIAL ============
   { name: 'J.P. Mullin', handle: '@jp_mullin888', domain: 'crypto', traits: ['Mantra CEO', 'RWA narrative', 'OM token'] },
   { name: 'Jim Cramer', handle: '@jimcramer', domain: 'finance', traits: ['inverse Cramer', 'Mad Money', 'always wrong', 'sell indicator'] },
+  { name: 'YoungHoon Kim', handle: '@YoungHoonKim_', domain: 'crypto_kol', traits: ['calls pumps that dump', 'reverse indicator', 'crypto soothsayer', 'buy signal = sell'] },
+  { name: 'IQ276', handle: '@IQ276', domain: 'crypto_kol', traits: ['galaxy brain takes', 'wrong predictions', 'confidently incorrect', 'CT personality'] },
 ];
 
 // ==================== ACTION DEFINITIONS ====================
