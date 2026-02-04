@@ -16067,6 +16067,7 @@
                                 
                                 {/* Portfolio Simulator with REAL prices */}
                                 <PortfolioSimulator 
+                                    playerName={character?.name || 'Guest'}
                                     resources={resources}
                                     onResourceChange={handleResourceChange}
                                     showToast={showToast}
@@ -24171,11 +24172,8 @@
         }
 
         // ==================== PORTFOLIO SIMULATOR ====================
-        function PortfolioSimulator({ resources, onResourceChange, showToast, onTradeComplete }) {
-            const [portfolio, setPortfolio] = useState(() => {
-                const saved = localStorage.getItem('pumptown_portfolio');
-                return saved ? JSON.parse(saved) : [];
-            });
+        function PortfolioSimulator({ playerName, resources, onResourceChange, showToast, onTradeComplete }) {
+            const [portfolio, setPortfolio] = useState([]);
             const [allCoins, setAllCoins] = useState([]);
             const [prices, setPrices] = useState({});
             const [buyAmount, setBuyAmount] = useState(100);
@@ -24184,10 +24182,52 @@
             const [showDropdown, setShowDropdown] = useState(false);
             const [sortBy, setSortBy] = useState('rank'); // rank, price, change
             const [loading, setLoading] = useState(true);
+            const [portfolioLoaded, setPortfolioLoaded] = useState(false);
             
+            // Load portfolio from database on mount
             useEffect(() => {
-                localStorage.setItem('pumptown_portfolio', JSON.stringify(portfolio));
-            }, [portfolio]);
+                const loadPortfolio = async () => {
+                    if (!playerName || playerName === 'Guest') {
+                        // Guest users use localStorage
+                        const saved = localStorage.getItem('pumptown_portfolio');
+                        setPortfolio(saved ? JSON.parse(saved) : []);
+                        setPortfolioLoaded(true);
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`${API_BASE}/api/player/holdings/${encodeURIComponent(playerName)}`);
+                        const data = await response.json();
+                        if (data.success && data.holdings) {
+                            // Convert server format to local format
+                            const holdings = data.holdings.map(h => ({
+                                id: h.id,
+                                symbol: h.symbol,
+                                amount: h.amount,
+                                invested: h.invested,
+                                buyPrice: h.avgBuyPrice
+                            }));
+                            setPortfolio(holdings);
+                            // Also save to localStorage as backup
+                            localStorage.setItem('pumptown_portfolio', JSON.stringify(holdings));
+                        }
+                    } catch (err) {
+                        console.error('Failed to load portfolio from server:', err);
+                        // Fallback to localStorage
+                        const saved = localStorage.getItem('pumptown_portfolio');
+                        setPortfolio(saved ? JSON.parse(saved) : []);
+                    }
+                    setPortfolioLoaded(true);
+                };
+                loadPortfolio();
+            }, [playerName]);
+            
+            // Save to localStorage as backup whenever portfolio changes
+            useEffect(() => {
+                if (portfolioLoaded) {
+                    localStorage.setItem('pumptown_portfolio', JSON.stringify(portfolio));
+                }
+            }, [portfolio, portfolioLoaded]);
             
             // Fetch top 100 coins from CoinGecko
             useEffect(() => {
@@ -24254,7 +24294,7 @@
             
             const selectedCoinData = allCoins.find(c => c.id === selectedCoin);
             
-            const buyToken = () => {
+            const buyToken = async () => {
                 const coin = allCoins.find(c => c.id === selectedCoin);
                 const price = prices[selectedCoin]?.usd;
                 if (!price || !coin) return;
@@ -24267,6 +24307,27 @@
                 onResourceChange('hopium', -buyAmount);
                 
                 const amount = buyAmount / price;
+                
+                // Save to database if logged in
+                if (playerName && playerName !== 'Guest') {
+                    try {
+                        await fetch(`${API_BASE}/api/player/trade/buy`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                playerName,
+                                coinId: selectedCoin,
+                                symbol: coin.symbol,
+                                amount,
+                                price,
+                                total: buyAmount
+                            })
+                        });
+                    } catch (err) {
+                        console.error('Failed to save trade:', err);
+                    }
+                }
+                
                 setPortfolio(prev => {
                     const existing = prev.find(p => p.id === selectedCoin);
                     if (existing) {
@@ -24293,12 +24354,32 @@
                 showToast(`Bought ${amount.toFixed(6)} ${coin.symbol}!`, 'success');
             };
             
-            const sellToken = (coinId) => {
+            const sellToken = async (coinId) => {
                 const holding = portfolio.find(p => p.id === coinId);
                 const price = prices[coinId]?.usd;
                 if (!holding || !price) return;
                 
                 const value = holding.amount * price;
+                
+                // Save to database if logged in
+                if (playerName && playerName !== 'Guest') {
+                    try {
+                        await fetch(`${API_BASE}/api/player/trade/sell`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                playerName,
+                                coinId,
+                                symbol: holding.symbol,
+                                amount: holding.amount,
+                                price
+                            })
+                        });
+                    } catch (err) {
+                        console.error('Failed to save trade:', err);
+                    }
+                }
+                
                 onResourceChange('hopium', Math.floor(value));
                 setPortfolio(prev => prev.filter(p => p.id !== coinId));
                 

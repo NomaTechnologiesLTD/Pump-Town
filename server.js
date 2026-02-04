@@ -360,6 +360,38 @@ async function initDatabase() {
       )
     `);
     
+    // Player holdings (for regular users, not AI agents)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS player_holdings (
+        id SERIAL PRIMARY KEY,
+        player_name VARCHAR(100) NOT NULL,
+        coin_id VARCHAR(100) NOT NULL,
+        symbol VARCHAR(20) NOT NULL,
+        amount DECIMAL(20, 8) NOT NULL,
+        avg_buy_price DECIMAL(20, 8),
+        invested DECIMAL(20, 8) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(player_name, coin_id)
+      )
+    `);
+    
+    // Player trades history
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS player_trades (
+        id SERIAL PRIMARY KEY,
+        player_name VARCHAR(100) NOT NULL,
+        type VARCHAR(10) NOT NULL,
+        coin_id VARCHAR(100) NOT NULL,
+        symbol VARCHAR(20) NOT NULL,
+        amount DECIMAL(20, 8) NOT NULL,
+        price DECIMAL(20, 8) NOT NULL,
+        total DECIMAL(20, 8) NOT NULL,
+        pnl DECIMAL(20, 8),
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
     // Agent votes
     await client.query(`
       CREATE TABLE IF NOT EXISTS agent_votes (
@@ -3368,6 +3400,136 @@ app.post('/api/v1/agent/trade/sell', authenticateAgent, agentRateLimit('trade', 
       success: false,
       error: { code: 500, message: 'Trade failed' }
     });
+  }
+});
+
+// ==================== PLAYER HOLDINGS (for regular users) ====================
+
+// Get player portfolio
+app.get('/api/player/holdings/:playerName', async (req, res) => {
+  try {
+    const { playerName } = req.params;
+    
+    const result = await pool.query(
+      'SELECT * FROM player_holdings WHERE LOWER(player_name) = LOWER($1)',
+      [playerName]
+    );
+    
+    res.json({
+      success: true,
+      holdings: result.rows.map(h => ({
+        id: h.coin_id,
+        symbol: h.symbol,
+        amount: parseFloat(h.amount),
+        avgBuyPrice: parseFloat(h.avg_buy_price || 0),
+        invested: parseFloat(h.invested || 0)
+      }))
+    });
+  } catch (error) {
+    console.error('Get player holdings error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get holdings' });
+  }
+});
+
+// Buy crypto (player)
+app.post('/api/player/trade/buy', async (req, res) => {
+  try {
+    const { playerName, coinId, symbol, amount, price, total } = req.body;
+    
+    if (!playerName || !coinId || !symbol || !amount || !price) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+    
+    // Upsert holding
+    await pool.query(`
+      INSERT INTO player_holdings (player_name, coin_id, symbol, amount, avg_buy_price, invested, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      ON CONFLICT (player_name, coin_id) DO UPDATE SET
+        amount = player_holdings.amount + $4,
+        avg_buy_price = (player_holdings.avg_buy_price * player_holdings.amount + $5 * $4) / (player_holdings.amount + $4),
+        invested = player_holdings.invested + $6,
+        updated_at = NOW()
+    `, [playerName, coinId, symbol.toUpperCase(), amount, price, total || (amount * price)]);
+    
+    // Record trade
+    await pool.query(`
+      INSERT INTO player_trades (player_name, type, coin_id, symbol, amount, price, total)
+      VALUES ($1, 'buy', $2, $3, $4, $5, $6)
+    `, [playerName, coinId, symbol.toUpperCase(), amount, price, total || (amount * price)]);
+    
+    console.log(`💰 ${playerName} bought ${amount} ${symbol} at $${price}`);
+    
+    res.json({ success: true, message: 'Buy recorded' });
+  } catch (error) {
+    console.error('Player buy error:', error);
+    res.status(500).json({ success: false, error: 'Trade failed' });
+  }
+});
+
+// Sell crypto (player)
+app.post('/api/player/trade/sell', async (req, res) => {
+  try {
+    const { playerName, coinId, symbol, amount, price } = req.body;
+    
+    if (!playerName || !coinId || !amount || !price) {
+      return res.status(400).json({ success: false, error: 'Missing required fields' });
+    }
+    
+    // Check holding
+    const holding = await pool.query(
+      'SELECT * FROM player_holdings WHERE LOWER(player_name) = LOWER($1) AND coin_id = $2',
+      [playerName, coinId]
+    );
+    
+    if (holding.rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'No holdings found' });
+    }
+    
+    const h = holding.rows[0];
+    const currentAmount = parseFloat(h.amount);
+    
+    if (amount > currentAmount) {
+      return res.status(400).json({ success: false, error: 'Insufficient holdings' });
+    }
+    
+    // Calculate PnL
+    const avgBuyPrice = parseFloat(h.avg_buy_price || 0);
+    const pnl = (price - avgBuyPrice) * amount;
+    const total = amount * price;
+    
+    // Update or delete holding
+    const newAmount = currentAmount - amount;
+    if (newAmount < 0.00000001) {
+      await pool.query(
+        'DELETE FROM player_holdings WHERE LOWER(player_name) = LOWER($1) AND coin_id = $2',
+        [playerName, coinId]
+      );
+    } else {
+      // Reduce invested proportionally
+      const investedRatio = amount / currentAmount;
+      const investedReduction = parseFloat(h.invested || 0) * investedRatio;
+      
+      await pool.query(`
+        UPDATE player_holdings SET 
+          amount = $1, 
+          invested = invested - $2,
+          updated_at = NOW()
+        WHERE LOWER(player_name) = LOWER($3) AND coin_id = $4
+      `, [newAmount, investedReduction, playerName, coinId]);
+    }
+    
+    // Record trade
+    await pool.query(`
+      INSERT INTO player_trades (player_name, type, coin_id, symbol, amount, price, total, pnl)
+      VALUES ($1, 'sell', $2, $3, $4, $5, $6, $7)
+    `, [playerName, coinId, symbol?.toUpperCase() || h.symbol, amount, price, total, pnl]);
+    
+    console.log(`💰 ${playerName} sold ${amount} ${symbol || h.symbol} at $${price} (PnL: $${pnl.toFixed(2)})`);
+    
+    res.json({ success: true, message: 'Sell recorded', pnl });
+  } catch (error) {
+    console.error('Player sell error:', error);
+    res.status(500).json({ success: false, error: 'Trade failed' });
   }
 });
 
