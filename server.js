@@ -2616,7 +2616,7 @@ app.get('/api/v1/brain/lawsuits', async (req, res) => {
     // First try lawsuits table
     try {
       const result = await pool.query(`
-        SELECT id, case_number, plaintiff_name, plaintiff_type, defendant_name as target_name, defendant_type as target_type, 
+        SELECT id, case_number, plaintiff_name, plaintiff_type, defendant_name, defendant_type, 
                complaint, damages_requested, status, verdict, damages_awarded, judge_ruling, 
                twitter_share_text, target_handle, created_at, resolved_at
         FROM lawsuits 
