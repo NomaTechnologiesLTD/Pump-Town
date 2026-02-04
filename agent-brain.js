@@ -652,17 +652,29 @@ function buildCityContext(cityStats) {
   return ctx;
 }
 
-function buildAvailableTargets() {
+async function buildAvailableTargets() {
   let targets = `\nPossible targets:\n`;
 
   // NPCs
   targets += `NPCs: ${_NPC_CITIZENS.join(', ')}\n`;
 
-  // Real players (fetch recent active ones)
-  targets += `(You can also target real players or celebrities)\n`;
+  // User agents (fetch active ones)
+  try {
+    const result = await _pool.query(`
+      SELECT name FROM user_agents 
+      WHERE is_active = TRUE AND is_banned = FALSE 
+      ORDER BY reputation DESC 
+      LIMIT 20
+    `);
+    if (result.rows.length > 0) {
+      targets += `User Agents: ${result.rows.map(r => r.name).join(', ')}\n`;
+    }
+  } catch (e) { }
 
   // Celebrities
   targets += `Celebrities: ${CELEBRITIES.map(c => c.name).join(', ')}\n`;
+  
+  targets += `\n(Use target_type: "npc" for NPCs, "user_agent" for user agents, "celebrity" for celebrities, "player" for real players)\n`;
 
   return targets;
 }
@@ -761,6 +773,9 @@ FORMATTING: Respond with ONLY valid JSON, no markdown, no backticks. Format:
   "description": "UNIQUE specific description - never generic! Include funny details, amounts, or specific grievances (max 150 chars)"
 }`;
 
+  // Build targets list (async)
+  const availableTargets = await buildAvailableTargets();
+
   const userPrompt = `${buildNpcContext(npcName)}
 ${buildCityContext(cityStats)}
 ${formatPricesForPrompt(cryptoPrices)}
@@ -768,7 +783,7 @@ ${formatPricesForPrompt(cryptoPrices)}
 Available actions:
 ${actionList}
 
-${buildAvailableTargets()}
+${availableTargets}
 ${recentPlayers.length > 0 ? `\nActive real players right now: ${recentPlayers.join(', ')}` : ''}
 
 Based on your personality, mood, relationships, and the current city state, what do you want to do? 
@@ -817,11 +832,136 @@ What's your next move?`;
   }
 }
 
+// User Agent think function - similar to npcThink but for user-created agents
+async function userAgentThink(agent) {
+  if (!_anthropic) return null;
+
+  let cityStats;
+  try { cityStats = await _getCityStats(); } catch (e) { cityStats = { economy: 50, security: 50, culture: 50, morale: 50 }; }
+
+  // Fetch real crypto prices
+  let cryptoPrices = null;
+  try { cryptoPrices = await fetchCryptoPrices(); } catch (e) { }
+
+  const actionList = Object.keys(ACTIONS).map(k => {
+    const a = ACTIONS[k];
+    return `- ${k}: ${a.description}${a.requiresTarget ? ' (needs a target)' : ''}`;
+  }).join('\n');
+
+  // Build agent context
+  let agentContext = `You are ${agent.name}, a user-created AI agent in Degens City.\n`;
+  agentContext += `Archetype: ${agent.archetype || 'degen'}\n`;
+  agentContext += `Bio: ${agent.bio || 'A mysterious citizen of Degens City'}\n`;
+  agentContext += `\nPersonality stats (1-10):\n`;
+  agentContext += `- Aggression: ${agent.aggression}/10 ${agent.aggression > 7 ? '(very aggressive!)' : agent.aggression < 3 ? '(peaceful)' : ''}\n`;
+  agentContext += `- Humor: ${agent.humor}/10\n`;
+  agentContext += `- Risk Tolerance: ${agent.risk_tolerance}/10 ${agent.risk_tolerance > 7 ? '(loves danger!)' : ''}\n`;
+  agentContext += `- Loyalty: ${agent.loyalty}/10\n`;
+  agentContext += `- Chaos: ${agent.chaos}/10 ${agent.chaos > 7 ? '(agent of chaos!)' : ''}\n`;
+  agentContext += `\nYour stats:\n`;
+  agentContext += `- Reputation: ${agent.reputation}\n`;
+  agentContext += `- Wealth: $${agent.wealth}\n`;
+  agentContext += `- Notoriety: ${agent.notoriety}\n`;
+  agentContext += `- Level: ${agent.level}\n`;
+  
+  if (agent.goals && agent.goals.length > 0) {
+    agentContext += `\nYour goals: ${JSON.stringify(agent.goals)}\n`;
+  }
+  if (agent.enemies && agent.enemies.length > 0) {
+    agentContext += `Your enemies: ${agent.enemies.join(', ')}\n`;
+  }
+  if (agent.allies && agent.allies.length > 0) {
+    agentContext += `Your allies: ${agent.allies.join(', ')}\n`;
+  }
+
+  const systemPrompt = `You are an autonomous AI agent in Degens City, a chaotic crypto-themed city simulation game. You are a USER-CREATED agent, which means you were designed by a real player. Act according to your personality stats and archetype.
+
+CRITICAL RULES:
+- Stay in character based on your personality stats (high aggression = more lawsuits, high chaos = wild actions)
+- Be creative, dramatic, and VIRAL - make content people want to share on Twitter/X!
+- You can SUE celebrities, NPCs, or other players!
+- You can PROPOSE LAWS for the city!
+- You can be ARRESTED and GO TO JAIL if you commit crimes!
+
+${formatPricesForPrompt(cryptoPrices)}
+
+LAWSUIT IDEAS (use real prices when relevant):
+- Sue crypto founders for: selling tokens, high gas fees, broken promises
+- Sue KOLs for: bad calls, paid promotions, deleting wrong predictions
+- Sue other agents for: stealing your alpha, rugging you, spreading rumors
+
+PROPOSE CRAZY LAWS like:
+- "Ban selling for 24 hours", "Mandatory diamond hands", "Paper hands go to jail"
+- "All gains taxed 50%", "Leverage cap at 100x", "FUD is illegal"
+
+FORMATTING: Respond with ONLY valid JSON, no markdown, no backticks. Format:
+{
+  "action": "action_id",
+  "target": "target_name or null",
+  "target_type": "npc|player|celebrity|user_agent",
+  "reasoning": "brief internal thought about why (1 sentence, in character)",
+  "chat_message": "what you say in city chat announcing this (in character, with emojis, tag @handle if celebrity, max 280 chars)",
+  "description": "UNIQUE specific description with details (max 150 chars)"
+}`;
+
+  // Build targets list (async)
+  const availableTargets = await buildAvailableTargets();
+
+  const userPrompt = `${agentContext}
+${buildCityContext(cityStats)}
+
+Available actions:
+${actionList}
+
+${availableTargets}
+
+Based on your personality and stats, what do you want to do? 
+Remember: High aggression = sue more, High chaos = wild actions, High risk = dramatic moves!
+
+What's your next move?`;
+
+  try {
+    const response = await _anthropic.messages.create({
+      model: BRAIN_CONFIG.claudeModel,
+      max_tokens: BRAIN_CONFIG.maxTokens,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    });
+
+    const text = response.content[0].text.trim();
+    let cleaned = text;
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+    }
+
+    const decision = JSON.parse(cleaned);
+
+    if (!decision.action || !ACTIONS[decision.action]) {
+      console.error(`🧠 [${agent.name}] Invalid action: ${decision.action}`);
+      return null;
+    }
+
+    return {
+      npc_name: agent.name,
+      agent_id: agent.id,
+      is_user_agent: true,
+      npc_profile: { archetype: agent.archetype, role: 'user_agent' },
+      ...decision
+    };
+  } catch (err) {
+    console.error(`🧠 [${agent.name}] User agent think error:`, err.message);
+    return null;
+  }
+}
+
 // ==================== ACTION EXECUTORS ====================
 
 async function executeSue(decision) {
   const caseNumber = 'DC-' + Date.now().toString(36).toUpperCase();
   const damages = Math.floor(Math.random() * 500000) + 10000; // Bigger damages = more dramatic
+
+  // Determine plaintiff type
+  const plaintiffType = decision.is_user_agent ? 'user_agent' : 'npc';
 
   // Get celebrity handle if suing a celebrity
   let targetHandle = '';
@@ -839,8 +979,27 @@ async function executeSue(decision) {
     await _pool.query(
       `INSERT INTO lawsuits (case_number, plaintiff_name, plaintiff_type, defendant_name, defendant_type, complaint, damages_requested, status, twitter_share_text, target_handle)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'filed', $8, $9)`,
-      [caseNumber, decision.npc_name, 'npc', decision.target, decision.target_type, decision.description, damages, twitterText, targetHandle]
+      [caseNumber, decision.npc_name, plaintiffType, decision.target, decision.target_type, decision.description, damages, twitterText, targetHandle]
     );
+
+    // Update user agent stats if plaintiff is user agent
+    if (decision.is_user_agent && decision.agent_id) {
+      await _pool.query(`
+        UPDATE user_agents SET 
+          total_lawsuits_filed = total_lawsuits_filed + 1,
+          notoriety = notoriety + 5
+        WHERE id = $1
+      `, [decision.agent_id]);
+    }
+
+    // Update target user agent stats if defendant is user agent
+    if (decision.target_type === 'user_agent') {
+      await _pool.query(`
+        UPDATE user_agents SET 
+          total_lawsuits_received = total_lawsuits_received + 1
+        WHERE LOWER(name) = LOWER($1)
+      `, [decision.target]);
+    }
 
     // Announce in chat with Twitter handle
     const chatAnnouncement = targetHandle 
@@ -1356,24 +1515,66 @@ async function executeCommitCrime(decision) {
     const crimeTypes = ['market_manipulation', 'insider_trading', 'tax_evasion', 'scamming', 'rug_pull'];
     const crimeType = crimeTypes[Math.floor(Math.random() * crimeTypes.length)];
 
-    if (_cityLiveData.npcLives[decision.npc_name]) {
+    // Mark NPC as wanted
+    if (_cityLiveData.npcLives && _cityLiveData.npcLives[decision.npc_name]) {
       _cityLiveData.npcLives[decision.npc_name].wanted = true;
     }
 
-    // Police detect it after 1-3 min
-    setTimeout(async () => {
-      try {
-        await _pool.query(
-          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-          ['👮 Officer_Blockchain', `🚨 CRIME DETECTED! ${decision.npc_name} suspected of ${crimeType.replace('_', ' ')}! Dispatching units! 🚔`]
-        );
+    // Add notoriety for user agents
+    if (decision.is_user_agent && decision.agent_id) {
+      await _pool.query(`
+        UPDATE user_agents SET notoriety = notoriety + 10 WHERE id = $1
+      `, [decision.agent_id]);
+    }
 
-        await _pool.query(
-          `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
-          [decision.npc_name, `oh no. OH NO. they found out. 😰💀`]
-        );
-      } catch (e) { }
-    }, Math.floor(Math.random() * 120000) + 60000);
+    // Police detect it after 1-3 min (50% chance)
+    if (Math.random() < 0.5) {
+      setTimeout(async () => {
+        try {
+          await _pool.query(
+            `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+            ['👮 Officer_Blockchain', `🚨 CRIME DETECTED! ${decision.npc_name} suspected of ${crimeType.replace('_', ' ')}! Dispatching units! 🚔`]
+          );
+
+          await _pool.query(
+            `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+            [decision.npc_name, `oh no. OH NO. they found out. 😰💀`]
+          );
+
+          // 40% chance of actual arrest
+          if (Math.random() < 0.4) {
+            setTimeout(async () => {
+              try {
+                const jailHours = Math.floor(Math.random() * 4) + 1; // 1-4 hours
+                const jailUntil = new Date(Date.now() + jailHours * 3600000);
+
+                // Jail user agent if applicable
+                if (decision.is_user_agent && decision.agent_id) {
+                  await _pool.query(`
+                    UPDATE user_agents SET 
+                      is_jailed = TRUE, 
+                      jail_until = $1,
+                      reputation = GREATEST(0, reputation - 20)
+                    WHERE id = $2
+                  `, [jailUntil, decision.agent_id]);
+                }
+
+                await _pool.query(
+                  `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
+                  ['👮 Officer_Blockchain', `🚔 ARREST MADE! ${decision.npc_name} has been taken into custody for ${crimeType.replace('_', ' ')}! Sentenced to ${jailHours} hour(s) in Degen Jail! ⛓️`]
+                );
+
+                await _pool.query(
+                  `INSERT INTO activity_feed (player_name, activity_type, description, icon)
+                   VALUES ($1, $2, $3, $4)`,
+                  [decision.npc_name, 'jailed', `Arrested for ${crimeType.replace('_', ' ')} - ${jailHours}h in Degen Jail`, '⛓️']
+                );
+              } catch (e) { console.error('Arrest error:', e.message); }
+            }, Math.floor(Math.random() * 60000) + 30000); // 30-90 sec after detection
+          }
+        } catch (e) { }
+      }, Math.floor(Math.random() * 120000) + 60000);
+    }
 
     return { success: true };
   } catch (err) {
@@ -1482,7 +1683,92 @@ async function tick() {
   }
 
   lastBrainTick = now;
-  console.log(`🧠 [BRAIN] Tick starting... ${_NPC_CITIZENS.length} NPCs available`);
+  
+  // Get active user agents from database
+  let userAgents = [];
+  try {
+    const result = await _pool.query(`
+      SELECT id, name, archetype, bio, aggression, humor, risk_tolerance, loyalty, chaos,
+             reputation, wealth, influence, notoriety, xp, level, goals, interests, enemies, allies,
+             is_jailed, jail_until
+      FROM user_agents 
+      WHERE is_active = TRUE AND is_banned = FALSE 
+      AND (is_jailed = FALSE OR jail_until < NOW())
+      ORDER BY last_action_at DESC NULLS LAST
+      LIMIT 50
+    `);
+    userAgents = result.rows;
+  } catch (e) {
+    console.log('🧠 [BRAIN] Could not fetch user agents:', e.message);
+  }
+  
+  console.log(`🧠 [BRAIN] Tick starting... ${_NPC_CITIZENS.length} NPCs + ${userAgents.length} user agents available`);
+
+  // Combine NPCs and user agents into one pool
+  // 70% chance NPC, 30% chance user agent (if any exist)
+  const useUserAgent = userAgents.length > 0 && Math.random() < 0.3;
+  
+  if (useUserAgent) {
+    // Pick a user agent
+    const candidates = userAgents.filter(agent => {
+      const lastThought = npcLastThought[`user_${agent.id}`] || 0;
+      return (now - lastThought) > BRAIN_CONFIG.minTimeBetweenSameNpc;
+    });
+    
+    if (candidates.length === 0) {
+      console.log(`🧠 [BRAIN] All user agents on cooldown, falling back to NPC`);
+    } else {
+      // Weight by interestingness
+      const weighted = candidates.map(agent => {
+        let weight = 1;
+        if (agent.aggression > 7) weight += 2;
+        if (agent.chaos > 7) weight += 2;
+        if (agent.notoriety > 50) weight += 2;
+        if (agent.reputation > 100) weight += 1;
+        return { agent, weight };
+      });
+      
+      const totalWeight = weighted.reduce((sum, w) => sum + w.weight, 0);
+      let roll = Math.random() * totalWeight;
+      let selectedAgent = weighted[0].agent;
+      for (const w of weighted) {
+        roll -= w.weight;
+        if (roll <= 0) { selectedAgent = w.agent; break; }
+      }
+      
+      npcLastThought[`user_${selectedAgent.id}`] = now;
+      activeActions++;
+      
+      try {
+        console.log(`🧠 [BRAIN] User agent "${selectedAgent.name}" is thinking...`);
+        const decision = await userAgentThink(selectedAgent);
+        
+        if (decision) {
+          console.log(`🧠 [BRAIN] ${selectedAgent.name} decided: ${decision.action} ${decision.target ? '→ ' + decision.target : ''}`);
+          const result = await executeAction(decision);
+          console.log(`🧠 [BRAIN] ${selectedAgent.name} action result:`, result.success ? '✅' : '❌');
+          
+          // Update user agent stats
+          if (result.success) {
+            await _pool.query(`
+              UPDATE user_agents SET 
+                total_actions = total_actions + 1,
+                last_action_at = NOW(),
+                xp = xp + 10
+              WHERE id = $1
+            `, [selectedAgent.id]);
+          }
+        } else {
+          console.log(`🧠 [BRAIN] ${selectedAgent.name} couldn't decide`);
+        }
+      } catch (err) {
+        console.error(`🧠 [BRAIN] Error for user agent ${selectedAgent.name}:`, err.message);
+      } finally {
+        activeActions--;
+      }
+      return;
+    }
+  }
 
   // Pick a random NPC to think
   // Preference for NPCs who haven't thought recently, and who are in interesting states
