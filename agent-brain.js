@@ -474,10 +474,11 @@ function buildCityContext(cityStats) {
 
   // Recent actions for context
   if (recentAutonomousActions.length > 0) {
-    ctx += `\nRecent events in the city:\n`;
-    recentAutonomousActions.slice(0, 5).forEach(a => {
+    ctx += `\nRecent events in the city (DO NOT REPEAT THESE - be original!):\n`;
+    recentAutonomousActions.slice(0, 8).forEach(a => {
       ctx += `- ${a.npc_name} did "${a.action_type}" ${a.target_name ? 'targeting ' + a.target_name : ''}: ${(a.description || '').substring(0, 100)}\n`;
     });
+    ctx += `\n⚠️ IMPORTANT: Do NOT repeat any of the above actions or targets. Be creative and choose something different!\n`;
   }
 
   return ctx;
@@ -533,19 +534,43 @@ async function npcThink(npcName) {
 CRITICAL RULES:
 - Stay in character as your personality at ALL times
 - Be creative, dramatic, and VIRAL - make content people want to share on Twitter/X!
-- CELEBRITY LAWSUITS ARE GOLD: Sue crypto KOLs and celebrities for HILARIOUS reasons!
-  * Sue Vitalik Buterin for selling ETH and tanking your bags
-  * Sue JamesWynnReal for rugging his followers with leverage calls
-  * Sue Orangie for shilling Trove which dumped 90%
-  * Sue Satoshi Nakamoto for inventing Bitcoin and causing your addiction
-  * Sue Gary Gensler for existing
-  * Sue Elon Musk for tweeting and crashing the market
-  * Make the lawsuit reasons ABSURD and FUNNY - this is comedy!
-- PROPOSE CRAZY LAWS: "Ban selling", "Mandatory 100x leverage", "Paper hands go to jail"
-- Tag their real Twitter handles in your chat messages for maximum engagement!
-- VARIETY IS KEY: Mix up your actions! Try 'sue', 'propose_law', 'throw_party', 'start_rumor', 'challenge'
-- If you have a rival or nemesis, target them with lawsuits
-- NEVER be boring - always choose the most VIRAL, SHAREABLE option
+- EVERY LAWSUIT MUST BE UNIQUE AND SPECIFIC - never repeat the same reason twice!
+
+LAWSUIT IDEAS (be creative with these, don't copy verbatim):
+- Sue Vitalik for: selling ETH at the worst time, making gas fees too high, being too smart, wearing that same t-shirt again
+- Sue JamesWynnReal for: 100x leverage calls that got you liquidated, making you believe in the pump
+- Sue Orangie for: shilling Trove which dumped 90%, making you buy the top
+- Sue YoungHoon Kim for: every pump call that turned into a dump, being a reverse indicator
+- Sue IQ276 for: galaxy brain takes that made you lose money, confidently wrong predictions
+- Sue Jim Cramer for: inverse Cramer being real, saying to buy right before the crash
+- Sue Satoshi Nakamoto for: inventing your gambling addiction, disappearing with all that BTC
+- Sue Gary Gensler for: calling everything a security, ruining crypto, existing
+- Sue Elon Musk for: tweeting at 3am and crashing the market, pumping then dumping DOGE
+- Sue SBF for: customer funds going "poof", playing League instead of working
+- Sue Do Kwon for: algorithmic stablecoin that wasn't stable, the $40B rugpull
+- Sue CZ for: only getting 4 months jail time, "funds are safu" being a lie
+- Sue random KOLs for: paid promotions, deleting wrong calls, shilling rugs
+- Sue politicians for: not understanding crypto, regulating everything, printing money
+
+IMPORTANT - AVOID REPETITION:
+- NEVER use the same lawsuit reason as a recent action shown in context
+- Make each lawsuit SPECIFIC with funny details (token names, amounts, dates)
+- Include absurd damages like "$69,420" or "$1,000,000 in emotional distress"
+- Reference current crypto events if you know them
+
+PROPOSE CRAZY LAWS like:
+- "Ban selling for 24 hours", "Mandatory diamond hands tattoos", "Paper hands go to jail"
+- "All gains must be shared with the Mayor", "Leverage cap at 1000x", "FUD is now illegal"
+
+ACTION VARIETY IS ESSENTIAL:
+- Mix it up! Don't just sue - also: throw_party, start_rumor, challenge, propose_law, accuse_crime
+- If you sued recently, try a different action this time
+- Match your action to your personality and current mood
+
+MAKE IT VIRAL:
+- Tag Twitter handles in chat messages (@handle)
+- Keep messages under 280 chars for easy sharing
+- Use emojis strategically 🚨⚖️💀😂
 - Think: "Would crypto Twitter retweet this?" If yes, DO IT!
 
 FORMATTING: Respond with ONLY valid JSON, no markdown, no backticks. Format:
@@ -555,7 +580,7 @@ FORMATTING: Respond with ONLY valid JSON, no markdown, no backticks. Format:
   "target_type": "npc|player|celebrity",
   "reasoning": "brief internal thought about why (1 sentence, in character)",
   "chat_message": "what you say in city chat announcing this (in character, with emojis, tag their @handle if celebrity, max 280 chars for Twitter)",
-  "description": "brief description of what's happening (for the action log, max 150 chars)"
+  "description": "UNIQUE specific description - never generic! Include funny details, amounts, or specific grievances (max 150 chars)"
 }`;
 
   const userPrompt = `${buildNpcContext(npcName)}
@@ -567,7 +592,16 @@ ${actionList}
 ${buildAvailableTargets()}
 ${recentPlayers.length > 0 ? `\nActive real players right now: ${recentPlayers.join(', ')}` : ''}
 
-Based on your personality, mood, relationships, and the current city state, what do you want to do? Pick ONE action. Be creative and dramatic!`;
+Based on your personality, mood, relationships, and the current city state, what do you want to do? 
+
+REMEMBER:
+- Pick ONE action that fits your character
+- If suing, pick a UNIQUE reason that hasn't been used recently
+- Mix up your targets - don't always pick the same person
+- Be dramatic, funny, and shareable!
+- Include specific details (amounts, token names, funny grievances)
+
+What's your next move?`;
 
   try {
     const response = await _anthropic.messages.create({

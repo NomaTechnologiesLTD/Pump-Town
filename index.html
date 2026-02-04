@@ -36908,6 +36908,38 @@ Play at degenscity.com
                                                         💭 "{action.ai_reasoning}"
                                                     </div>
                                                 )}
+                                                {/* Share on X Button for actions */}
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                                                    <button
+                                                        onClick={() => {
+                                                            const actionEmoji = actionIcons[action.action_type] || '🧠';
+                                                            const targetText = action.target_name ? ` ${action.target_handle || action.target_name}` : '';
+                                                            const tweetText = action.action_type === 'sue' 
+                                                                ? `⚖️ LAWSUIT FILED in Degens City!\n\n${action.npc_name} is suing${targetText}!\n\n"${action.description || action.ai_reasoning || 'No reason needed'}"\n\n💭 "${action.ai_reasoning || 'Justice must be served'}"\n\nWatch the chaos: degenscity.com 🏙️`
+                                                                : `${actionEmoji} ${action.npc_name} just ${action.action_type?.replace('_', ' ')}${targetText} in Degens City!\n\n"${action.description || ''}"\n\n💭 "${action.ai_reasoning || ''}"\n\nAI NPCs making autonomous decisions 🤖\n\ndegenscity.com`;
+                                                            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                                                            window.open(tweetUrl, '_blank', 'width=550,height=420');
+                                                        }}
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #1DA1F2, #0d8bd9)',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '16px',
+                                                            padding: '5px 12px',
+                                                            fontSize: '0.72em',
+                                                            fontWeight: 'bold',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '4px',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                                                        onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                                                    >
+                                                        𝕏 Share
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
