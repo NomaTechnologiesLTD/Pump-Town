@@ -14,6 +14,7 @@ const { Pool } = require('pg');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const agentBrain = require('./agent-brain.js');
+const reputation = require('./reputation-system.js');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -514,6 +515,9 @@ async function initDatabase() {
 
     // ==================== AGENT BRAIN TABLES ====================
     await agentBrain.initBrainTables(pool);
+
+    // ==================== REPUTATION SYSTEM TABLES ====================
+    await reputation.initReputationTables(pool);
 
     // ==================== USER AI AGENTS TABLE ====================
     await client.query(`
@@ -2006,6 +2010,32 @@ app.post('/api/cast-vote', async (req, res) => {
     }
     
     console.log('🗳️ Vote:', email, '→', optionId);
+    
+    // ---- REPUTATION: NPCs react to your vote ----
+    try {
+      const charResult = await pool.query('SELECT name FROM characters WHERE LOWER(email) = LOWER($1)', [email]);
+      const voterName = charResult.rows[0]?.name;
+      if (voterName) {
+        // Random 3-5 NPCs "notice" how you voted
+        const noticeCount = Math.floor(Math.random() * 3) + 3;
+        const shuffled = [...NPC_CITIZENS].sort(() => Math.random() - 0.5).slice(0, noticeCount);
+        for (const npcName of shuffled) {
+          // NPCs with strong opinions react more — archetype-based
+          const npc = NPC_PROFILES[npcName];
+          const optionTitle = option?.title || 'Unknown';
+          // Small random rep change: some NPCs agree, some disagree
+          const agrees = Math.random() < 0.5;
+          await reputation.trackEvent(voterName, npcName,
+            agrees ? 'voted_same' : 'voted_against',
+            undefined, // use default delta from REP_EVENTS
+            (agrees ? 'Voted for "' : 'Voted against what I wanted on "') + optionTitle + '"',
+            'vote',
+            { voteId: currentVoteId, optionId, optionTitle }
+          );
+        }
+      }
+    } catch (repErr) { console.error('Rep tracking (vote):', repErr.message); }
+    
     res.json({ success: true, voteId: currentVoteId, optionId, timeRemaining: getTimeRemaining() });
   } catch (err) {
     console.error('Cast vote error:', err);
@@ -6424,6 +6454,10 @@ initNpcLives();
 agentBrain.init(pool, anthropic, cityEngine, cityLiveData, NPC_PROFILES, NPC_CITIZENS, getCityStats, updateCityStats);
 agentBrain.registerRoutes(app);
 
+// ---- INITIALIZE REPUTATION SYSTEM ----
+reputation.init(pool, NPC_PROFILES, NPC_CITIZENS);
+reputation.registerRoutes(app);
+
 // ---- NPC RELATIONSHIP DRAMA ----
 async function npcRelationshipEvent() {
   try {
@@ -8642,6 +8676,37 @@ app.post('/api/city-situations/resolve', async (req, res) => {
       [playerName, 'city_situation', situationTitle + ' — ' + (choiceLabel||'choice made'), success ? '🏆' : '💀']
     );
     
+    // ---- REPUTATION: NPCs nearby remember what you did ----
+    try {
+      // The NPC who reacted gets a rep change
+      const repDelta = success ? 3 : -2;
+      await reputation.trackEvent(playerName, reactor, 
+        success ? 'explored_npc_territory' : 'explored_npc_territory',
+        repDelta,
+        (success ? 'Pulled off a bold move' : 'Failed spectacularly') + ' at ' + (location || 'the city'),
+        'explore',
+        { location, situationTitle, choiceLabel, success }
+      );
+      
+      // High risk successful actions impress more NPCs
+      if (success && (risk === 'high' || risk === 'extreme')) {
+        const impressedNpc = pick(NPC_CITIZENS.filter(n => n !== reactor));
+        if (impressedNpc) {
+          await reputation.trackEvent(playerName, impressedNpc, 'helped_npc', 5,
+            'Impressed by bold move at ' + (location || 'the city'), 'explore');
+        }
+      }
+      
+      // Failed high-risk actions make some NPCs lose respect
+      if (!success && (risk === 'high' || risk === 'extreme')) {
+        const unimpressedNpc = pick(NPC_CITIZENS.filter(n => n !== reactor));
+        if (unimpressedNpc) {
+          await reputation.trackEvent(playerName, unimpressedNpc, 'mentioned_npc_negatively', -3,
+            'Laughed at their failure at ' + (location || 'the city'), 'explore');
+        }
+      }
+    } catch (repErr) { console.error('Rep tracking (explore):', repErr.message); }
+    
     res.json({ success: true, outcome: success ? 'success' : 'fail', narrative });
   } catch(err) {
     console.error('Resolve situation error:', err.message);
@@ -8671,6 +8736,30 @@ async function npcTargetPlayer() {
     const npcName = pick(NPC_CITIZENS);
     const npc = NPC_PROFILES[npcName];
     const life = cityLiveData.npcLives ? cityLiveData.npcLives[npcName] : null;
+    
+    // ---- REPUTATION-AWARE TARGETING ----
+    let rep = { score: 0, relationship: 'neutral' };
+    try { rep = await reputation.getReputation(targetPlayer, npcName); } catch(e) {}
+    
+    // Hostile messages for enemies
+    const hostileMessages = [
+      `@${targetPlayer} oh great, YOU'RE still here? 🙄 thought the city had standards.`,
+      `@${targetPlayer} I remember what you did. don't think I forgot. 💀`,
+      `@${targetPlayer} every time I see your name I lose brain cells. go away.`,
+      `@${targetPlayer} you've got some nerve showing your face here after last time.`,
+      `@${targetPlayer} I'm filing a formal complaint about your existence. 📝`,
+      `@${targetPlayer} stay away from me and stay away from my friends. final warning. ⚠️`,
+    ];
+    
+    // Friendly messages for allies
+    const friendlyMessages = [
+      `@${targetPlayer} yo! my favorite person in this city! what's good?! 🤝`,
+      `@${targetPlayer} just wanted to say — you're one of the real ones. respect. 💎`,
+      `@${targetPlayer} psst... got some insider info for you. meet me at the casino. 🤫`,
+      `@${targetPlayer} if anyone gives you trouble, they answer to ME. just saying. 💪`,
+      `@${targetPlayer} saved you a seat at the VIP table. don't tell the others. 😏`,
+      `@${targetPlayer} you and me? we're gonna run this city someday. mark my words. 🏆`,
+    ];
     
     const challenges = [
       `@${targetPlayer} hey! I just saw your portfolio and... 😬 no comment.`,
@@ -8719,16 +8808,35 @@ async function npcTargetPlayer() {
     
     let msg;
     const roll = Math.random();
-    if(roll < 0.35) msg = pick(challenges);
-    else if(roll < 0.65) msg = pick(opinions);
-    else if(roleSpecific[npc.archetype]) msg = pick(roleSpecific[npc.archetype]);
-    else msg = pick(opinions);
+    
+    // ---- REPUTATION-AWARE MESSAGE SELECTION ----
+    if (rep.score <= -30) {
+      // Enemy/hostile: mostly hostile messages
+      if (roll < 0.7) msg = pick(hostileMessages);
+      else msg = pick(opinions);
+    } else if (rep.score >= 30) {
+      // Ally/devoted: mostly friendly messages
+      if (roll < 0.7) msg = pick(friendlyMessages);
+      else msg = pick(challenges);
+    } else {
+      // Neutral: original behavior
+      if(roll < 0.35) msg = pick(challenges);
+      else if(roll < 0.65) msg = pick(opinions);
+      else if(roleSpecific[npc.archetype]) msg = pick(roleSpecific[npc.archetype]);
+      else msg = pick(opinions);
+    }
     
     if(life && life.drunk > 3) msg = msg.replace(/\./g, '...') + ' *hiccup*';
     if(life && life.status === 'unhinged') msg = msg.toUpperCase();
     
     await pool.query('INSERT INTO chat_messages (channel,player_name,message) VALUES ($1,$2,$3)', ['global', npcName, msg]);
-    console.log('🎯 NPC ' + npcName + ' targeted player ' + targetPlayer);
+    
+    // Track the interaction
+    try {
+      await reputation.trackEvent(targetPlayer, npcName, 'first_interaction', 1, 'Chatted with ' + targetPlayer, 'chat');
+    } catch(e) {}
+    
+    console.log('🎯 NPC ' + npcName + ' targeted player ' + targetPlayer + ' (rep: ' + rep.score + ')');
   } catch(err) { console.error('NPC target player error:', err.message); }
 }
 
@@ -8740,7 +8848,7 @@ app.listen(PORT, () => {
   console.log(`🤖 Agent API: ENABLED ✅`);
   console.log(`⚖️ Justice System: ENABLED ✅`);
   console.log(`🧠 Agent Brain: ${anthropic ? 'ENABLED ✅ - NPCs think autonomously!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
-  console.log(`🤖 User Agent Brain: ${anthropic ? 'ENABLED ✅ - Player AI agents active!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
+  console.log(`🎭 Reputation System: ENABLED ✅ - NPCs remember everything!`);  console.log(`🤖 User Agent Brain: ${anthropic ? 'ENABLED ✅ - Player AI agents active!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
   console.log(`🎬 Soap Opera Engine: ENABLED ✅`);
   console.log(`👑 Mayor Unhinged: ENABLED ✅`);
   console.log(`🔔 Chaos Notifications: ENABLED ✅`);
