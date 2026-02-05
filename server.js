@@ -6451,7 +6451,7 @@ function initNpcLives() {
 initNpcLives();
 
 // ---- INITIALIZE AGENT BRAIN ----
-agentBrain.init(pool, anthropic, cityEngine, cityLiveData, NPC_PROFILES, NPC_CITIZENS, getCityStats, updateCityStats);
+agentBrain.init(pool, anthropic, cityEngine, cityLiveData, NPC_PROFILES, NPC_CITIZENS, getCityStats, updateCityStats, reputation);
 agentBrain.registerRoutes(app);
 
 // ---- INITIALIZE REPUTATION SYSTEM ----

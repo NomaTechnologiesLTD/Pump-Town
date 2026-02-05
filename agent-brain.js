@@ -529,6 +529,7 @@ let _NPC_PROFILES = null;
 let _NPC_CITIZENS = null;
 let _getCityStats = null;
 let _updateCityStats = null;
+let _reputation = null;  // Reputation system reference
 
 // Track when each NPC last thought and action cooldowns
 const npcLastThought = {};
@@ -541,7 +542,7 @@ let recentAutonomousActions = [];
 
 // ==================== INITIALIZATION ====================
 
-function init(pool, anthropic, cityEngine, cityLiveData, NPC_PROFILES, NPC_CITIZENS, getCityStats, updateCityStats) {
+function init(pool, anthropic, cityEngine, cityLiveData, NPC_PROFILES, NPC_CITIZENS, getCityStats, updateCityStats, reputationSystem) {
   _pool = pool;
   _anthropic = anthropic;
   _cityEngine = cityEngine;
@@ -550,7 +551,8 @@ function init(pool, anthropic, cityEngine, cityLiveData, NPC_PROFILES, NPC_CITIZ
   _NPC_CITIZENS = NPC_CITIZENS;
   _getCityStats = getCityStats;
   _updateCityStats = updateCityStats;
-  console.log('🧠 Agent Brain initialized with', NPC_CITIZENS.length, 'NPCs');
+  _reputation = reputationSystem || null;
+  console.log('🧠 Agent Brain initialized with', NPC_CITIZENS.length, 'NPCs' + (_reputation ? ' + Reputation System 🎭' : ''));
 }
 
 // ==================== DATABASE SETUP ====================
@@ -847,10 +849,30 @@ FORMATTING: Respond with ONLY valid JSON, no markdown, no backticks. Format:
   // Build targets list (async)
   const availableTargets = await buildAvailableTargets();
 
+  // Build reputation context for this NPC
+  let reputationContext = '';
+  if (_reputation) {
+    try {
+      const npcRelationships = await _reputation.getNpcFullContext(npcName);
+      if (npcRelationships && npcRelationships !== 'You have no strong relationships with any players yet.') {
+        reputationContext = `\n🎭 YOUR RELATIONSHIPS WITH PLAYERS (use these to guide your decisions!):\n${npcRelationships}\n\nIMPORTANT REPUTATION RULES:\n- If a player is your ENEMY (score < -30): consider suing them, accusing them, spreading rumors about them\n- If a player is your ALLY (score > 30): defend them, share alpha, invite to parties\n- If a player recently helped you: be grateful, return the favor\n- If a player recently betrayed you: seek revenge!\n- When targeting a player with dm_player, adjust your tone: hostile to enemies, warm to allies\n`;
+      }
+      
+      // Also get favorites/enemies for targeting
+      const { favorites, enemies } = await _reputation.getNpcFavorites(npcName, 3);
+      if (enemies.length > 0) {
+        reputationContext += `\n🎯 Players you HATE (consider targeting): ${enemies.map(e => e.player_name + ' (' + e.score + ')').join(', ')}\n`;
+      }
+      if (favorites.length > 0) {
+        reputationContext += `💚 Players you LIKE (consider helping): ${favorites.map(f => f.player_name + ' (' + f.score + ')').join(', ')}\n`;
+      }
+    } catch (e) { /* reputation context is optional */ }
+  }
+
   const userPrompt = `${buildNpcContext(npcName)}
 ${buildCityContext(cityStats)}
 ${formatPricesForPrompt(cryptoPrices)}
-
+${reputationContext}
 Available actions:
 ${actionList}
 
@@ -1146,6 +1168,22 @@ async function executeSue(decision) {
 
     console.log(`⚖️ Lawsuit filed: ${decision.npc_name} vs ${decision.target} ${targetHandle} - Case ${caseNumber}`);
 
+    // ---- REPUTATION: Suing someone affects relationships ----
+    if (_reputation && decision.target_type === 'player') {
+      await _reputation.trackEvent(decision.target, decision.npc_name, 'sued_npc', -12,
+        `${decision.npc_name} filed lawsuit against you: ${decision.description}`, 'brain');
+    }
+    if (_reputation && decision.target_type === 'npc' && _NPC_CITIZENS.includes(decision.target)) {
+      // NPC-to-NPC suing — players who are allies of the target notice
+      try {
+        const targetFavs = await _reputation.getNpcFavorites(decision.target, 3);
+        for (const fav of (targetFavs.favorites || [])) {
+          await _reputation.trackEvent(fav.player_name, decision.npc_name, 'mentioned_npc_negatively', -3,
+            `Sued my friend ${decision.target}`, 'brain');
+        }
+      } catch(e) {}
+    }
+
     return { success: true, caseNumber, damages, twitterText };
   } catch (err) {
     console.error('Sue execution error:', err.message);
@@ -1186,6 +1224,19 @@ async function resolveLawsuit(caseNumber) {
     );
 
     console.log(`⚖️ Lawsuit ${caseNumber} resolved: ${verdict.verdict}`);
+    
+    // ---- REPUTATION: Lawsuit outcome affects relationships ----
+    if (_reputation && lawsuit.defendant_type === 'player') {
+      if (verdict.verdict === 'sustained') {
+        // NPC won — defendant loses more rep with the plaintiff
+        await _reputation.trackEvent(lawsuit.defendant_name, lawsuit.plaintiff_name, 'sued_by_npc_lost', undefined,
+          `Lost lawsuit Case #${caseNumber} — ${lawsuit.plaintiff_name} was vindicated`, 'justice');
+      } else {
+        // Defendant won — gains slight respect from plaintiff
+        await _reputation.trackEvent(lawsuit.defendant_name, lawsuit.plaintiff_name, 'sued_by_npc_won', undefined,
+          `Won lawsuit Case #${caseNumber} — beat ${lawsuit.plaintiff_name} in court`, 'justice');
+      }
+    }
   } catch (err) {
     console.error('Lawsuit resolve error:', err.message);
   }
@@ -1322,6 +1373,24 @@ async function executeThrowParty(decision) {
     // Apply morale boost
     try { if (_updateCityStats) await _updateCityStats({ morale: 3 }); } catch (e) { }
 
+    // ---- REPUTATION: Party host gains rep with attendees ----
+    if (_reputation) {
+      try {
+        // Recent active players who "attended" gain rep with host
+        const recentRes = await _pool.query(
+          `SELECT DISTINCT player_name FROM chat_messages 
+           WHERE channel = 'global' AND created_at > NOW() - INTERVAL '15 minutes'
+           AND player_name NOT IN (SELECT unnest($1::text[]))
+           LIMIT 5`,
+          [_NPC_CITIZENS]
+        );
+        for (const row of recentRes.rows) {
+          await _reputation.trackEvent(row.player_name, decision.npc_name, 'npc_party_attended', undefined,
+            `Attended ${decision.npc_name}'s party`, 'brain');
+        }
+      } catch(e) {}
+    }
+
     return { success: true };
   } catch (err) {
     console.error('Party error:', err.message);
@@ -1362,6 +1431,12 @@ async function executeStartRumor(decision) {
           );
         } catch (e) { }
       }, Math.floor(Math.random() * 20000) + 8000);
+    }
+
+    // ---- REPUTATION: Rumors about a player affect their rep with the rumor spreader ----
+    if (_reputation && decision.target_type === 'player') {
+      await _reputation.trackEvent(decision.target, decision.npc_name, 'mentioned_npc_negatively', -6,
+        `Spread a rumor about you: ${decision.description}`, 'brain');
     }
 
     return { success: true };
@@ -1504,6 +1579,12 @@ async function executeFormAlliance(decision) {
       }, Math.floor(Math.random() * 15000) + 5000);
     }
 
+    // ---- REPUTATION: Alliance forming affects player relationships ----
+    if (_reputation && decision.target_type === 'player') {
+      await _reputation.trackEvent(decision.target, decision.npc_name, 'formed_alliance', undefined,
+        `Formed an alliance with you`, 'brain');
+    }
+
     return { success: true };
   } catch (err) {
     console.error('Alliance error:', err.message);
@@ -1555,6 +1636,12 @@ async function executeBetrayAlly(decision) {
 
     // Chaos spike
     _cityEngine.chaosLevel = Math.min(100, _cityEngine.chaosLevel + 8);
+
+    // ---- REPUTATION: Betrayal is devastating to relationships ----
+    if (_reputation && decision.target_type === 'player') {
+      await _reputation.trackEvent(decision.target, decision.npc_name, 'broke_alliance', undefined,
+        `BETRAYED you! Stabbed you in the back!`, 'brain');
+    }
 
     return { success: true };
   } catch (err) {
@@ -1674,6 +1761,12 @@ async function executeDmPlayer(decision) {
       `INSERT INTO chat_messages (channel, player_name, message) VALUES ('global', $1, $2)`,
       [decision.npc_name, decision.chat_message]
     );
+
+    // ---- REPUTATION: DM interaction tracked ----
+    if (_reputation && decision.target_type === 'player' && decision.target) {
+      await _reputation.trackEvent(decision.target, decision.npc_name, 'first_interaction', 1,
+        `Sent you a message in chat`, 'brain');
+    }
 
     return { success: true };
   } catch (err) {
