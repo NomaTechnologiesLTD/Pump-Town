@@ -15689,7 +15689,7 @@
                                                 <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: character?.avatar?.color ? 'linear-gradient(135deg, ' + character.avatar.color + '33, ' + character.avatar.color + '11)' : 'linear-gradient(135deg, ' + dashRepTier.color + '33, ' + dashRepTier.color + '11)', border: '2px solid ' + dashRepTier.color + '66', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5em', overflow: 'hidden' }}>
                                                     {character?.avatar?.image ? (
                                                         <img src={character.avatar.image} alt={character.avatar.name || 'Avatar'} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
-                                                    ) : '🐸'}
+                                                    ) : (character?.name ? character.name.charAt(0).toUpperCase() : '?')}
                                                 </div>
                                             </div>
                                             <div>
@@ -16280,7 +16280,7 @@
                                             alt={character.avatar.name || 'Avatar'}
                                             style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }}
                                         />
-                                    ) : '🐸'}
+                                    ) : (character?.name ? character.name.charAt(0).toUpperCase() : '?')}
                                 </div>
                                 <div>
                                     <div className="sidebar-player-name">{character?.name}</div>
@@ -17161,7 +17161,7 @@
             useEffect(function() {
                 var generateMessages = async function() {
                     try {
-                        var res = await fetch(API_BASE + '/api/mayor-chat', {
+                        var res = await fetch(API_BASE + '/api/ai/mayor-chat', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -37635,8 +37635,7 @@ Play at degenscity.com
                                                                 tweetText = `${actionEmoji} ${npcName} just ${actionName}${targetText} in Degens City!\n\n${desc ? `"${desc}"\n\n` : ''}${reasoning ? `💭 "${reasoning}"\n\n` : ''}AI NPCs making autonomous decisions 🤖\n\ndegenscity.com`;
                                                             }
                                                             
-                                                            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-                                                            window.open(tweetUrl, '_blank', 'width=550,height=420');
+                                                            shareToX(tweetText);
                                                         }}
                                                         style={{
                                                             background: 'linear-gradient(135deg, #1DA1F2, #0d8bd9)',
@@ -37744,8 +37743,7 @@ Play at degenscity.com
                                                         onClick={() => {
                                                             const tweetText = suit.twitter_share_text || 
                                                                 `🚨 LAWSUIT ALERT in Degens City!\n\n${suit.plaintiff_name} is suing ${suit.defendant_name}${suit.target_handle ? ` ${suit.target_handle}` : ''} for $${(suit.damages_requested || 0).toLocaleString()}!\n\nReason: "${suit.complaint || 'Undisclosed'}"\n\nCase #${suit.case_number} ⚖️\n\nPlay free at degenscity.com 🏙️`;
-                                                            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-                                                            window.open(tweetUrl, '_blank', 'width=550,height=420');
+                                                            shareToX(tweetText);
                                                         }}
                                                         style={{
                                                             background: 'linear-gradient(135deg, #1DA1F2, #0d8bd9)',
@@ -37818,8 +37816,7 @@ Play at degenscity.com
                                                     <button
                                                         onClick={() => {
                                                             const tweetText = `🏛️ NEW LAW PROPOSED in Degens City!\n\n📜 "${law.law_title}"\n\nProposed by ${law.proposer_name}\n\n"${law.law_description}"\n\n👍 ${law.votes_for || 0} For | 👎 ${law.votes_against || 0} Against\n\nVote now at degenscity.com ⚖️`;
-                                                            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-                                                            window.open(tweetUrl, '_blank', 'width=550,height=420');
+                                                            shareToX(tweetText);
                                                         }}
                                                         style={{
                                                             background: 'linear-gradient(135deg, #1DA1F2, #0d8bd9)',
