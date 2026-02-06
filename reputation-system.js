@@ -718,95 +718,68 @@ async function getReputationStats() {
 // ==================== API ROUTES ====================
 
 function registerRoutes(app) {
-  // Get a player's reputation with all NPCs
+  // === STATIC routes FIRST (won't be swallowed by :params) ===
+
+  app.get('/api/v1/reputation/leaderboard/loved', async (req, res) => {
+    try { res.json({ success: true, leaderboard: await getMostLoved() }); }
+    catch (err) { res.status(500).json({ success: false, error: err.message }); }
+  });
+
+  app.get('/api/v1/reputation/leaderboard/hated', async (req, res) => {
+    try { res.json({ success: true, leaderboard: await getMostHated() }); }
+    catch (err) { res.status(500).json({ success: false, error: err.message }); }
+  });
+
+  app.get('/api/v1/reputation/stats/global', async (req, res) => {
+    try { res.json({ success: true, stats: await getReputationStats() }); }
+    catch (err) { res.status(500).json({ success: false, error: err.message }); }
+  });
+
+  app.get('/api/v1/reputation/npc/:npcName', async (req, res) => {
+    try {
+      const relationships = await getNpcRelationships(req.params.npcName);
+      const favorites = await getNpcFavorites(req.params.npcName);
+      res.json({ success: true, relationships, favorites: favorites.favorites, enemies: favorites.enemies });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+  });
+
+  // === PARAMETERIZED routes — /history BEFORE /:npcName ===
+
+  app.get('/api/v1/reputation/:playerName/history', async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+      const result = await _pool.query(
+        `SELECT * FROM reputation_events WHERE player_name = $1 ORDER BY created_at DESC LIMIT $2`,
+        [req.params.playerName, limit]
+      );
+      res.json({ success: true, events: result.rows });
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+  });
+
   app.get('/api/v1/reputation/:playerName', async (req, res) => {
     try {
-      const { playerName } = req.params;
-      const reputations = await getPlayerReputation(playerName);
-      const stats = {
+      const reputations = await getPlayerReputation(req.params.playerName);
+      res.json({ success: true, reputations, stats: {
         totalNpcs: _NPC_CITIZENS ? _NPC_CITIZENS.length : 0,
         knownBy: reputations.length,
         allies: reputations.filter(r => r.score >= 30).length,
         enemies: reputations.filter(r => r.score <= -30).length,
-        averageScore: reputations.length > 0 
-          ? Math.round(reputations.reduce((sum, r) => sum + r.score, 0) / reputations.length) 
-          : 0
-      };
-      res.json({ success: true, reputations, stats });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
+        averageScore: reputations.length > 0 ? Math.round(reputations.reduce((s, r) => s + r.score, 0) / reputations.length) : 0
+      }});
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
   });
 
-  // Get specific NPC-player relationship
+  // Most generic route — LAST
   app.get('/api/v1/reputation/:playerName/:npcName', async (req, res) => {
     try {
-      const { playerName, npcName } = req.params;
-      const rep = await getReputation(playerName, npcName);
+      const rep = await getReputation(req.params.playerName, req.params.npcName);
       res.json({ success: true, reputation: rep });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  // Get reputation event history for a player
-  app.get('/api/v1/reputation/:playerName/history', async (req, res) => {
-    try {
-      const { playerName } = req.params;
-      const limit = Math.min(parseInt(req.query.limit) || 50, 100);
-      const result = await _pool.query(
-        `SELECT * FROM reputation_events WHERE player_name = $1 ORDER BY created_at DESC LIMIT $2`,
-        [playerName, limit]
-      );
-      res.json({ success: true, events: result.rows });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  // Get NPC's relationships with all players (for NPC profile pages)
-  app.get('/api/v1/reputation/npc/:npcName', async (req, res) => {
-    try {
-      const { npcName } = req.params;
-      const relationships = await getNpcRelationships(npcName);
-      const favorites = await getNpcFavorites(npcName);
-      res.json({ success: true, relationships, favorites: favorites.favorites, enemies: favorites.enemies });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  // Reputation leaderboard
-  app.get('/api/v1/reputation/leaderboard/loved', async (req, res) => {
-    try {
-      const loved = await getMostLoved();
-      res.json({ success: true, leaderboard: loved });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  app.get('/api/v1/reputation/leaderboard/hated', async (req, res) => {
-    try {
-      const hated = await getMostHated();
-      res.json({ success: true, leaderboard: hated });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  // Global reputation stats
-  app.get('/api/v1/reputation/stats/global', async (req, res) => {
-    try {
-      const stats = await getReputationStats();
-      res.json({ success: true, stats });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
+    } catch (err) { res.status(500).json({ success: false, error: err.message }); }
   });
 
   console.log('🎭 Reputation System API routes registered');
 }
+
 
 // ==================== EXPORTS ====================
 
