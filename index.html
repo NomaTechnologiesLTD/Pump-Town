@@ -16212,6 +16212,14 @@
                         return (
                             <AgentBrainPage />
                         );
+                    
+                    case 'reputation':
+                        return (
+                            <ReputationPage 
+                                playerName={character?.name}
+                                email={wallet?.address}
+                            />
+                        );
                         
                     default:
                         return null;
@@ -16414,6 +16422,14 @@
                             >
                                 <span className="nav-item-icon">🏆</span>
                                 <span className="nav-item-text">Leaderboard</span>
+                            </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'reputation' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('reputation'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">🎭</span>
+                                <span className="nav-item-text">Reputation</span>
+                                <span className="nav-item-badge new">NEW</span>
                             </div>
                         </div>
                         
@@ -38085,6 +38101,371 @@
         // ==================== NFT ACHIEVEMENT MINT ====================
 
 
+
+        // ==================== REPUTATION PAGE ====================
+
+        function ReputationPage({ playerName, email }) {
+            const [reputations, setReputations] = useState([]);
+            const [stats, setStats] = useState(null);
+            const [history, setHistory] = useState([]);
+            const [leaderboard, setLeaderboard] = useState({ loved: [], hated: [] });
+            const [globalStats, setGlobalStats] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [activeTab, setActiveTab] = useState('relationships');
+            const [selectedNpc, setSelectedNpc] = useState(null);
+            const [filterTier, setFilterTier] = useState('all');
+            const [sortBy, setSortBy] = useState('score');
+
+            const TIERS = [
+                { label: 'enemy',   emoji: '💀', color: '#ff0000', bg: 'rgba(255,0,0,0.15)', min: -100, max: -60 },
+                { label: 'hostile',  emoji: '😡', color: '#ff4444', bg: 'rgba(255,68,68,0.12)', min: -59, max: -30 },
+                { label: 'dislike',  emoji: '😒', color: '#ff8844', bg: 'rgba(255,136,68,0.10)', min: -29, max: -10 },
+                { label: 'neutral',  emoji: '😐', color: '#888888', bg: 'rgba(136,136,136,0.08)', min: -9, max: 9 },
+                { label: 'friendly', emoji: '😊', color: '#44dd44', bg: 'rgba(68,221,68,0.10)', min: 10, max: 29 },
+                { label: 'ally',     emoji: '🤝', color: '#00ccff', bg: 'rgba(0,204,255,0.12)', min: 30, max: 59 },
+                { label: 'devoted',  emoji: '💎', color: '#ffd700', bg: 'rgba(255,215,0,0.15)', min: 60, max: 100 },
+            ];
+
+            const NPC_ARCHETYPES = {
+                alpha: '🎯', whale: '🐋', analyst: '📊', meme: '🤡', holder: '💎',
+                og: '👴', defi: '🌾', fomo: '😱', paper: '📄', trader: '💹',
+                maxi: '⚡', bear: '🐻', hype: '🚀', victim: '🥴', cope: '🤡',
+                moon: '🌙', degen: '🎰', nft: '🖼️', complainer: '😤', newbie: '🐣'
+            };
+
+            useEffect(() => {
+                if (playerName) {
+                    fetchAll();
+                    const interval = setInterval(fetchAll, 30000);
+                    return () => clearInterval(interval);
+                }
+            }, [playerName]);
+
+            const fetchAll = async () => {
+                try {
+                    const [repRes, histRes, lovedRes, hatedRes, statsRes] = await Promise.all([
+                        fetch(`${API_BASE}/api/v1/reputation/${encodeURIComponent(playerName)}`),
+                        fetch(`${API_BASE}/api/v1/reputation/${encodeURIComponent(playerName)}/history?limit=50`),
+                        fetch(`${API_BASE}/api/v1/reputation/leaderboard/loved`),
+                        fetch(`${API_BASE}/api/v1/reputation/leaderboard/hated`),
+                        fetch(`${API_BASE}/api/v1/reputation/stats/global`)
+                    ]);
+
+                    const [repData, histData, lovedData, hatedData, statsData] = await Promise.all([
+                        repRes.json(), histRes.json(), lovedRes.json(), hatedRes.json(), statsRes.json()
+                    ]);
+
+                    if (repData.success) {
+                        setReputations(repData.reputations || []);
+                        setStats(repData.stats || null);
+                    }
+                    if (histData.success) setHistory(histData.events || []);
+                    if (lovedData.success || hatedData.success) {
+                        setLeaderboard({
+                            loved: lovedData.leaderboard || [],
+                            hated: hatedData.leaderboard || []
+                        });
+                    }
+                    if (statsData.success) setGlobalStats(statsData.stats || null);
+                } catch (err) {
+                    console.error('Reputation fetch error:', err);
+                }
+                setLoading(false);
+            };
+
+            const getTier = (score) => {
+                for (const t of TIERS) {
+                    if (score >= t.min && score <= t.max) return t;
+                }
+                return TIERS[3];
+            };
+
+            const getScoreBarWidth = (score) => ((score + 100) / 200) * 100;
+
+            const timeAgo = (ts) => {
+                if (!ts) return '';
+                const diff = Date.now() - new Date(ts).getTime();
+                const mins = Math.floor(diff / 60000);
+                if (mins < 1) return 'just now';
+                if (mins < 60) return `${mins}m ago`;
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return `${hrs}h ago`;
+                const days = Math.floor(hrs / 24);
+                return `${days}d ago`;
+            };
+
+            const filteredReps = reputations
+                .filter(r => filterTier === 'all' || r.relationship === filterTier)
+                .sort((a, b) => {
+                    if (sortBy === 'score') return b.score - a.score;
+                    if (sortBy === 'interactions') return (b.total_interactions || 0) - (a.total_interactions || 0);
+                    if (sortBy === 'recent') return new Date(b.last_interaction_at || 0) - new Date(a.last_interaction_at || 0);
+                    return Math.abs(b.score) - Math.abs(a.score);
+                });
+
+            if (loading) {
+                return <div className="rep-page"><div className="rep-loading">🎭 Loading reputation data...</div></div>;
+            }
+
+            if (!playerName) {
+                return (
+                    <div className="rep-page">
+                        <div className="rep-login-prompt">
+                            <div className="rep-login-icon">🎭</div>
+                            <h3>NPC Reputation System</h3>
+                            <p>Log in to see how NPCs feel about you. Every action has consequences!</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="rep-page">
+                    {/* Header */}
+                    <div className="rep-header">
+                        <h2 className="rep-title">🎭 NPC Reputation</h2>
+                        <p className="rep-subtitle">Every NPC remembers. Every action matters.</p>
+                    </div>
+
+                    {/* Overview Stats */}
+                    {stats && (
+                        <div className="rep-overview">
+                            <div className="rep-stats-grid">
+                                <div className="rep-stat-card">
+                                    <div className="rep-stat-value" style={{ color: '#00ff88' }}>{stats.knownBy || 0}</div>
+                                    <div className="rep-stat-label">NPCs Know You</div>
+                                </div>
+                                <div className="rep-stat-card">
+                                    <div className="rep-stat-value" style={{ color: '#00ccff' }}>{stats.allies || 0}</div>
+                                    <div className="rep-stat-label">Allies</div>
+                                </div>
+                                <div className="rep-stat-card">
+                                    <div className="rep-stat-value" style={{ color: '#ff4444' }}>{stats.enemies || 0}</div>
+                                    <div className="rep-stat-label">Enemies</div>
+                                </div>
+                                <div className="rep-stat-card">
+                                    <div className="rep-stat-value" style={{ color: stats.averageScore >= 0 ? '#44dd44' : '#ff4444' }}>
+                                        {(stats.averageScore >= 0 ? '+' : '') + (stats.averageScore || 0)}
+                                    </div>
+                                    <div className="rep-stat-label">Avg Score</div>
+                                </div>
+                            </div>
+                            <div className="rep-tier-bar">
+                                {TIERS.map(tier => {
+                                    const count = reputations.filter(r => r.relationship === tier.label).length;
+                                    return count > 0 ? (
+                                        <div key={tier.label} className="rep-tier-segment"
+                                            style={{ flex: count, background: tier.color, opacity: 0.8 }}
+                                            title={`${tier.emoji} ${tier.label}: ${count}`}
+                                        />
+                                    ) : null;
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Tabs */}
+                    <div className="rep-tabs">
+                        {['relationships', 'history', 'leaderboard'].map(tab => (
+                            <button key={tab}
+                                className={`rep-tab ${activeTab === tab ? 'active' : ''}`}
+                                onClick={() => setActiveTab(tab)}
+                            >
+                                {tab === 'relationships' ? `🤝 Relationships${reputations.length > 0 ? ` (${reputations.length})` : ''}` :
+                                 tab === 'history' ? `📜 History${history.length > 0 ? ` (${history.length})` : ''}` :
+                                 '🏆 Leaderboard'}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Filters (relationships tab) */}
+                    {activeTab === 'relationships' && (
+                        <div className="rep-filters">
+                            <div className="rep-filter-group">
+                                <span className="rep-filter-label">Filter:</span>
+                                <button className={`rep-filter-btn ${filterTier === 'all' ? 'active' : ''}`}
+                                    onClick={() => setFilterTier('all')}>All</button>
+                                {TIERS.map(t => (
+                                    <button key={t.label}
+                                        className={`rep-filter-btn ${filterTier === t.label ? 'active' : ''}`}
+                                        style={filterTier === t.label ? { borderColor: t.color, color: t.color } : {}}
+                                        onClick={() => setFilterTier(t.label)}
+                                    >{t.emoji}</button>
+                                ))}
+                            </div>
+                            <div className="rep-filter-group">
+                                <span className="rep-filter-label">Sort:</span>
+                                <select className="rep-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                                    <option value="score">Best → Worst</option>
+                                    <option value="intensity">Most Intense</option>
+                                    <option value="interactions">Most Interactions</option>
+                                    <option value="recent">Most Recent</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Relationships Tab */}
+                    {activeTab === 'relationships' && (
+                        <div className="rep-list">
+                            {filteredReps.length === 0 ? (
+                                <div className="rep-no-data">
+                                    {filterTier === 'all'
+                                        ? '🤷 No NPCs know you yet. Go explore the city, vote, and chat to build reputation!'
+                                        : `No NPCs with "${filterTier}" relationship. Keep playing!`}
+                                </div>
+                            ) : filteredReps.map(rep => {
+                                const tier = getTier(rep.score);
+                                const recentMemory = rep.memories && rep.memories.length > 0
+                                    ? rep.memories[rep.memories.length - 1] : null;
+                                return (
+                                    <div key={rep.npc} className="rep-npc-card"
+                                        style={{ borderLeft: `3px solid ${tier.color}`, background: tier.bg }}
+                                        onClick={() => setSelectedNpc(selectedNpc === rep.npc ? null : rep.npc)}
+                                    >
+                                        {/* Header */}
+                                        <div className="rep-npc-header">
+                                            <div className="rep-npc-identity">
+                                                <span className="rep-npc-emoji">{NPC_ARCHETYPES[rep.archetype] || '👤'}</span>
+                                                <span className="rep-npc-name">{(rep.npc || '').replace(/_/g, ' ')}</span>
+                                                <span className="rep-npc-tier" style={{ color: tier.color }}>
+                                                    {tier.emoji} {tier.label.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div className="rep-npc-score" style={{ color: tier.color }}>
+                                                {rep.score > 0 ? '+' : ''}{rep.score}
+                                            </div>
+                                        </div>
+
+                                        {/* Score bar */}
+                                        <div className="rep-score-bar-bg">
+                                            <div className="rep-score-bar-fill" style={{
+                                                width: getScoreBarWidth(rep.score) + '%',
+                                                background: 'linear-gradient(90deg, #ff0000 0%, #888 50%, #00ff88 100%)',
+                                                opacity: 0.7
+                                            }} />
+                                            <div className="rep-score-bar-marker" style={{
+                                                left: getScoreBarWidth(rep.score) + '%'
+                                            }} />
+                                        </div>
+
+                                        {/* Recent memory */}
+                                        {recentMemory ? (
+                                            <div className="rep-npc-memory">
+                                                <span className="rep-memory-icon">{recentMemory.delta > 0 ? '💚' : '💔'}</span>
+                                                <span className="rep-memory-text">{recentMemory.description || recentMemory.event}</span>
+                                                <span className="rep-memory-time">{timeAgo(recentMemory.timestamp)}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="rep-npc-memory rep-memory-none">— No notable memories yet —</div>
+                                        )}
+
+                                        {/* Expanded memories */}
+                                        {selectedNpc === rep.npc && (
+                                            <div className="rep-npc-expanded">
+                                                <div className="rep-expanded-title">📝 Full Memory Log</div>
+                                                <div className="rep-expanded-stats">
+                                                    {rep.total_interactions || 0} interactions • Last: {timeAgo(rep.last_interaction_at)}
+                                                </div>
+                                                {(rep.memories || []).slice().reverse().map((mem, i) => (
+                                                    <div key={i} className="rep-memory-item">
+                                                        <span className="rep-memory-delta"
+                                                            style={{ color: mem.delta > 0 ? '#44dd44' : mem.delta < 0 ? '#ff4444' : '#888' }}>
+                                                            {mem.delta > 0 ? '+' + mem.delta : mem.delta}
+                                                        </span>
+                                                        <span className="rep-memory-desc">{mem.description || mem.event}</span>
+                                                        <span className="rep-memory-src">{mem.source || ''}</span>
+                                                        <span className="rep-memory-ts">{timeAgo(mem.timestamp)}</span>
+                                                    </div>
+                                                ))}
+                                                {(rep.memories || []).length === 0 && <div className="rep-no-data">No memories yet</div>}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* History Tab */}
+                    {activeTab === 'history' && (
+                        <div className="rep-history">
+                            {history.length === 0 ? (
+                                <div className="rep-no-data">📭 No reputation events yet. Start interacting with NPCs!</div>
+                            ) : history.map((evt, i) => (
+                                <div key={i} className="rep-history-item">
+                                    <div className="rep-history-left">
+                                        <span className="rep-history-delta"
+                                            style={{ color: evt.delta > 0 ? '#44dd44' : evt.delta < 0 ? '#ff4444' : '#888' }}>
+                                            {evt.delta > 0 ? '+' + evt.delta : String(evt.delta)}
+                                        </span>
+                                        <div className="rep-history-info">
+                                            <span className="rep-history-npc">{(evt.npc_name || '').replace(/_/g, ' ')}</span>
+                                            <span className="rep-history-desc">{evt.description || evt.event_type}</span>
+                                        </div>
+                                    </div>
+                                    <div className="rep-history-right">
+                                        <span className="rep-history-source">{evt.source || ''}</span>
+                                        <span className="rep-history-time">{timeAgo(evt.created_at)}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Leaderboard Tab */}
+                    {activeTab === 'leaderboard' && (
+                        <div className="rep-leaderboard">
+                            {/* Most Loved */}
+                            <div className="rep-lb-section">
+                                <h4 className="rep-lb-title" style={{ color: '#00ff88' }}>💚 Most Loved Citizens</h4>
+                                {leaderboard.loved.length === 0 ? (
+                                    <div className="rep-no-data">No data yet</div>
+                                ) : leaderboard.loved.map((p, i) => (
+                                    <div key={i} className="rep-lb-row">
+                                        <span className="rep-lb-rank">{i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+                                        <span className="rep-lb-name" style={{ color: p.player_name === playerName ? '#ffd700' : '#ccc' }}>
+                                            {(p.player_name || '').replace(/_/g, ' ')}{p.player_name === playerName ? ' (you)' : ''}
+                                        </span>
+                                        <span className="rep-lb-score" style={{ color: '#44dd44' }}>+{p.total_rep || p.positive_rep || 0}</span>
+                                        <span className="rep-lb-count">{p.npc_count || 0} NPCs</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Most Hated */}
+                            <div className="rep-lb-section">
+                                <h4 className="rep-lb-title" style={{ color: '#ff4444' }}>💀 Most Hated Citizens</h4>
+                                {leaderboard.hated.length === 0 ? (
+                                    <div className="rep-no-data">No data yet</div>
+                                ) : leaderboard.hated.map((p, i) => (
+                                    <div key={i} className="rep-lb-row">
+                                        <span className="rep-lb-rank">{i === 0 ? '☠️' : i === 1 ? '💀' : i === 2 ? '👿' : `#${i + 1}`}</span>
+                                        <span className="rep-lb-name" style={{ color: p.player_name === playerName ? '#ffd700' : '#ccc' }}>
+                                            {(p.player_name || '').replace(/_/g, ' ')}{p.player_name === playerName ? ' (you)' : ''}
+                                        </span>
+                                        <span className="rep-lb-score" style={{ color: '#ff4444' }}>{p.total_rep || 0}</span>
+                                        <span className="rep-lb-count">{p.enemy_count || 0} enemies</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Global Stats */}
+                            {globalStats && (
+                                <div className="rep-global-stats">
+                                    <div className="rep-global-title">🌍 City Reputation Stats</div>
+                                    <div className="rep-global-grid">
+                                        <div>🔗 Active Relationships: <strong>{globalStats.activeRelationships || 0}</strong></div>
+                                        <div>📊 Total Events: <strong>{globalStats.totalEvents || 0}</strong></div>
+                                        <div>📈 Avg Score: <strong style={{ color: parseFloat(globalStats.averageScore) >= 0 ? '#44dd44' : '#ff4444' }}>{globalStats.averageScore || '0'}</strong></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
 
         ReactDOM.render(<DegensCity />, document.getElementById('root'));
     </script>
