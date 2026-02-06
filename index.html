@@ -16229,6 +16229,14 @@
                                 showToast={showToast}
                             />
                         );
+                    
+                    case 'citytv':
+                        return (
+                            <CityTVPage 
+                                playerName={character?.name}
+                                showToast={showToast}
+                            />
+                        );
                         
                     default:
                         return null;
@@ -16447,6 +16455,14 @@
                                 <span className="nav-item-icon">📋</span>
                                 <span className="nav-item-text">Quests</span>
                                 <span className="nav-item-badge new" style={{ background: 'linear-gradient(90deg, #ff6b6b, #ffd700)' }}>NEW</span>
+                            </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'citytv' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('citytv'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">📺</span>
+                                <span className="nav-item-text">City TV</span>
+                                <span className="nav-item-badge new" style={{ background: 'linear-gradient(90deg, #ff0000, #ff6600)' }}>LIVE</span>
                             </div>
                         </div>
                         
@@ -38118,6 +38134,397 @@
         // ==================== NFT ACHIEVEMENT MINT ====================
 
 
+
+        // ==================== CITY TV PAGE ====================
+
+        function CityTVPage({ playerName, showToast }) {
+            const [feed, setFeed] = useState([]);
+            const [soapArcs, setSoapArcs] = useState([]);
+            const [soapHistory, setSoapHistory] = useState([]);
+            const [npcLives, setNpcLives] = useState({});
+            const [cityStats, setCityStats] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [tab, setTab] = useState('live');
+            const [filter, setFilter] = useState('all');
+            const [expandedArc, setExpandedArc] = useState(null);
+            const [tickerItems, setTickerItems] = useState([]);
+            const tickerRef = useRef(null);
+
+            const EVENT_STYLES = {
+                breaking_news: { emoji: '🚨', color: '#ff0000', label: 'BREAKING' },
+                mayor_decree: { emoji: '👑', color: '#ffd700', label: 'MAYOR' },
+                npc_chat: { emoji: '💬', color: '#00ccff', label: 'NPC' },
+                player_chat: { emoji: '🗣️', color: '#888', label: 'CITIZEN' },
+                city_event: { emoji: '⚡', color: '#ff6600', label: 'EVENT' },
+                crime: { emoji: '🚔', color: '#ff4444', label: 'CRIME' },
+                lawsuit: { emoji: '⚖️', color: '#ff6b6b', label: 'LEGAL' },
+                party: { emoji: '🎉', color: '#ff00ff', label: 'PARTY' },
+                alliance: { emoji: '🤝', color: '#44dd44', label: 'ALLIANCE' },
+                betrayal: { emoji: '🗡️', color: '#ff0000', label: 'BETRAYAL' },
+                trade: { emoji: '📊', color: '#00ff88', label: 'MARKET' },
+                quest: { emoji: '📋', color: '#ffd700', label: 'QUEST' },
+                rumor: { emoji: '🤫', color: '#8a2be2', label: 'GOSSIP' },
+            };
+
+            useEffect(() => {
+                fetchAll();
+                const iv = setInterval(fetchAll, 8000);
+                return () => clearInterval(iv);
+            }, []);
+
+            const fetchAll = async () => {
+                try {
+                    const [feedRes, soapRes, statusRes] = await Promise.all([
+                        fetch(`${API_BASE}/api/city-engine/chaos-feed?limit=60`),
+                        fetch(`${API_BASE}/api/city-engine/soap-operas`),
+                        fetch(`${API_BASE}/api/city-engine/status`)
+                    ]);
+                    const [feedData, soapData, statusData] = await Promise.all([feedRes.json(), soapRes.json(), statusRes.json()]);
+
+                    if (feedData.success) {
+                        const items = (feedData.feed || []).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                        setFeed(items);
+                        // Build ticker from most dramatic events
+                        const dramatic = items.filter(i =>
+                            i.type === 'breaking_news' || i.type === 'city_event' ||
+                            (i.message || '').includes('ARRESTED') || (i.message || '').includes('GUILTY') ||
+                            (i.message || '').includes('RUGGED') || (i.message || '').includes('LAUNCHED') ||
+                            (i.message || '').includes('BETRAYED') || (i.message || '').includes('ALLIANCE')
+                        ).slice(0, 8);
+                        setTickerItems(dramatic);
+                    }
+                    if (soapData.success) {
+                        setSoapArcs(soapData.activeArcs || []);
+                        setSoapHistory(soapData.recentHistory || []);
+                    }
+                    if (statusData.success) {
+                        setNpcLives(statusData.npcLives || statusData.npcs || {});
+                        setCityStats(statusData.stats || statusData.cityStats || null);
+                    }
+                } catch (e) { console.error('CityTV fetch error:', e); }
+                setLoading(false);
+            };
+
+            const classifyEvent = (item) => {
+                const msg = (item.message || '').toLowerCase();
+                const author = (item.author || '').toLowerCase();
+                if (item.type && EVENT_STYLES[item.type]) return item.type;
+                if (author.includes('breaking') || msg.includes('breaking')) return 'breaking_news';
+                if (author.includes('mayor') || author.includes('🎩')) return 'mayor_decree';
+                if (msg.includes('arrested') || msg.includes('guilty') || msg.includes('crime') || author.includes('officer') || author.includes('judge')) return 'crime';
+                if (msg.includes('lawsuit') || msg.includes('suing') || msg.includes('case:')) return 'lawsuit';
+                if (msg.includes('party') || msg.includes('🎉')) return 'party';
+                if (msg.includes('alliance') || msg.includes('🤝')) return 'alliance';
+                if (msg.includes('betray') || msg.includes('🗡️')) return 'betrayal';
+                if (msg.includes('bought') || msg.includes('sold') || msg.includes('launched $')) return 'trade';
+                if (msg.includes('quest') || msg.includes('📋')) return 'quest';
+                if (msg.includes('rumor') || msg.includes('heard that')) return 'rumor';
+                if (item.type === 'npc_chat') return 'npc_chat';
+                return 'player_chat';
+            };
+
+            const timeAgo = (ts) => {
+                if (!ts) return '';
+                const diff = Date.now() - ts;
+                const s = Math.floor(diff / 1000);
+                if (s < 60) return 'just now';
+                if (s < 3600) return Math.floor(s / 60) + 'm ago';
+                if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+                return Math.floor(s / 86400) + 'd ago';
+            };
+
+            const filteredFeed = filter === 'all' ? feed : feed.filter(i => classifyEvent(i) === filter);
+
+            if (loading) return <div className="rep-page"><div className="rep-loading">📺 Tuning in to City TV...</div></div>;
+
+            return (
+                <div className="rep-page">
+                    {/* TV Header */}
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(255,0,0,0.15), rgba(0,0,0,0.3))',
+                        borderRadius: '12px', padding: '20px', marginBottom: '15px',
+                        border: '1px solid rgba(255,0,0,0.2)', position: 'relative', overflow: 'hidden'
+                    }}>
+                        <div style={{ position: 'absolute', top: '10px', right: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff0000', animation: 'pulse 1.5s infinite' }}></span>
+                            <span style={{ color: '#ff0000', fontSize: '0.75em', fontWeight: 'bold', letterSpacing: '2px' }}>LIVE</span>
+                        </div>
+                        <h2 style={{ color: '#fff', margin: '0 0 5px', fontSize: '1.4em', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span>📺</span> DEGENS CITY TV
+                        </h2>
+                        <p style={{ color: '#888', margin: 0, fontSize: '0.85em' }}>24/7 Drama • AI NPCs Living Their Best Worst Lives</p>
+                    </div>
+
+                    {/* Breaking News Ticker */}
+                    {tickerItems.length > 0 && (
+                        <div style={{
+                            background: 'rgba(255,0,0,0.1)', borderRadius: '8px', padding: '8px 12px',
+                            marginBottom: '12px', overflow: 'hidden', border: '1px solid rgba(255,0,0,0.15)',
+                            whiteSpace: 'nowrap', position: 'relative'
+                        }}>
+                            <span style={{ color: '#ff0000', fontWeight: 'bold', fontSize: '0.75em', marginRight: '10px', letterSpacing: '1px' }}>🚨 BREAKING</span>
+                            <span ref={tickerRef} style={{
+                                color: '#fff', fontSize: '0.8em', display: 'inline-block',
+                                animation: `tickerScroll ${tickerItems.length * 8}s linear infinite`
+                            }}>
+                                {tickerItems.map((t, i) => (
+                                    <span key={i} style={{ marginRight: '40px' }}>
+                                        {(t.message || '').substring(0, 80)} • 
+                                    </span>
+                                ))}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* City Pulse Stats */}
+                    {cityStats && (
+                        <div className="rep-stats-grid" style={{ marginBottom: '12px' }}>
+                            <div className="rep-stat-card">
+                                <div className="rep-stat-value" style={{ color: cityStats.economy > 50 ? '#44dd44' : '#ff4444', fontSize: '1.1em' }}>📈 {cityStats.economy || '?'}</div>
+                                <div className="rep-stat-label">Economy</div>
+                            </div>
+                            <div className="rep-stat-card">
+                                <div className="rep-stat-value" style={{ color: cityStats.security > 50 ? '#44dd44' : '#ff4444', fontSize: '1.1em' }}>🛡️ {cityStats.security || '?'}</div>
+                                <div className="rep-stat-label">Security</div>
+                            </div>
+                            <div className="rep-stat-card">
+                                <div className="rep-stat-value" style={{ color: cityStats.morale > 50 ? '#44dd44' : '#ff4444', fontSize: '1.1em' }}>😊 {cityStats.morale || '?'}</div>
+                                <div className="rep-stat-label">Morale</div>
+                            </div>
+                            <div className="rep-stat-card">
+                                <div className="rep-stat-value" style={{ color: '#ff6600', fontSize: '1.1em' }}>🔥 {cityStats.chaosLevel || '?'}</div>
+                                <div className="rep-stat-label">Chaos</div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Tabs */}
+                    <div className="rep-tabs">
+                        {[
+                            { id: 'live', label: '📡 Live Feed' },
+                            { id: 'drama', label: `🎬 Soap Operas (${soapArcs.length})` },
+                            { id: 'npcs', label: '🎭 NPC Tracker' }
+                        ].map(t => (
+                            <button key={t.id} className={`rep-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* LIVE FEED TAB */}
+                    {tab === 'live' && (
+                        <div>
+                            {/* Filters */}
+                            <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                                {['all', 'breaking_news', 'crime', 'mayor_decree', 'trade', 'npc_chat'].map(f => {
+                                    const s = EVENT_STYLES[f] || { emoji: '📋', color: '#ffd700', label: 'ALL' };
+                                    return (
+                                        <button key={f} onClick={() => setFilter(f)} style={{
+                                            padding: '5px 10px', borderRadius: '16px', fontSize: '0.75em',
+                                            border: filter === f ? `1px solid ${s.color}` : '1px solid rgba(255,255,255,0.1)',
+                                            background: filter === f ? `${s.color}15` : 'rgba(0,0,0,0.2)',
+                                            color: filter === f ? s.color : '#888', cursor: 'pointer'
+                                        }}>
+                                            {s.emoji} {f === 'all' ? 'All' : s.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Feed Items */}
+                            <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                                {filteredFeed.length === 0 ? (
+                                    <div className="rep-no-data">📺 Signal lost... City is quiet (for now)</div>
+                                ) : filteredFeed.slice(0, 50).map((item, idx) => {
+                                    const type = classifyEvent(item);
+                                    const style = EVENT_STYLES[type] || EVENT_STYLES.player_chat;
+                                    const isBreaking = type === 'breaking_news';
+
+                                    return (
+                                        <div key={item.id || idx} style={{
+                                            display: 'flex', gap: '10px', padding: '10px 12px',
+                                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                            background: isBreaking ? 'rgba(255,0,0,0.06)' : 'transparent',
+                                            borderLeft: isBreaking ? '3px solid #ff0000' : '3px solid transparent',
+                                            animation: idx === 0 ? 'fadeIn 0.5s ease' : 'none'
+                                        }}>
+                                            <div style={{ fontSize: '1.1em', minWidth: '28px', textAlign: 'center', paddingTop: '2px' }}>
+                                                {style.emoji}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <span style={{
+                                                            color: style.color, fontWeight: 'bold', fontSize: '0.82em'
+                                                        }}>{(item.author || 'System').replace(/_/g, ' ')}</span>
+                                                        <span style={{
+                                                            fontSize: '0.6em', color: style.color, background: `${style.color}15`,
+                                                            padding: '1px 5px', borderRadius: '4px', letterSpacing: '0.5px'
+                                                        }}>{style.label}</span>
+                                                    </div>
+                                                    <span style={{ color: '#444', fontSize: '0.7em', flexShrink: 0 }}>{timeAgo(item.timestamp)}</span>
+                                                </div>
+                                                <div style={{ color: '#ccc', fontSize: '0.85em', wordBreak: 'break-word', lineHeight: 1.4 }}>
+                                                    {item.message}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SOAP OPERA TAB */}
+                    {tab === 'drama' && (
+                        <div>
+                            {soapArcs.length === 0 && soapHistory.length === 0 ? (
+                                <div className="rep-no-data">🎬 No active soap operas. The drama engine is cooking... check back soon!</div>
+                            ) : (
+                                <>
+                                    {/* Active arcs */}
+                                    {soapArcs.map(arc => (
+                                        <div key={arc.id} style={{
+                                            background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '16px',
+                                            marginBottom: '12px', border: '1px solid rgba(255,215,0,0.15)',
+                                            cursor: 'pointer'
+                                        }} onClick={() => setExpandedArc(expandedArc === arc.id ? null : arc.id)}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontSize: '1.3em' }}>🎬</span>
+                                                    <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '1em' }}>{arc.title}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <span style={{ fontSize: '0.7em', color: '#00ff88', background: 'rgba(0,255,136,0.1)', padding: '2px 8px', borderRadius: '10px' }}>
+                                                        Stage {arc.currentStage + 1}/{arc.totalStages}
+                                                    </span>
+                                                    {arc.bettingOpen && (
+                                                        <span style={{ fontSize: '0.7em', color: '#ffd700', background: 'rgba(255,215,0,0.1)', padding: '2px 8px', borderRadius: '10px' }}>
+                                                            🎰 BET NOW
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* NPC vs NPC */}
+                                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginBottom: '10px' }}>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '1.5em' }}>👤</div>
+                                                    <div style={{ color: '#00ccff', fontSize: '0.85em', fontWeight: 'bold' }}>{(arc.npc1 || '').replace(/_/g, ' ')}</div>
+                                                </div>
+                                                <div style={{ color: '#ff4444', fontSize: '1.2em', fontWeight: 'bold' }}>VS</div>
+                                                <div style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '1.5em' }}>👤</div>
+                                                    <div style={{ color: '#ff6b6b', fontSize: '0.85em', fontWeight: 'bold' }}>{(arc.npc2 || '').replace(/_/g, ' ')}</div>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ color: '#bbb', fontSize: '0.85em', textAlign: 'center', marginBottom: '8px' }}>
+                                                {arc.setup}
+                                            </div>
+                                            <div style={{ color: '#888', fontSize: '0.75em', textAlign: 'center' }}>
+                                                📍 {arc.currentLabel} • {arc.type}
+                                            </div>
+
+                                            {/* Betting outcomes */}
+                                            {expandedArc === arc.id && arc.outcomes && arc.outcomes.length > 0 && (
+                                                <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
+                                                    <div style={{ color: '#ffd700', fontSize: '0.8em', marginBottom: '8px' }}>🎰 Possible Outcomes:</div>
+                                                    {arc.outcomes.map(o => (
+                                                        <div key={o.id} style={{
+                                                            background: 'rgba(255,215,0,0.05)', borderRadius: '8px', padding: '8px 12px',
+                                                            marginBottom: '4px', fontSize: '0.85em', color: '#ddd'
+                                                        }}>
+                                                            {o.label}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {/* History */}
+                                    {soapHistory.length > 0 && (
+                                        <div style={{ marginTop: '15px' }}>
+                                            <h4 style={{ color: '#888', fontSize: '0.85em', marginBottom: '8px' }}>📜 Past Drama</h4>
+                                            {soapHistory.map(arc => (
+                                                <div key={arc.id} className="rep-history-item" style={{ opacity: 0.7 }}>
+                                                    <div className="rep-history-left">
+                                                        <span className="rep-history-delta" style={{ color: '#ffd700' }}>🎬</span>
+                                                        <div className="rep-history-info">
+                                                            <span className="rep-history-npc">{arc.title}</span>
+                                                            <span className="rep-history-desc">
+                                                                {(arc.npc1 || '').replace(/_/g, ' ')} vs {(arc.npc2 || '').replace(/_/g, ' ')}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="rep-history-right">
+                                                        <span className="rep-history-source" style={{ color: '#44dd44' }}>{arc.resolvedOutcome || 'resolved'}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* NPC TRACKER TAB */}
+                    {tab === 'npcs' && (
+                        <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                                {Object.entries(npcLives).filter(([name]) => name && typeof npcLives[name] === 'object').slice(0, 25).map(([name, life]) => {
+                                    if (!life) return null;
+                                    const statusColors = { normal: '#888', drunk: '#ff8800', bankrupt: '#ff0000', unhinged: '#ff00ff', wanted: '#ff4444' };
+                                    const statusEmojis = { normal: '😐', drunk: '🍺', bankrupt: '💸', unhinged: '🤪', wanted: '🚨' };
+                                    const st = life.status || 'normal';
+
+                                    return (
+                                        <div key={name} style={{
+                                            background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '12px',
+                                            border: `1px solid ${statusColors[st] || '#333'}22`
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.9em' }}>
+                                                    {statusEmojis[st] || '😐'} {name.replace(/_/g, ' ')}
+                                                </div>
+                                                <span style={{
+                                                    fontSize: '0.65em', color: statusColors[st] || '#888',
+                                                    background: `${statusColors[st] || '#888'}15`,
+                                                    padding: '2px 6px', borderRadius: '6px', textTransform: 'uppercase'
+                                                }}>{st}</span>
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.75em' }}>
+                                                <span style={{ color: '#ffd700' }}>💰 {(life.wealth || 0).toLocaleString()}</span>
+                                                <span style={{ color: '#00ccff' }}>📍 {(life.location || 'Unknown').substring(0, 15)}</span>
+                                                <span style={{ color: '#44dd44' }}>⚡ {life.energy || 0}%</span>
+                                                <span style={{ color: life.drunk > 2 ? '#ff8800' : '#888' }}>🍺 {life.drunk || 0}</span>
+                                            </div>
+                                            {life.partner && (
+                                                <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#ff69b4' }}>
+                                                    ❤️ Dating {(life.partner || '').replace(/_/g, ' ')}
+                                                </div>
+                                            )}
+                                            {life.wanted && (
+                                                <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#ff0000', fontWeight: 'bold' }}>
+                                                    🚨 WANTED BY POLICE
+                                                </div>
+                                            )}
+                                            {life.bankrupt && (
+                                                <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#ff4444' }}>
+                                                    💸 BANKRUPT
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
 
         // ==================== QUESTS PAGE ====================
 
