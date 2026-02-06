@@ -15,6 +15,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const agentBrain = require('./agent-brain.js');
 const reputation = require('./reputation-system.js');
+const questSystem = require('./quest-system.js');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -518,6 +519,7 @@ async function initDatabase() {
 
     // ==================== REPUTATION SYSTEM TABLES ====================
     await reputation.initReputationTables(pool);
+    await questSystem.initQuestTables(pool);
 
     // ==================== USER AI AGENTS TABLE ====================
     await client.query(`
@@ -6457,6 +6459,8 @@ agentBrain.registerRoutes(app);
 // ---- INITIALIZE REPUTATION SYSTEM ----
 reputation.init(pool, NPC_PROFILES, NPC_CITIZENS);
 reputation.registerRoutes(app);
+questSystem.init(pool, anthropic, reputation, NPC_PROFILES, NPC_CITIZENS, getCityStats);
+questSystem.registerRoutes(app);
 
 // ---- NPC RELATIONSHIP DRAMA ----
 async function npcRelationshipEvent() {
@@ -8848,7 +8852,9 @@ app.listen(PORT, () => {
   console.log(`🤖 Agent API: ENABLED ✅`);
   console.log(`⚖️ Justice System: ENABLED ✅`);
   console.log(`🧠 Agent Brain: ${anthropic ? 'ENABLED ✅ - NPCs think autonomously!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
-  console.log(`🎭 Reputation System: ENABLED ✅ - NPCs remember everything!`);  console.log(`🤖 User Agent Brain: ${anthropic ? 'ENABLED ✅ - Player AI agents active!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
+  console.log(`🎭 Reputation System: ENABLED ✅ - NPCs remember everything!`);
+  console.log(`📋 Quest System: ENABLED ✅ - NPCs give personalized missions!`);
+  console.log(`🤖 User Agent Brain: ${anthropic ? 'ENABLED ✅ - Player AI agents active!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
   console.log(`🎬 Soap Opera Engine: ENABLED ✅`);
   console.log(`👑 Mayor Unhinged: ENABLED ✅`);
   console.log(`🔔 Chaos Notifications: ENABLED ✅`);

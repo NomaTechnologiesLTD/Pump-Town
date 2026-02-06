@@ -16220,6 +16220,15 @@
                                 email={wallet?.address}
                             />
                         );
+                    
+                    case 'quests':
+                        return (
+                            <QuestsPage 
+                                playerName={character?.name}
+                                email={wallet?.address}
+                                showToast={showToast}
+                            />
+                        );
                         
                     default:
                         return null;
@@ -16430,6 +16439,14 @@
                                 <span className="nav-item-icon">🎭</span>
                                 <span className="nav-item-text">Reputation</span>
                                 <span className="nav-item-badge new">NEW</span>
+                            </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'quests' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('quests'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">📋</span>
+                                <span className="nav-item-text">Quests</span>
+                                <span className="nav-item-badge new" style={{ background: 'linear-gradient(90deg, #ff6b6b, #ffd700)' }}>NEW</span>
                             </div>
                         </div>
                         
@@ -38101,6 +38118,320 @@
         // ==================== NFT ACHIEVEMENT MINT ====================
 
 
+
+        // ==================== QUESTS PAGE ====================
+
+        function QuestsPage({ playerName, email, showToast }) {
+            const [tab, setTab] = useState('available');
+            const [givers, setGivers] = useState([]);
+            const [quests, setQuests] = useState([]);
+            const [stats, setStats] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [generating, setGenerating] = useState(null);
+            const [resolving, setResolving] = useState(null);
+            const [activeQuest, setActiveQuest] = useState(null);
+            const [outcome, setOutcome] = useState(null);
+
+            const DIFFICULTY_COLORS = { easy: '#44dd44', medium: '#ffd700', hard: '#ff6b6b', extreme: '#ff00ff' };
+            const MOOD_COLORS = { eager: '#ffd700', friendly: '#44dd44', cautious: '#888', hostile: '#ff6b6b', threatening: '#ff0000', neutral: '#888' };
+            const MOOD_EMOJIS = { eager: '🤩', friendly: '😊', cautious: '🤔', hostile: '😠', threatening: '💀', neutral: '😐' };
+
+            useEffect(() => { if (playerName) { fetchAll(); const iv = setInterval(fetchAll, 20000); return () => clearInterval(iv); } }, [playerName]);
+
+            const fetchAll = async () => {
+                try {
+                    const [gRes, qRes] = await Promise.all([
+                        fetch(`${API_BASE}/api/v1/quests/available/${encodeURIComponent(playerName)}`),
+                        fetch(`${API_BASE}/api/v1/quests/${encodeURIComponent(playerName)}?history=true`)
+                    ]);
+                    const [gData, qData] = await Promise.all([gRes.json(), qRes.json()]);
+                    if (gData.success) setGivers(gData.givers || []);
+                    if (qData.success) { setQuests(qData.quests || []); setStats(qData.stats || null); }
+                } catch (e) { console.error('Quest fetch error:', e); }
+                setLoading(false);
+            };
+
+            const requestQuest = async (npcName) => {
+                setGenerating(npcName);
+                try {
+                    const res = await fetch(`${API_BASE}/api/v1/quests/generate`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ playerName, npcName })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        setActiveQuest(data.quest);
+                        setTab('active');
+                        fetchAll();
+                        showToast && showToast(`New quest from ${npcName.replace(/_/g, ' ')}!`, 'success');
+                    } else {
+                        showToast && showToast(data.message || 'Quest failed to generate', 'error');
+                    }
+                } catch (e) { showToast && showToast('Failed to request quest', 'error'); }
+                setGenerating(null);
+            };
+
+            const resolveQuest = async (questId, choiceId) => {
+                setResolving(questId);
+                try {
+                    const res = await fetch(`${API_BASE}/api/v1/quests/resolve`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ questId, playerName, choiceId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        setOutcome(data.result);
+                        setActiveQuest(null);
+                        fetchAll();
+                    } else {
+                        showToast && showToast(data.message || 'Resolution failed', 'error');
+                    }
+                } catch (e) { showToast && showToast('Failed to resolve quest', 'error'); }
+                setResolving(null);
+            };
+
+            const abandonQuest = async (questId) => {
+                try {
+                    const res = await fetch(`${API_BASE}/api/v1/quests/abandon`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ questId, playerName })
+                    });
+                    const data = await res.json();
+                    if (data.success) { fetchAll(); showToast && showToast(data.message || 'Quest abandoned', 'info'); setActiveQuest(null); }
+                } catch (e) { showToast && showToast('Failed to abandon', 'error'); }
+            };
+
+            const timeRemaining = (ms) => {
+                if (!ms || ms <= 0) return 'Expired';
+                const mins = Math.floor(ms / 60000);
+                return mins > 0 ? `${mins}m left` : 'Expiring soon';
+            };
+
+            if (loading) return <div className="rep-page"><div className="rep-loading">📋 Loading quests...</div></div>;
+            if (!playerName) return <div className="rep-page"><div className="rep-login-prompt"><div className="rep-login-icon">📋</div><h3>NPC Quests</h3><p>Log in to receive personalized missions from NPCs!</p></div></div>;
+
+            const activeQuests = quests.filter(q => ['available', 'accepted', 'in_progress'].includes(q.status));
+            const completedQuests = quests.filter(q => ['completed', 'failed', 'abandoned', 'expired'].includes(q.status));
+
+            return (
+                <div className="rep-page">
+                    <div className="rep-header">
+                        <h2 className="rep-title">📋 NPC Quests</h2>
+                        <p className="rep-subtitle">NPCs have missions for you. Your reputation determines what they offer.</p>
+                    </div>
+
+                    {/* Stats */}
+                    {stats && (
+                        <div className="rep-stats-grid" style={{ marginBottom: '15px' }}>
+                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#00ff88' }}>{stats.completed || 0}</div><div className="rep-stat-label">Completed</div></div>
+                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#ff4444' }}>{stats.failed || 0}</div><div className="rep-stat-label">Failed</div></div>
+                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#00ccff' }}>{activeQuests.length}</div><div className="rep-stat-label">Active</div></div>
+                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#ffd700' }}>{stats.npcs_served || 0}</div><div className="rep-stat-label">NPCs Served</div></div>
+                        </div>
+                    )}
+
+                    {/* Outcome overlay */}
+                    {outcome && (
+                        <div className="quest-outcome" style={{
+                            background: outcome.success ? 'linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,0,0,0.3))' : 'linear-gradient(135deg, rgba(255,68,68,0.15), rgba(0,0,0,0.3))',
+                            border: `1px solid ${outcome.success ? '#00ff8844' : '#ff444444'}`,
+                            borderRadius: '12px', padding: '20px', marginBottom: '15px', animation: 'fadeIn 0.3s ease'
+                        }}>
+                            <div style={{ fontSize: '2em', textAlign: 'center', marginBottom: '10px' }}>{outcome.success ? '🏆' : '💀'}</div>
+                            <div style={{ color: outcome.success ? '#00ff88' : '#ff4444', fontSize: '1.2em', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px' }}>
+                                {outcome.success ? 'QUEST COMPLETE!' : 'QUEST FAILED'}
+                            </div>
+                            <div style={{ color: '#ccc', fontSize: '0.9em', marginBottom: '10px', textAlign: 'center' }}>{outcome.quest_title}</div>
+                            <div style={{ color: '#bbb', fontSize: '0.85em', marginBottom: '12px', lineHeight: 1.5, fontStyle: 'italic' }}>{outcome.narrative}</div>
+                            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
+                                <div style={{ color: '#ffd700', fontSize: '0.8em', marginBottom: '5px' }}>💬 {outcome.npc_name.replace(/_/g, ' ')}:</div>
+                                <div style={{ color: '#ccc', fontSize: '0.85em' }}>{outcome.npc_reaction}</div>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', fontSize: '0.85em' }}>
+                                <span style={{ color: outcome.rep_change > 0 ? '#44dd44' : '#ff4444' }}>
+                                    Rep: {outcome.rep_change > 0 ? '+' : ''}{outcome.rep_change}
+                                </span>
+                                {outcome.rewards?.xp && <span style={{ color: '#00ccff' }}>XP: +{outcome.rewards.xp}</span>}
+                                {outcome.rewards?.hopium && outcome.rewards.hopium > 0 && <span style={{ color: '#ffd700' }}>💊 +{outcome.rewards.hopium}</span>}
+                            </div>
+                            <button onClick={() => setOutcome(null)} style={{
+                                display: 'block', margin: '12px auto 0', padding: '8px 20px', background: 'rgba(255,255,255,0.1)',
+                                border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#ccc', cursor: 'pointer', fontSize: '0.85em'
+                            }}>Dismiss</button>
+                        </div>
+                    )}
+
+                    {/* Tabs */}
+                    <div className="rep-tabs">
+                        {['available', 'active', 'history'].map(t => (
+                            <button key={t} className={`rep-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+                                {t === 'available' ? `🗺️ Find Quests` :
+                                 t === 'active' ? `⚡ Active (${activeQuests.length})` :
+                                 `📜 History (${completedQuests.length})`}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Available tab — quest givers */}
+                    {tab === 'available' && (
+                        <div className="rep-list">
+                            {givers.length === 0 ? (
+                                <div className="rep-no-data">🤷 No NPCs know you well enough yet. Build reputation first!</div>
+                            ) : givers.sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).map(g => (
+                                <div key={g.npc_name} className="rep-npc-card" style={{
+                                    borderLeft: `3px solid ${MOOD_COLORS[g.mood] || '#888'}`,
+                                    background: 'rgba(0,0,0,0.25)', opacity: g.available ? 1 : 0.5
+                                }}>
+                                    <div className="rep-npc-header">
+                                        <div className="rep-npc-identity">
+                                            <span className="rep-npc-emoji">{MOOD_EMOJIS[g.mood] || '😐'}</span>
+                                            <span className="rep-npc-name">{g.npc_name.replace(/_/g, ' ')}</span>
+                                            <span style={{ fontSize: '0.7em', color: g.score >= 10 ? '#44dd44' : g.score <= -10 ? '#ff4444' : '#888' }}>
+                                                {g.score > 0 ? '+' : ''}{g.score}
+                                            </span>
+                                        </div>
+                                        {g.available ? (
+                                            <button onClick={() => requestQuest(g.npc_name)} disabled={generating === g.npc_name}
+                                                style={{
+                                                    padding: '6px 14px', background: 'linear-gradient(135deg, #ffd700, #ff8800)',
+                                                    border: 'none', borderRadius: '8px', color: '#000', fontWeight: 'bold',
+                                                    cursor: generating ? 'wait' : 'pointer', fontSize: '0.8em'
+                                                }}>
+                                                {generating === g.npc_name ? '⏳ Generating...' : '📋 Request Quest'}
+                                            </button>
+                                        ) : (
+                                            <span style={{ fontSize: '0.75em', color: '#555' }}>⏳ Cooldown</span>
+                                        )}
+                                    </div>
+                                    <div style={{ fontSize: '0.8em', color: MOOD_COLORS[g.mood] || '#888', marginTop: '4px' }}>
+                                        {g.quest_hint}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Active tab — current quests */}
+                    {tab === 'active' && (
+                        <div className="rep-list">
+                            {activeQuests.length === 0 && !activeQuest ? (
+                                <div className="rep-no-data">📭 No active quests. Visit the "Find Quests" tab to get one!</div>
+                            ) : (activeQuest ? [activeQuest] : []).concat(activeQuests.filter(q => q.quest_id !== activeQuest?.quest_id)).map(q => {
+                                const diff = q.difficulty || 'medium';
+                                return (
+                                    <div key={q.quest_id} style={{
+                                        background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '16px',
+                                        border: `1px solid ${DIFFICULTY_COLORS[diff]}33`, marginBottom: '10px'
+                                    }}>
+                                        {/* Quest header */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                            <div>
+                                                <span style={{ fontSize: '1.2em', marginRight: '8px' }}>{q.quest_emoji || '📋'}</span>
+                                                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '1em' }}>{q.title}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                <span style={{ fontSize: '0.7em', color: DIFFICULTY_COLORS[diff], fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>{diff}</span>
+                                                {q.time_remaining != null && (
+                                                    <span style={{ fontSize: '0.75em', color: q.time_remaining < 300000 ? '#ff4444' : '#888' }}>
+                                                        ⏰ {timeRemaining(q.time_remaining)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* From NPC */}
+                                        <div style={{ fontSize: '0.8em', color: '#00ccff', marginBottom: '8px' }}>
+                                            From: {(q.npc_name || q.npc).replace(/_/g, ' ')} ({q.quest_label || q.quest_type})
+                                        </div>
+
+                                        {/* Description */}
+                                        <div style={{ color: '#bbb', fontSize: '0.85em', lineHeight: 1.5, marginBottom: '10px' }}>{q.description}</div>
+
+                                        {/* Briefing */}
+                                        {q.briefing && (
+                                            <div style={{ background: 'rgba(255,215,0,0.08)', borderRadius: '8px', padding: '10px', marginBottom: '12px', borderLeft: '3px solid #ffd700' }}>
+                                                <div style={{ color: '#ffd700', fontSize: '0.75em', marginBottom: '4px' }}>💬 {(q.npc_name || q.npc || '').replace(/_/g, ' ')} says:</div>
+                                                <div style={{ color: '#ddd', fontSize: '0.85em', fontStyle: 'italic' }}>{q.briefing}</div>
+                                            </div>
+                                        )}
+
+                                        {/* Rewards preview */}
+                                        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', fontSize: '0.8em' }}>
+                                            {q.rewards?.xp && <span style={{ color: '#00ccff' }}>⭐ {q.rewards.xp} XP</span>}
+                                            {q.rewards?.rep_change && <span style={{ color: '#44dd44' }}>🎭 +{q.rewards.rep_change} Rep</span>}
+                                            {q.rewards?.hopium && <span style={{ color: '#ffd700' }}>💊 {q.rewards.hopium}</span>}
+                                            {q.rewards?.special && <span style={{ color: '#ff00ff' }}>✨ {q.rewards.special}</span>}
+                                        </div>
+
+                                        {/* Choices */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            {(q.choices || []).map(c => (
+                                                <button key={c.id} onClick={() => resolveQuest(q.quest_id, c.id)}
+                                                    disabled={resolving === q.quest_id}
+                                                    style={{
+                                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                        padding: '10px 14px', background: 'rgba(255,255,255,0.05)',
+                                                        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                                                        color: '#eee', cursor: resolving ? 'wait' : 'pointer', textAlign: 'left',
+                                                        transition: 'all 0.2s', width: '100%'
+                                                    }}
+                                                    onMouseEnter={e => { e.target.style.background = 'rgba(255,215,0,0.1)'; e.target.style.borderColor = '#ffd70066'; }}
+                                                    onMouseLeave={e => { e.target.style.background = 'rgba(255,255,255,0.05)'; e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                                                >
+                                                    <div>
+                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9em' }}>{c.label}</div>
+                                                        <div style={{ color: '#999', fontSize: '0.8em', marginTop: '2px' }}>{c.desc}</div>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                                                        <span style={{ fontSize: '0.7em', color: { low: '#44dd44', medium: '#ffd700', high: '#ff6b6b', extreme: '#ff00ff' }[c.risk] || '#888', textTransform: 'uppercase' }}>{c.risk}</span>
+                                                        <span style={{ fontSize: '0.65em', color: '#555' }}>{c.alignment}</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Abandon button */}
+                                        <button onClick={() => abandonQuest(q.quest_id)} style={{
+                                            marginTop: '10px', padding: '5px 12px', background: 'transparent',
+                                            border: '1px solid rgba(255,68,68,0.3)', borderRadius: '6px',
+                                            color: '#ff4444', fontSize: '0.75em', cursor: 'pointer', opacity: 0.6
+                                        }}>🏳️ Abandon Quest</button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* History tab */}
+                    {tab === 'history' && (
+                        <div className="rep-history">
+                            {completedQuests.length === 0 ? (
+                                <div className="rep-no-data">📭 No quest history yet. Complete your first quest!</div>
+                            ) : completedQuests.map(q => (
+                                <div key={q.quest_id} className="rep-history-item" style={{ opacity: q.status === 'expired' || q.status === 'abandoned' ? 0.5 : 1 }}>
+                                    <div className="rep-history-left">
+                                        <span className="rep-history-delta" style={{
+                                            color: q.status === 'completed' ? '#44dd44' : '#ff4444'
+                                        }}>
+                                            {q.status === 'completed' ? '✅' : q.status === 'failed' ? '❌' : q.status === 'abandoned' ? '🏳️' : '⏰'}
+                                        </span>
+                                        <div className="rep-history-info">
+                                            <span className="rep-history-npc">{q.title}</span>
+                                            <span className="rep-history-desc">
+                                                From {(q.npc_name || '').replace(/_/g, ' ')} • {q.difficulty} • Rep: {q.rep_before} → {q.rep_after || '?'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="rep-history-right">
+                                        <span className="rep-history-source" style={{ color: q.status === 'completed' ? '#44dd44' : '#ff4444' }}>{q.status}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
 
         // ==================== REPUTATION PAGE ====================
 
