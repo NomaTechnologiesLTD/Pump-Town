@@ -2294,6 +2294,128 @@
         @media (max-width: 768px) {
             .dash-hero-stats { grid-template-columns: repeat(2, 1fr) !important; }
         }
+
+        /* ═══════ VISUAL OVERHAUL — Distinct Section Styles ═══════ */
+        
+        /* Section divider between dashboard groups */
+        .dash-section-divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 28px 0 16px; padding: 0 4px;
+        }
+        .dash-section-divider .dash-div-line {
+            flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.2), transparent);
+        }
+        .dash-section-divider .dash-div-label {
+            color: #555; font-size: 0.7em; text-transform: uppercase;
+            letter-spacing: 2px; white-space: nowrap;
+        }
+        
+        /* Drama-themed card (Mayor, Soap Opera, NPC Relationships) */
+        .card-drama {
+            background: linear-gradient(135deg, rgba(255,68,68,0.06) 0%, rgba(0,0,0,0.5) 40%, rgba(255,107,107,0.04) 100%);
+            border: 1px solid rgba(255,68,68,0.15);
+            border-radius: 16px; padding: 20px;
+            position: relative; overflow: hidden;
+        }
+        .card-drama::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #ff4444, #ff8800, transparent);
+        }
+        .card-drama h2, .card-drama h3 { color: #ff6b6b; }
+        
+        /* Activity-themed card (CityPulse, Live Feed) */
+        .card-activity {
+            background: linear-gradient(135deg, rgba(0,255,136,0.04) 0%, rgba(0,0,0,0.5) 50%, rgba(0,204,255,0.03) 100%);
+            border: 1px solid rgba(0,255,136,0.12);
+            border-radius: 16px; padding: 20px;
+            position: relative; overflow: hidden;
+        }
+        .card-activity::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, #00ccff, transparent);
+        }
+        .card-activity::after {
+            content: ''; position: absolute; top: 8px; right: 12px;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #00ff88; animation: pulse 2s infinite;
+            box-shadow: 0 0 8px #00ff8866;
+        }
+        
+        /* Economy-themed card (Economy, Passive Income, Fear/Greed) */
+        .card-economy {
+            background: linear-gradient(135deg, rgba(255,215,0,0.05) 0%, rgba(0,0,0,0.5) 50%, rgba(255,215,0,0.03) 100%);
+            border: 1px solid rgba(255,215,0,0.12);
+            border-radius: 16px; padding: 20px;
+            position: relative; overflow: hidden;
+        }
+        .card-economy::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #ffd700, #ff8800, transparent);
+        }
+        .card-economy h2, .card-economy h3 { color: #ffd700; }
+        
+        /* Progression-themed card (Quests, BattlePass, Achievements) */
+        .card-progression {
+            background: linear-gradient(135deg, rgba(0,136,255,0.05) 0%, rgba(0,0,0,0.5) 50%, rgba(138,43,226,0.04) 100%);
+            border: 1px solid rgba(0,136,255,0.12);
+            border-radius: 16px; padding: 20px;
+            position: relative; overflow: hidden;
+        }
+        .card-progression::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #0088ff, #8a2be2, transparent);
+        }
+        .card-progression h2, .card-progression h3 { color: #4488ff; }
+        
+        /* Chaos-themed card (Mayor Unhinged, Seasonal) */
+        .card-chaos {
+            background: linear-gradient(135deg, rgba(170,68,170,0.06) 0%, rgba(0,0,0,0.5) 40%, rgba(255,0,255,0.04) 100%);
+            border: 1px solid rgba(170,68,170,0.15);
+            border-radius: 16px; padding: 20px;
+            position: relative; overflow: hidden;
+        }
+        .card-chaos::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #aa44aa, #ff00ff, transparent);
+            animation: gradientShift 4s ease infinite; background-size: 200% 100%;
+        }
+        
+        /* Animated section entrance */
+        .dash-section-enter {
+            animation: dashSectionIn 0.5s ease-out both;
+        }
+        @keyframes dashSectionIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Glowing accent for important numbers */
+        .stat-glow {
+            text-shadow: 0 0 10px currentColor;
+        }
+        
+        /* Scrolling news ticker */
+        .news-ticker-wrap {
+            overflow: hidden; position: relative;
+        }
+        .news-ticker-track {
+            display: flex; gap: 40px; white-space: nowrap;
+            animation: tickerScroll 30s linear infinite;
+        }
+        @keyframes tickerScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        /* Mini sparkline bars */
+        .mini-bar-chart {
+            display: flex; align-items: flex-end; gap: 2px; height: 24px;
+        }
+        .mini-bar-chart .bar {
+            width: 4px; border-radius: 2px 2px 0 0;
+            transition: height 0.5s ease;
+        }
         
         /* Toast Notifications */
         .toast-container {
@@ -15983,16 +16105,27 @@
                                 </div>
                                 
                                 {/* ═══════ LIVE CITY PULSE ═══════ */}
-                                <CityPulse />
+                                <div className="card-activity dash-section-enter" style={{ animationDelay: '0.1s', padding: '8px' }}>
+                                    <CityPulse />
+                                </div>
+                                
+                                {/* ═══════ SECTION: YOUR CITY LIFE ═══════ */}
+                                <div className="dash-section-divider">
+                                    <div className="dash-div-line" />
+                                    <span className="dash-div-label">🏛️ Your City Life</span>
+                                    <div className="dash-div-line" />
+                                </div>
                                 
                                 {/* ═══════ CITIZEN ACTIONS (Sue, Propose Laws) ═══════ */}
-                                <CitizenActions 
-                                    playerName={character?.name || 'Guest'}
-                                    showToast={showToast}
-                                />
+                                <div className="dash-section-enter" style={{ animationDelay: '0.15s' }}>
+                                    <CitizenActions 
+                                        playerName={character?.name || 'Guest'}
+                                        showToast={showToast}
+                                    />
+                                </div>
                                 
                                 {/* ═══════ MAYOR & REPUTATION — Side by Side on desktop ═══════ */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '0' }}>
+                                <div className="dash-section-enter" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', marginBottom: '0', animationDelay: '0.2s' }}>
                                     <MayorInbox 
                                         character={character}
                                         showToast={showToast}
@@ -16006,44 +16139,73 @@
                                     />
                                 </div>
                                 
-                                {/* ═══════ SOCIAL & DRAMA ZONE ═══════ */}
-                                <NPCRelationships
-                                    character={character}
-                                    reputation={dashRep}
-                                    showToast={showToast}
-                                />
+                                {/* ═══════ SECTION: DRAMA & SOCIAL ═══════ */}
+                                <div className="dash-section-divider">
+                                    <div className="dash-div-line" />
+                                    <span className="dash-div-label">🍿 Drama & Social</span>
+                                    <div className="dash-div-line" />
+                                </div>
                                 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                                {/* ═══════ SOCIAL & DRAMA ZONE ═══════ */}
+                                <div className="dash-section-enter" style={{ animationDelay: '0.25s' }}>
+                                    <NPCRelationships
+                                        character={character}
+                                        reputation={dashRep}
+                                        showToast={showToast}
+                                    />
+                                </div>
+                                
+                                <div className="dash-section-enter" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', animationDelay: '0.3s' }}>
                                     <MayorUnhingedPanel />
                                     <SoapOperaPanel showToast={showToast} playerName={character?.name} />
                                 </div>
                                 
                                 {/* Seasonal Event Banner */}
-                                <SeasonalEventBanner playerStats={playerStats} />
+                                <div className="dash-section-enter" style={{ animationDelay: '0.35s' }}>
+                                    <SeasonalEventBanner playerStats={playerStats} />
+                                </div>
+                                
+                                {/* ═══════ SECTION: EVENTS & PROGRESSION ═══════ */}
+                                <div className="dash-section-divider">
+                                    <div className="dash-div-line" />
+                                    <span className="dash-div-label">⚡ Events & Progression</span>
+                                    <div className="dash-div-line" />
+                                </div>
                                 
                                 {/* ═══════ EVENTS & PROGRESSION ═══════ */}
-                                <MayorDynamicEvents 
-                                    gameState={gameState}
-                                    resources={resources}
-                                    onResourceChange={handleResourceChange}
-                                    showToast={showToast}
-                                    playerName={character?.name}
-                                />
+                                <div className="dash-section-enter" style={{ animationDelay: '0.4s' }}>
+                                    <MayorDynamicEvents 
+                                        gameState={gameState}
+                                        resources={resources}
+                                        onResourceChange={handleResourceChange}
+                                        showToast={showToast}
+                                        playerName={character?.name}
+                                    />
+                                </div>
                                 
-                                <BattlePass 
-                                    playerStats={playerStats}
-                                    resources={resources}
-                                    onResourceChange={handleResourceChange}
-                                    showToast={showToast}
-                                />
+                                <div className="dash-section-enter" style={{ animationDelay: '0.45s' }}>
+                                    <BattlePass 
+                                        playerStats={playerStats}
+                                        resources={resources}
+                                        onResourceChange={handleResourceChange}
+                                        showToast={showToast}
+                                    />
+                                </div>
+                                
+                                {/* ═══════ SECTION: ECONOMY & STATS ═══════ */}
+                                <div className="dash-section-divider">
+                                    <div className="dash-div-line" />
+                                    <span className="dash-div-label">💰 Economy & Stats</span>
+                                    <div className="dash-div-line" />
+                                </div>
                                 
                                 {/* ═══════ STATS & ECONOMY — Side by Side ═══════ */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                                <div className="dash-section-enter" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', animationDelay: '0.5s' }}>
                                     <FearGreedIndex />
                                     <LiveActivityFeed playerName={character?.name} onPlayerClick={openPlayerProfile} />
                                 </div>
                                 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                                <div className="dash-section-enter" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px', animationDelay: '0.55s' }}>
                                     <PassiveIncomePanel 
                                         resources={resources}
                                         currentZone={currentZone}
@@ -16052,26 +16214,46 @@
                                     <EconomyPanel resources={resources} />
                                 </div>
                                 
-                                {/* ═══════ ZONES & QUESTS ═══════ */}
-                                <ZonesSection 
-                                    currentZone={currentZone}
-                                    setCurrentZone={setCurrentZone}
-                                    playerLevel={playerStats.level}
-                                />
+                                {/* ═══════ SECTION: ZONES & QUESTS ═══════ */}
+                                <div className="dash-section-divider">
+                                    <div className="dash-div-line" />
+                                    <span className="dash-div-label">🗺️ Zones & Quests</span>
+                                    <div className="dash-div-line" />
+                                </div>
                                 
-                                <QuestsSection 
-                                    quests={quests}
-                                    onClaimReward={claimQuestReward}
-                                />
+                                {/* ═══════ ZONES & QUESTS ═══════ */}
+                                <div className="dash-section-enter" style={{ animationDelay: '0.6s' }}>
+                                    <ZonesSection 
+                                        currentZone={currentZone}
+                                        setCurrentZone={setCurrentZone}
+                                        playerLevel={playerStats.level}
+                                    />
+                                </div>
+                                
+                                <div className="dash-section-enter" style={{ animationDelay: '0.65s' }}>
+                                    <QuestsSection 
+                                        quests={quests}
+                                        onClaimReward={claimQuestReward}
+                                    />
+                                </div>
+                                
+                                {/* ═══════ SECTION: ACHIEVEMENTS ═══════ */}
+                                <div className="dash-section-divider">
+                                    <div className="dash-div-line" />
+                                    <span className="dash-div-label">🏆 Achievements & Badges</span>
+                                    <div className="dash-div-line" />
+                                </div>
                                 
                                 {/* ═══════ ACHIEVEMENTS ═══════ */}
-                                <AchievementSection 
-                                    playerStats={playerStats}
-                                    character={character}
-                                    resources={resources}
-                                />
+                                <div className="dash-section-enter" style={{ animationDelay: '0.7s' }}>
+                                    <AchievementSection 
+                                        playerStats={playerStats}
+                                        character={character}
+                                        resources={resources}
+                                    />
+                                </div>
                                 
-                                <div className="card">
+                                <div className="card dash-section-enter" style={{ animationDelay: '0.75s' }}>
                                     <h2>🏆 Your Badges</h2>
                                     <div className="badges-container">
                                         {badges.map(badge => (
@@ -16095,10 +16277,12 @@
                                     </div>
                                 </div>
                                 
-                                <NFTAchievementSection 
-                                    character={character}
-                                    playerStats={playerStats}
-                                />
+                                <div className="dash-section-enter" style={{ animationDelay: '0.8s' }}>
+                                    <NFTAchievementSection 
+                                        character={character}
+                                        playerStats={playerStats}
+                                    />
+                                </div>
                             </>
                         );
                     
@@ -21645,7 +21829,17 @@
                 ),
 
                 // ═══════ CITY MAP ═══════
-                !currentLocation && React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '18px', padding: '16px', border: '1px solid rgba(255,255,255,0.04)' } },
+                !currentLocation && React.createElement('div', { style: { position: 'relative' } },
+                    // City skyline decorative header
+                    React.createElement('div', { style: { textAlign: 'center', padding: '20px 0 10px', position: 'relative' } },
+                        React.createElement('div', { style: { fontSize: '0.7em', color: '#444', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '8px' } }, '— choose your destination —'),
+                        React.createElement('div', { style: { display: 'flex', justifyContent: 'center', gap: '3px', opacity: 0.3 } },
+                            [12,20,35,15,28,40,18,30,22,35,25,14].map(function(h, i) {
+                                return React.createElement('div', { key: i, style: { width: '6px', height: h + 'px', background: 'linear-gradient(180deg, #ffd700, transparent)', borderRadius: '2px 2px 0 0', animation: 'cityLights 3s ease-in-out infinite', animationDelay: (i * 0.2) + 's' } });
+                            })
+                        )
+                    ),
+                    React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '12px', background: 'linear-gradient(180deg, rgba(0,0,0,0.3), rgba(0,0,0,0.1))', borderRadius: '18px', padding: '16px', border: '1px solid rgba(255,255,255,0.04)' } },
                     LOCATIONS.map(function(loc) {
                         return React.createElement('div', { key: loc.id, onClick: function() { if (!onCooldown) exploreLocation(loc); },
                             style: { background: loc.bgGrad, border: '1px solid ' + loc.color + '33', borderRadius: '14px', padding: '18px 14px', cursor: onCooldown ? 'not-allowed' : 'pointer', transition: 'all 0.3s', textAlign: 'center', opacity: onCooldown ? 0.5 : 1, position: 'relative', overflow: 'hidden' },
@@ -21659,6 +21853,7 @@
                             React.createElement('div', { style: { color: '#555', fontSize: '0.65em', marginTop: '6px', fontStyle: 'italic', position: 'relative' } }, loc.vibe)
                         );
                     })
+                )
                 ),
 
                 // ═══════ ENCOUNTER SCREEN ═══════
