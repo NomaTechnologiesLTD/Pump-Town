@@ -38162,7 +38162,7 @@
             const [investing, setInvesting] = useState(null);
             const [investAmount, setInvestAmount] = useState(500);
 
-            const BIZ_TYPE_INFO = {
+            const BIZ = {
                 casino: { emoji: '🎰', color: '#ffd700' }, exchange: { emoji: '📊', color: '#00ff88' },
                 bar: { emoji: '🍺', color: '#ff8800' }, info_broker: { emoji: '🕵️', color: '#8a2be2' },
                 nft_gallery: { emoji: '🖼️', color: '#ff69b4' }, degen_gym: { emoji: '💪', color: '#ff4444' },
@@ -38180,10 +38180,8 @@
                         fetch(`${API_BASE}/api/v1/economy/stats`)
                     ];
                     if (playerName) promises.push(fetch(`${API_BASE}/api/v1/economy/investments/${encodeURIComponent(playerName)}`));
-                    
                     const responses = await Promise.all(promises);
                     const data = await Promise.all(responses.map(r => r.json()));
-                    
                     if (data[0].success) setBusinesses(data[0].businesses || []);
                     if (data[1].success) setStats(data[1].stats || null);
                     if (data[2] && data[2].success) setInvestments(data[2].investments || []);
@@ -38200,130 +38198,89 @@
                         body: JSON.stringify({ playerName, businessId, amount: investAmount })
                     });
                     const data = await res.json();
-                    if (data.success) {
-                        showToast && showToast(`Invested ${investAmount} USD in ${data.business_name}!`, 'success');
-                        fetchAll();
-                    } else {
-                        showToast && showToast(data.message || 'Investment failed', 'error');
-                    }
+                    if (data.success) { showToast && showToast(`Invested ${investAmount} USD in ${data.business_name}!`, 'success'); fetchAll(); }
+                    else { showToast && showToast(data.message || 'Investment failed', 'error'); }
                 } catch (e) { showToast && showToast('Investment failed', 'error'); }
                 setInvesting(null);
             };
 
-            if (loading) return <div className="rep-page"><div className="rep-loading">💰 Loading economy...</div></div>;
+            if (loading) return <div className="feat-page"><div className="feat-empty"><span className="icon">💰</span>Loading economy...</div></div>;
 
             const openBiz = businesses.filter(b => b.status === 'open');
             const bankruptBiz = businesses.filter(b => b.status === 'bankrupt');
 
             return (
-                <div className="rep-page">
-                    <div className="rep-header">
-                        <h2 className="rep-title">💰 Degens City Economy</h2>
-                        <p className="rep-subtitle">NPC businesses compete for profit. Invest and earn returns!</p>
+                <div className="feat-page">
+                    <div className="feat-hero" style={{ '--accent': '#00ff88' }}>
+                        <div className="feat-hero-icon">💰</div>
+                        <h2>Degens City Economy</h2>
+                        <p>NPC businesses compete for profit. Invest and earn returns!</p>
                     </div>
 
-                    {/* Economy Stats */}
                     {stats && (
-                        <div className="rep-stats-grid" style={{ marginBottom: '15px' }}>
-                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#00ff88' }}>{stats.active_businesses || 0}</div><div className="rep-stat-label">Businesses</div></div>
-                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#ffd700' }}>{((stats.total_revenue || 0) / 1000).toFixed(0)}K</div><div className="rep-stat-label">Revenue</div></div>
-                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: stats.total_profit >= 0 ? '#44dd44' : '#ff4444' }}>{((stats.total_profit || 0) / 1000).toFixed(0)}K</div><div className="rep-stat-label">Total Profit</div></div>
-                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#ff4444' }}>{stats.bankrupt_businesses || 0}</div><div className="rep-stat-label">Bankrupt</div></div>
+                        <div className="feat-stats">
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#00ff88' }}>{stats.active_businesses || 0}</div><div className="feat-stat-label">Businesses</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#ffd700' }}>{((stats.total_revenue || 0) / 1000).toFixed(0)}K</div><div className="feat-stat-label">Revenue</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: (stats.total_profit || 0) >= 0 ? '#44dd44' : '#ff4444' }}>{((stats.total_profit || 0) / 1000).toFixed(0)}K</div><div className="feat-stat-label">Total Profit</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#ff4444' }}>{stats.bankrupt_businesses || 0}</div><div className="feat-stat-label">Bankrupt</div></div>
                         </div>
                     )}
 
-                    {/* Tabs */}
-                    <div className="rep-tabs">
-                        {[
-                            { id: 'businesses', label: `🏪 Businesses (${openBiz.length})` },
-                            { id: 'investments', label: `📈 My Investments (${investments.length})` },
-                            { id: 'leaderboard', label: '🏆 Top Earners' }
-                        ].map(t => (
-                            <button key={t.id} className={`rep-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
-                                {t.label}
-                            </button>
+                    <div className="feat-tabs">
+                        {[{ id: 'businesses', label: `🏪 Businesses (${openBiz.length})` }, { id: 'investments', label: `📈 My Investments (${investments.length})` }, { id: 'leaderboard', label: '🏆 Top Earners' }].map(t => (
+                            <button key={t.id} className={`feat-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
                         ))}
                     </div>
 
-                    {/* BUSINESSES TAB */}
                     {tab === 'businesses' && (
-                        <div className="rep-list">
-                            {openBiz.length === 0 ? (
-                                <div className="rep-no-data">🏗️ No businesses yet. NPCs are setting up shop...</div>
-                            ) : openBiz.map(biz => {
-                                const info = BIZ_TYPE_INFO[biz.business_type] || { emoji: '🏪', color: '#888' };
+                        <div>
+                            {openBiz.length === 0 ? <div className="feat-empty"><span className="icon">🏗️</span>No businesses yet. NPCs are setting up shop...</div> :
+                            openBiz.map(biz => {
+                                const info = BIZ[biz.business_type] || { emoji: '🏪', color: '#888' };
                                 const isInvested = investments.some(i => i.business_id === biz.business_id);
                                 return (
-                                    <div key={biz.business_id} style={{
-                                        background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '14px',
-                                        marginBottom: '10px', border: `1px solid ${info.color}22`,
-                                        borderLeft: `3px solid ${info.color}`
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <span style={{ fontSize: '1.3em' }}>{info.emoji}</span>
+                                    <div key={biz.business_id} className={`feat-card ${isInvested ? 'highlight' : ''}`} style={{ borderLeft: `3px solid ${info.color}` }}>
+                                        <div className="feat-card-header">
+                                            <div className="feat-card-title">
+                                                <span className="icon">{info.emoji}</span>
                                                 <div>
-                                                    <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.95em' }}>{biz.name}</div>
-                                                    <div style={{ color: '#888', fontSize: '0.75em' }}>by {(biz.owner_name || '').replace(/_/g, ' ')} • {biz.location}</div>
+                                                    <div className="name">{biz.name}</div>
+                                                    <div className="sub">by {(biz.owner_name || '').replace(/_/g, ' ')} • {biz.location}</div>
                                                 </div>
                                             </div>
                                             <div style={{ textAlign: 'right' }}>
-                                                <div style={{ color: '#ffd700', fontSize: '0.75em', fontWeight: 'bold' }}>LVL {biz.level}</div>
-                                                {isInvested && <div style={{ color: '#00ff88', fontSize: '0.65em' }}>✅ INVESTED</div>}
+                                                <span className="feat-badge" style={{ background: 'rgba(255,215,0,0.15)', color: '#ffd700' }}>LVL {biz.level}</span>
+                                                {isInvested && <div style={{ color: '#00ff88', fontSize: '0.65em', marginTop: '3px' }}>✅ INVESTED</div>}
                                             </div>
                                         </div>
-
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '8px', fontSize: '0.8em' }}>
-                                            <div style={{ color: '#00ff88' }}>💵 {(biz.revenue || 0).toLocaleString()} rev</div>
-                                            <div style={{ color: biz.profit >= 0 ? '#44dd44' : '#ff4444' }}>
-                                                {biz.profit >= 0 ? '📈' : '📉'} {(biz.profit || 0).toLocaleString()} profit
-                                            </div>
-                                            <div style={{ color: '#00ccff' }}>👥 {(biz.customers || 0).toLocaleString()}</div>
+                                        <div className="feat-metric-row" style={{ marginBottom: '10px' }}>
+                                            <span className="feat-metric" style={{ color: '#00ff88' }}>💵 {(biz.revenue || 0).toLocaleString()} rev</span>
+                                            <span className="feat-metric" style={{ color: (biz.profit || 0) >= 0 ? '#44dd44' : '#ff4444' }}>{(biz.profit || 0) >= 0 ? '📈' : '📉'} {(biz.profit || 0).toLocaleString()} profit</span>
+                                            <span className="feat-metric" style={{ color: '#00ccff' }}>👥 {(biz.customers || 0).toLocaleString()}</span>
                                         </div>
-
-                                        {/* Invest */}
                                         {playerName && (
                                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                <input type="number" value={investAmount} onChange={e => setInvestAmount(parseInt(e.target.value) || 100)}
-                                                    min="100" max="10000" step="100"
-                                                    style={{
-                                                        width: '80px', padding: '5px 8px', background: 'rgba(255,255,255,0.05)',
-                                                        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px',
-                                                        color: '#fff', fontSize: '0.8em', textAlign: 'center'
-                                                    }}
-                                                />
-                                                <button onClick={() => invest(biz.business_id)}
-                                                    disabled={investing === biz.business_id}
-                                                    style={{
-                                                        padding: '5px 12px', background: 'linear-gradient(135deg, #00ff88, #00cc66)',
-                                                        border: 'none', borderRadius: '6px', color: '#000', fontWeight: 'bold',
-                                                        fontSize: '0.8em', cursor: investing ? 'wait' : 'pointer'
-                                                    }}>
+                                                <input type="number" value={investAmount} onChange={e => setInvestAmount(parseInt(e.target.value) || 100)} min="100" max="10000" step="100" className="feat-input" style={{ width: '80px', textAlign: 'center' }} />
+                                                <button className="feat-btn feat-btn-green" onClick={() => invest(biz.business_id)} disabled={investing === biz.business_id}>
                                                     {investing === biz.business_id ? '⏳' : '💰 Invest'}
                                                 </button>
-                                                <span style={{ fontSize: '0.7em', color: '#555' }}>{biz.investor_count || 0} investors</span>
+                                                <span style={{ fontSize: '0.72em', color: '#555' }}>{biz.investor_count || 0} investors</span>
                                             </div>
                                         )}
                                     </div>
                                 );
                             })}
-
-                            {/* Bankrupt businesses */}
                             {bankruptBiz.length > 0 && (
                                 <div style={{ marginTop: '15px' }}>
-                                    <h4 style={{ color: '#ff4444', fontSize: '0.85em', marginBottom: '8px' }}>💀 Bankrupt</h4>
+                                    <div style={{ color: '#ff4444', fontSize: '0.85em', fontWeight: 700, marginBottom: '8px' }}>💀 Bankrupt Businesses</div>
                                     {bankruptBiz.map(biz => {
-                                        const info = BIZ_TYPE_INFO[biz.business_type] || { emoji: '🏪', color: '#888' };
+                                        const info = BIZ[biz.business_type] || { emoji: '🏪', color: '#888' };
                                         return (
-                                            <div key={biz.business_id} className="rep-history-item" style={{ opacity: 0.5 }}>
-                                                <div className="rep-history-left">
-                                                    <span className="rep-history-delta" style={{ color: '#ff4444' }}>{info.emoji}</span>
-                                                    <div className="rep-history-info">
-                                                        <span className="rep-history-npc">{biz.name}</span>
-                                                        <span className="rep-history-desc">{(biz.owner_name || '').replace(/_/g, ' ')} • Lost {Math.abs(biz.profit || 0).toLocaleString()}</span>
-                                                    </div>
+                                            <div key={biz.business_id} className="feat-card" style={{ opacity: 0.5, borderLeft: `3px solid #ff4444` }}>
+                                                <div className="feat-card-header">
+                                                    <div className="feat-card-title"><span className="icon">{info.emoji}</span><div><div className="name">{biz.name}</div><div className="sub">{(biz.owner_name || '').replace(/_/g, ' ')} • Lost {Math.abs(biz.profit || 0).toLocaleString()}</div></div></div>
+                                                    <span className="feat-badge" style={{ background: 'rgba(255,0,0,0.15)', color: '#ff4444' }}>BANKRUPT</span>
                                                 </div>
-                                                <span style={{ color: '#ff4444', fontSize: '0.75em' }}>BANKRUPT</span>
                                             </div>
                                         );
                                     })}
@@ -38332,109 +38289,78 @@
                         </div>
                     )}
 
-                    {/* INVESTMENTS TAB */}
                     {tab === 'investments' && (
-                        <div className="rep-list">
-                            {!playerName ? (
-                                <div className="rep-no-data">🔒 Login to see your investments</div>
-                            ) : investments.length === 0 ? (
-                                <div className="rep-no-data">📭 No investments yet. Browse businesses and invest!</div>
-                            ) : (
-                                <>
-                                    <div style={{ background: 'rgba(0,255,136,0.08)', borderRadius: '10px', padding: '12px', marginBottom: '12px', border: '1px solid rgba(0,255,136,0.15)' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
-                                            <div>
-                                                <div style={{ color: '#ffd700', fontSize: '1.1em', fontWeight: 'bold' }}>{investments.reduce((a, i) => a + (i.amount || 0), 0).toLocaleString()}</div>
-                                                <div style={{ color: '#888', fontSize: '0.75em' }}>Total Invested</div>
+                        <div>
+                            {!playerName ? <div className="feat-empty"><span className="icon">🔒</span>Login to see your investments</div> :
+                            investments.length === 0 ? <div className="feat-empty"><span className="icon">📭</span>No investments yet. Browse businesses and invest!</div> :
+                            <>
+                                <div className="feat-card highlight" style={{ borderColor: 'rgba(0,255,136,0.2)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                                        <div><div style={{ color: '#ffd700', fontSize: '1.3em', fontWeight: 'bold' }}>{investments.reduce((a, i) => a + (i.amount || 0), 0).toLocaleString()}</div><div style={{ color: '#666', fontSize: '0.72em', marginTop: '3px' }}>TOTAL INVESTED</div></div>
+                                        <div><div style={{ color: '#00ff88', fontSize: '1.3em', fontWeight: 'bold' }}>{investments.reduce((a, i) => a + (i.returns_collected || 0), 0).toLocaleString()}</div><div style={{ color: '#666', fontSize: '0.72em', marginTop: '3px' }}>RETURNS EARNED</div></div>
+                                        <div><div style={{ color: '#00ccff', fontSize: '1.3em', fontWeight: 'bold' }}>{investments.length}</div><div style={{ color: '#666', fontSize: '0.72em', marginTop: '3px' }}>POSITIONS</div></div>
+                                    </div>
+                                </div>
+                                {investments.map(inv => {
+                                    const info = BIZ[inv.business_type] || { emoji: '🏪', color: '#888' };
+                                    return (
+                                        <div key={inv.id} className="feat-card" style={{ borderLeft: `3px solid ${info.color}` }}>
+                                            <div className="feat-card-header">
+                                                <div className="feat-card-title"><span className="icon">{info.emoji}</span><div><div className="name">{inv.business_name}</div></div></div>
+                                                <span className="feat-badge" style={{ background: inv.biz_status === 'open' ? 'rgba(0,255,136,0.15)' : 'rgba(255,0,0,0.15)', color: inv.biz_status === 'open' ? '#44dd44' : '#ff4444' }}>{inv.biz_status === 'open' ? 'ACTIVE' : 'BANKRUPT'}</span>
                                             </div>
-                                            <div>
-                                                <div style={{ color: '#00ff88', fontSize: '1.1em', fontWeight: 'bold' }}>{investments.reduce((a, i) => a + (i.returns_collected || 0), 0).toLocaleString()}</div>
-                                                <div style={{ color: '#888', fontSize: '0.75em' }}>Returns Earned</div>
-                                            </div>
-                                            <div>
-                                                <div style={{ color: '#00ccff', fontSize: '1.1em', fontWeight: 'bold' }}>{investments.length}</div>
-                                                <div style={{ color: '#888', fontSize: '0.75em' }}>Positions</div>
+                                            <div className="feat-metric-row">
+                                                <span className="feat-metric" style={{ color: '#ffd700' }}>💵 {(inv.amount || 0).toLocaleString()} invested</span>
+                                                <span className="feat-metric" style={{ color: '#00ff88' }}>📈 {parseFloat(inv.share_pct || 0).toFixed(1)}% share</span>
+                                                <span className="feat-metric" style={{ color: '#00ccff' }}>💰 {(inv.returns_collected || 0).toLocaleString()} earned</span>
                                             </div>
                                         </div>
-                                    </div>
-                                    {investments.map(inv => {
-                                        const info = BIZ_TYPE_INFO[inv.business_type] || { emoji: '🏪', color: '#888' };
-                                        return (
-                                            <div key={inv.id} className="rep-npc-card" style={{ borderLeft: `3px solid ${info.color}` }}>
-                                                <div className="rep-npc-header">
-                                                    <div className="rep-npc-identity">
-                                                        <span className="rep-npc-emoji">{info.emoji}</span>
-                                                        <span className="rep-npc-name">{inv.business_name}</span>
-                                                    </div>
-                                                    <span style={{ fontSize: '0.7em', color: inv.biz_status === 'open' ? '#44dd44' : '#ff4444' }}>
-                                                        {inv.biz_status === 'open' ? '✅ Active' : '💀 Bankrupt'}
-                                                    </span>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '15px', fontSize: '0.8em', marginTop: '6px' }}>
-                                                    <span style={{ color: '#ffd700' }}>💵 {(inv.amount || 0).toLocaleString()} invested</span>
-                                                    <span style={{ color: '#00ff88' }}>📈 {parseFloat(inv.share_pct || 0).toFixed(1)}% share</span>
-                                                    <span style={{ color: '#00ccff' }}>💰 {(inv.returns_collected || 0).toLocaleString()} earned</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </>
-                            )}
+                                    );
+                                })}
+                            </>}
                         </div>
                     )}
 
-                    {/* LEADERBOARD TAB */}
                     {tab === 'leaderboard' && (
                         <div>
                             {stats && stats.top_businesses && stats.top_businesses.length > 0 ? (
                                 <>
-                                    <h4 style={{ color: '#ffd700', fontSize: '0.9em', marginBottom: '10px' }}>🏆 Most Profitable Businesses</h4>
                                     {stats.top_businesses.map((biz, idx) => {
-                                        const info = BIZ_TYPE_INFO[biz.business_type] || { emoji: '🏪', color: '#888' };
+                                        const info = BIZ[biz.business_type] || { emoji: '🏪', color: '#888' };
                                         const medals = ['👑', '🥈', '🥉', '4️⃣', '5️⃣'];
                                         return (
-                                            <div key={idx} style={{
-                                                display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
-                                                background: idx === 0 ? 'rgba(255,215,0,0.08)' : 'rgba(0,0,0,0.15)',
-                                                borderRadius: '10px', marginBottom: '6px',
-                                                border: idx === 0 ? '1px solid rgba(255,215,0,0.2)' : '1px solid transparent'
-                                            }}>
-                                                <span style={{ fontSize: '1.2em', minWidth: '28px', textAlign: 'center' }}>{medals[idx] || '🔸'}</span>
-                                                <span style={{ fontSize: '1.1em' }}>{info.emoji}</span>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.9em' }}>{biz.name}</div>
-                                                    <div style={{ color: '#888', fontSize: '0.75em' }}>{(biz.owner_name || '').replace(/_/g, ' ')} • LVL {biz.level}</div>
-                                                </div>
-                                                <div style={{ textAlign: 'right' }}>
-                                                    <div style={{ color: biz.profit >= 0 ? '#44dd44' : '#ff4444', fontWeight: 'bold', fontSize: '0.9em' }}>
-                                                        {(biz.profit || 0).toLocaleString()} USD
+                                            <div key={idx} className={`feat-card ${idx === 0 ? 'highlight' : ''}`}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <span style={{ fontSize: '1.4em', minWidth: '30px', textAlign: 'center' }}>{medals[idx] || '🔸'}</span>
+                                                    <span style={{ fontSize: '1.2em' }}>{info.emoji}</span>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.95em' }}>{biz.name}</div>
+                                                        <div style={{ color: '#666', fontSize: '0.78em' }}>{(biz.owner_name || '').replace(/_/g, ' ')} • LVL {biz.level}</div>
                                                     </div>
-                                                    <div style={{ color: '#888', fontSize: '0.7em' }}>{(biz.customers || 0).toLocaleString()} customers</div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ color: (biz.profit || 0) >= 0 ? '#44dd44' : '#ff4444', fontWeight: 'bold', fontSize: '1em' }}>{(biz.profit || 0).toLocaleString()} USD</div>
+                                                        <div style={{ color: '#555', fontSize: '0.72em' }}>{(biz.customers || 0).toLocaleString()} customers</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </>
-                            ) : (
-                                <div className="rep-no-data">🏗️ Economy is just getting started... check back soon!</div>
-                            )}
+                            ) : <div className="feat-empty"><span className="icon">🏗️</span>Economy is just getting started... check back soon!</div>}
 
-                            {/* Recent economic events */}
                             {stats && stats.recent_events && stats.recent_events.length > 0 && (
                                 <div style={{ marginTop: '15px' }}>
-                                    <h4 style={{ color: '#888', fontSize: '0.85em', marginBottom: '8px' }}>📜 Recent Economic Activity</h4>
+                                    <div style={{ color: '#666', fontSize: '0.82em', fontWeight: 700, marginBottom: '8px' }}>📜 Recent Activity</div>
                                     {stats.recent_events.map((ev, idx) => (
-                                        <div key={idx} className="rep-history-item">
-                                            <div className="rep-history-left">
-                                                <span className="rep-history-delta" style={{ color: '#ffd700' }}>
-                                                    {ev.event_type === 'business_opened' ? '🏪' : ev.event_type === 'investment' ? '📈' : ev.event_type === 'bankruptcy' ? '💀' : '💰'}
-                                                </span>
-                                                <div className="rep-history-info">
-                                                    <span className="rep-history-npc">{(ev.actor || '').replace(/_/g, ' ')}</span>
-                                                    <span className="rep-history-desc">{ev.description}</span>
+                                        <div key={idx} className="feat-card" style={{ padding: '10px 14px', marginBottom: '6px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span>{ev.event_type === 'business_opened' ? '🏪' : ev.event_type === 'investment' ? '📈' : ev.event_type === 'bankruptcy' ? '💀' : '💰'}</span>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ color: '#ccc', fontSize: '0.85em' }}>{(ev.actor || '').replace(/_/g, ' ')}</div>
+                                                    <div style={{ color: '#777', fontSize: '0.78em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.description}</div>
                                                 </div>
+                                                {ev.amount > 0 && <span style={{ color: '#ffd700', fontSize: '0.78em', fontWeight: 700 }}>{ev.amount.toLocaleString()}</span>}
                                             </div>
-                                            {ev.amount > 0 && <span style={{ color: '#ffd700', fontSize: '0.75em' }}>{ev.amount.toLocaleString()} USD</span>}
                                         </div>
                                     ))}
                                 </div>
@@ -38451,36 +38377,25 @@
             const [feed, setFeed] = useState([]);
             const [soapArcs, setSoapArcs] = useState([]);
             const [soapHistory, setSoapHistory] = useState([]);
-            const [npcLives, setNpcLives] = useState({});
             const [cityStats, setCityStats] = useState(null);
+            const [npcLives, setNpcLives] = useState({});
             const [loading, setLoading] = useState(true);
             const [tab, setTab] = useState('live');
             const [filter, setFilter] = useState('all');
             const [expandedArc, setExpandedArc] = useState(null);
             const [tickerItems, setTickerItems] = useState([]);
-            const tickerRef = useRef(null);
 
-            const EVENT_STYLES = {
+            const ETYPE = {
                 breaking_news: { emoji: '🚨', color: '#ff0000', label: 'BREAKING' },
                 mayor_decree: { emoji: '👑', color: '#ffd700', label: 'MAYOR' },
                 npc_chat: { emoji: '💬', color: '#00ccff', label: 'NPC' },
-                player_chat: { emoji: '🗣️', color: '#888', label: 'CITIZEN' },
+                player_chat: { emoji: '🗣️', color: '#666', label: 'CITIZEN' },
                 city_event: { emoji: '⚡', color: '#ff6600', label: 'EVENT' },
                 crime: { emoji: '🚔', color: '#ff4444', label: 'CRIME' },
-                lawsuit: { emoji: '⚖️', color: '#ff6b6b', label: 'LEGAL' },
-                party: { emoji: '🎉', color: '#ff00ff', label: 'PARTY' },
-                alliance: { emoji: '🤝', color: '#44dd44', label: 'ALLIANCE' },
-                betrayal: { emoji: '🗡️', color: '#ff0000', label: 'BETRAYAL' },
                 trade: { emoji: '📊', color: '#00ff88', label: 'MARKET' },
-                quest: { emoji: '📋', color: '#ffd700', label: 'QUEST' },
-                rumor: { emoji: '🤫', color: '#8a2be2', label: 'GOSSIP' },
             };
 
-            useEffect(() => {
-                fetchAll();
-                const iv = setInterval(fetchAll, 8000);
-                return () => clearInterval(iv);
-            }, []);
+            useEffect(() => { fetchAll(); const iv = setInterval(fetchAll, 8000); return () => clearInterval(iv); }, []);
 
             const fetchAll = async () => {
                 try {
@@ -38490,193 +38405,102 @@
                         fetch(`${API_BASE}/api/city-engine/status`)
                     ]);
                     const [feedData, soapData, statusData] = await Promise.all([feedRes.json(), soapRes.json(), statusRes.json()]);
-
                     if (feedData.success) {
                         const items = (feedData.feed || []).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                         setFeed(items);
-                        // Build ticker from most dramatic events
-                        const dramatic = items.filter(i =>
-                            i.type === 'breaking_news' || i.type === 'city_event' ||
-                            (i.message || '').includes('ARRESTED') || (i.message || '').includes('GUILTY') ||
-                            (i.message || '').includes('RUGGED') || (i.message || '').includes('LAUNCHED') ||
-                            (i.message || '').includes('BETRAYED') || (i.message || '').includes('ALLIANCE')
-                        ).slice(0, 8);
-                        setTickerItems(dramatic);
+                        setTickerItems(items.filter(i => i.type === 'breaking_news' || i.type === 'city_event' || (i.message || '').includes('ARRESTED') || (i.message || '').includes('LAUNCHED')).slice(0, 6));
                     }
-                    if (soapData.success) {
-                        setSoapArcs(soapData.activeArcs || []);
-                        setSoapHistory(soapData.recentHistory || []);
-                    }
-                    if (statusData.success) {
-                        setNpcLives(statusData.npcLives || statusData.npcs || {});
-                        setCityStats(statusData.stats || statusData.cityStats || null);
-                    }
-                } catch (e) { console.error('CityTV fetch error:', e); }
+                    if (soapData.success) { setSoapArcs(soapData.activeArcs || []); setSoapHistory(soapData.recentHistory || []); }
+                    if (statusData.success) { setNpcLives(statusData.npcStatuses || statusData.npcLives || statusData.npcs || {}); setCityStats(statusData.stats || statusData.cityStats || null); }
+                } catch (e) { console.error('CityTV fetch:', e); }
                 setLoading(false);
             };
 
-            const classifyEvent = (item) => {
+            const classify = (item) => {
                 const msg = (item.message || '').toLowerCase();
                 const author = (item.author || '').toLowerCase();
-                if (item.type && EVENT_STYLES[item.type]) return item.type;
-                if (author.includes('breaking') || msg.includes('breaking')) return 'breaking_news';
-                if (author.includes('mayor') || author.includes('🎩')) return 'mayor_decree';
-                if (msg.includes('arrested') || msg.includes('guilty') || msg.includes('crime') || author.includes('officer') || author.includes('judge')) return 'crime';
-                if (msg.includes('lawsuit') || msg.includes('suing') || msg.includes('case:')) return 'lawsuit';
-                if (msg.includes('party') || msg.includes('🎉')) return 'party';
-                if (msg.includes('alliance') || msg.includes('🤝')) return 'alliance';
-                if (msg.includes('betray') || msg.includes('🗡️')) return 'betrayal';
+                if (item.type && ETYPE[item.type]) return item.type;
+                if (author.includes('breaking')) return 'breaking_news';
+                if (author.includes('mayor')) return 'mayor_decree';
+                if (msg.includes('arrested') || msg.includes('guilty') || author.includes('officer') || author.includes('judge')) return 'crime';
                 if (msg.includes('bought') || msg.includes('sold') || msg.includes('launched $')) return 'trade';
-                if (msg.includes('quest') || msg.includes('📋')) return 'quest';
-                if (msg.includes('rumor') || msg.includes('heard that')) return 'rumor';
                 if (item.type === 'npc_chat') return 'npc_chat';
                 return 'player_chat';
             };
 
-            const timeAgo = (ts) => {
-                if (!ts) return '';
-                const diff = Date.now() - ts;
-                const s = Math.floor(diff / 1000);
-                if (s < 60) return 'just now';
-                if (s < 3600) return Math.floor(s / 60) + 'm ago';
-                if (s < 86400) return Math.floor(s / 3600) + 'h ago';
-                return Math.floor(s / 86400) + 'd ago';
-            };
+            const timeAgo = (ts) => { if (!ts) return ''; const s = Math.floor((Date.now() - ts) / 1000); if (s < 60) return 'now'; if (s < 3600) return Math.floor(s/60) + 'm ago'; if (s < 86400) return Math.floor(s/3600) + 'h ago'; return Math.floor(s/86400) + 'd ago'; };
 
-            const filteredFeed = filter === 'all' ? feed : feed.filter(i => classifyEvent(i) === filter);
+            const filtered = filter === 'all' ? feed : feed.filter(i => classify(i) === filter);
 
-            if (loading) return <div className="rep-page"><div className="rep-loading">📺 Tuning in to City TV...</div></div>;
+            if (loading) return <div className="feat-page"><div className="feat-empty"><span className="icon">📺</span>Tuning in to City TV...</div></div>;
 
             return (
-                <div className="rep-page">
-                    {/* TV Header */}
-                    <div style={{
-                        background: 'linear-gradient(135deg, rgba(255,0,0,0.15), rgba(0,0,0,0.3))',
-                        borderRadius: '12px', padding: '20px', marginBottom: '15px',
-                        border: '1px solid rgba(255,0,0,0.2)', position: 'relative', overflow: 'hidden'
-                    }}>
-                        <div style={{ position: 'absolute', top: '10px', right: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff0000', animation: 'pulse 1.5s infinite' }}></span>
+                <div className="feat-page">
+                    <div className="feat-hero" style={{ textAlign: 'left', paddingRight: '80px' }}>
+                        <div style={{ position: 'absolute', top: '12px', right: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className="feat-live-dot"></span>
                             <span style={{ color: '#ff0000', fontSize: '0.75em', fontWeight: 'bold', letterSpacing: '2px' }}>LIVE</span>
                         </div>
-                        <h2 style={{ color: '#fff', margin: '0 0 5px', fontSize: '1.4em', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span>📺</span> DEGENS CITY TV
-                        </h2>
-                        <p style={{ color: '#888', margin: 0, fontSize: '0.85em' }}>24/7 Drama • AI NPCs Living Their Best Worst Lives</p>
+                        <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.4em' }}><span>📺</span> DEGENS CITY TV</h2>
+                        <p>24/7 Drama • AI NPCs Living Their Best Worst Lives</p>
                     </div>
 
-                    {/* Breaking News Ticker */}
                     {tickerItems.length > 0 && (
-                        <div style={{
-                            background: 'rgba(255,0,0,0.1)', borderRadius: '8px', padding: '8px 12px',
-                            marginBottom: '12px', overflow: 'hidden', border: '1px solid rgba(255,0,0,0.15)',
-                            whiteSpace: 'nowrap', position: 'relative'
-                        }}>
+                        <div className="feat-ticker">
                             <span style={{ color: '#ff0000', fontWeight: 'bold', fontSize: '0.75em', marginRight: '10px', letterSpacing: '1px' }}>🚨 BREAKING</span>
-                            <span ref={tickerRef} style={{
-                                color: '#fff', fontSize: '0.8em', display: 'inline-block',
-                                animation: `tickerScroll ${tickerItems.length * 8}s linear infinite`
-                            }}>
-                                {tickerItems.map((t, i) => (
-                                    <span key={i} style={{ marginRight: '40px' }}>
-                                        {(t.message || '').substring(0, 80)} • 
-                                    </span>
-                                ))}
+                            <span style={{ color: '#ddd', fontSize: '0.8em', display: 'inline-block', animation: `tickerScroll ${Math.max(20, tickerItems.length * 8)}s linear infinite` }}>
+                                {tickerItems.map((t, i) => <span key={i} style={{ marginRight: '50px' }}>{(t.message || '').substring(0, 80)} •</span>)}
                             </span>
                         </div>
                     )}
 
-                    {/* City Pulse Stats */}
                     {cityStats && (
-                        <div className="rep-stats-grid" style={{ marginBottom: '12px' }}>
-                            <div className="rep-stat-card">
-                                <div className="rep-stat-value" style={{ color: cityStats.economy > 50 ? '#44dd44' : '#ff4444', fontSize: '1.1em' }}>📈 {cityStats.economy || '?'}</div>
-                                <div className="rep-stat-label">Economy</div>
-                            </div>
-                            <div className="rep-stat-card">
-                                <div className="rep-stat-value" style={{ color: cityStats.security > 50 ? '#44dd44' : '#ff4444', fontSize: '1.1em' }}>🛡️ {cityStats.security || '?'}</div>
-                                <div className="rep-stat-label">Security</div>
-                            </div>
-                            <div className="rep-stat-card">
-                                <div className="rep-stat-value" style={{ color: cityStats.morale > 50 ? '#44dd44' : '#ff4444', fontSize: '1.1em' }}>😊 {cityStats.morale || '?'}</div>
-                                <div className="rep-stat-label">Morale</div>
-                            </div>
-                            <div className="rep-stat-card">
-                                <div className="rep-stat-value" style={{ color: '#ff6600', fontSize: '1.1em' }}>🔥 {cityStats.chaosLevel || '?'}</div>
-                                <div className="rep-stat-label">Chaos</div>
-                            </div>
+                        <div className="feat-stats">
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: (cityStats.economy || 50) > 50 ? '#44dd44' : '#ff4444' }}>📈 {cityStats.economy || '?'}</div><div className="feat-stat-label">Economy</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: (cityStats.security || 50) > 50 ? '#44dd44' : '#ff4444' }}>🛡️ {cityStats.security || '?'}</div><div className="feat-stat-label">Security</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: (cityStats.morale || 50) > 50 ? '#44dd44' : '#ff4444' }}>😊 {cityStats.morale || '?'}</div><div className="feat-stat-label">Morale</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#ff6600' }}>🔥 {cityStats.chaosLevel || '?'}</div><div className="feat-stat-label">Chaos</div></div>
                         </div>
                     )}
 
-                    {/* Tabs */}
-                    <div className="rep-tabs">
-                        {[
-                            { id: 'live', label: '📡 Live Feed' },
-                            { id: 'drama', label: `🎬 Soap Operas (${soapArcs.length})` },
-                            { id: 'npcs', label: '🎭 NPC Tracker' }
-                        ].map(t => (
-                            <button key={t.id} className={`rep-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
-                                {t.label}
-                            </button>
+                    <div className="feat-tabs">
+                        {[{ id: 'live', label: '📡 Live Feed' }, { id: 'drama', label: `🎬 Soap Operas (${soapArcs.length})` }, { id: 'npcs', label: '🎭 NPC Tracker' }].map(t => (
+                            <button key={t.id} className={`feat-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
                         ))}
                     </div>
 
-                    {/* LIVE FEED TAB */}
                     {tab === 'live' && (
                         <div>
-                            {/* Filters */}
-                            <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                            <div className="feat-filters">
                                 {['all', 'breaking_news', 'crime', 'mayor_decree', 'trade', 'npc_chat'].map(f => {
-                                    const s = EVENT_STYLES[f] || { emoji: '📋', color: '#ffd700', label: 'ALL' };
-                                    return (
-                                        <button key={f} onClick={() => setFilter(f)} style={{
-                                            padding: '5px 10px', borderRadius: '16px', fontSize: '0.75em',
-                                            border: filter === f ? `1px solid ${s.color}` : '1px solid rgba(255,255,255,0.1)',
-                                            background: filter === f ? `${s.color}15` : 'rgba(0,0,0,0.2)',
-                                            color: filter === f ? s.color : '#888', cursor: 'pointer'
-                                        }}>
-                                            {s.emoji} {f === 'all' ? 'All' : s.label}
-                                        </button>
-                                    );
+                                    const s = ETYPE[f] || { emoji: '📋', color: '#ffd700', label: 'All' };
+                                    return <button key={f} className={`feat-filter ${filter === f ? 'active' : ''}`} style={{ '--filter-color': s.color }} onClick={() => setFilter(f)}>{s.emoji} {f === 'all' ? 'All' : s.label}</button>;
                                 })}
                             </div>
-
-                            {/* Feed Items */}
                             <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-                                {filteredFeed.length === 0 ? (
-                                    <div className="rep-no-data">📺 Signal lost... City is quiet (for now)</div>
-                                ) : filteredFeed.slice(0, 50).map((item, idx) => {
-                                    const type = classifyEvent(item);
-                                    const style = EVENT_STYLES[type] || EVENT_STYLES.player_chat;
+                                {filtered.length === 0 ? <div className="feat-empty"><span className="icon">📺</span>Signal lost... City is quiet (for now)</div> :
+                                filtered.slice(0, 50).map((item, idx) => {
+                                    const type = classify(item);
+                                    const s = ETYPE[type] || ETYPE.player_chat;
                                     const isBreaking = type === 'breaking_news';
-
                                     return (
                                         <div key={item.id || idx} style={{
                                             display: 'flex', gap: '10px', padding: '10px 12px',
                                             borderBottom: '1px solid rgba(255,255,255,0.04)',
                                             background: isBreaking ? 'rgba(255,0,0,0.06)' : 'transparent',
-                                            borderLeft: isBreaking ? '3px solid #ff0000' : '3px solid transparent',
+                                            borderLeft: `3px solid ${isBreaking ? '#ff0000' : 'transparent'}`,
                                             animation: idx === 0 ? 'fadeIn 0.5s ease' : 'none'
                                         }}>
-                                            <div style={{ fontSize: '1.1em', minWidth: '28px', textAlign: 'center', paddingTop: '2px' }}>
-                                                {style.emoji}
-                                            </div>
+                                            <span style={{ fontSize: '1.1em', minWidth: '28px', textAlign: 'center', paddingTop: '2px' }}>{s.emoji}</span>
                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <span style={{
-                                                            color: style.color, fontWeight: 'bold', fontSize: '0.82em'
-                                                        }}>{(item.author || 'System').replace(/_/g, ' ')}</span>
-                                                        <span style={{
-                                                            fontSize: '0.6em', color: style.color, background: `${style.color}15`,
-                                                            padding: '1px 5px', borderRadius: '4px', letterSpacing: '0.5px'
-                                                        }}>{style.label}</span>
+                                                        <span style={{ color: s.color, fontWeight: 700, fontSize: '0.82em' }}>{(item.author || 'System').replace(/_/g, ' ')}</span>
+                                                        <span className="feat-badge" style={{ background: `${s.color}18`, color: s.color, fontSize: '0.58em' }}>{s.label}</span>
                                                     </div>
-                                                    <span style={{ color: '#444', fontSize: '0.7em', flexShrink: 0 }}>{timeAgo(item.timestamp)}</span>
+                                                    <span style={{ color: '#444', fontSize: '0.7em' }}>{timeAgo(item.timestamp)}</span>
                                                 </div>
-                                                <div style={{ color: '#ccc', fontSize: '0.85em', wordBreak: 'break-word', lineHeight: 1.4 }}>
-                                                    {item.message}
-                                                </div>
+                                                <div style={{ color: '#bbb', fontSize: '0.85em', wordBreak: 'break-word', lineHeight: 1.4 }}>{item.message}</div>
                                             </div>
                                         </div>
                                     );
@@ -38685,151 +38509,71 @@
                         </div>
                     )}
 
-                    {/* SOAP OPERA TAB */}
                     {tab === 'drama' && (
                         <div>
-                            {soapArcs.length === 0 && soapHistory.length === 0 ? (
-                                <div className="rep-no-data">🎬 No active soap operas. The drama engine is cooking... check back soon!</div>
-                            ) : (
-                                <>
-                                    {/* Active arcs */}
-                                    {soapArcs.map(arc => (
-                                        <div key={arc.id} style={{
-                                            background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '16px',
-                                            marginBottom: '12px', border: '1px solid rgba(255,215,0,0.15)',
-                                            cursor: 'pointer'
-                                        }} onClick={() => setExpandedArc(expandedArc === arc.id ? null : arc.id)}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontSize: '1.3em' }}>🎬</span>
-                                                    <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '1em' }}>{arc.title}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontSize: '0.7em', color: '#00ff88', background: 'rgba(0,255,136,0.1)', padding: '2px 8px', borderRadius: '10px' }}>
-                                                        Stage {arc.currentStage + 1}/{arc.totalStages}
-                                                    </span>
-                                                    {arc.bettingOpen && (
-                                                        <span style={{ fontSize: '0.7em', color: '#ffd700', background: 'rgba(255,215,0,0.1)', padding: '2px 8px', borderRadius: '10px' }}>
-                                                            🎰 BET NOW
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* NPC vs NPC */}
-                                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginBottom: '10px' }}>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div style={{ fontSize: '1.5em' }}>👤</div>
-                                                    <div style={{ color: '#00ccff', fontSize: '0.85em', fontWeight: 'bold' }}>{(arc.npc1 || '').replace(/_/g, ' ')}</div>
-                                                </div>
-                                                <div style={{ color: '#ff4444', fontSize: '1.2em', fontWeight: 'bold' }}>VS</div>
-                                                <div style={{ textAlign: 'center' }}>
-                                                    <div style={{ fontSize: '1.5em' }}>👤</div>
-                                                    <div style={{ color: '#ff6b6b', fontSize: '0.85em', fontWeight: 'bold' }}>{(arc.npc2 || '').replace(/_/g, ' ')}</div>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ color: '#bbb', fontSize: '0.85em', textAlign: 'center', marginBottom: '8px' }}>
-                                                {arc.setup}
-                                            </div>
-                                            <div style={{ color: '#888', fontSize: '0.75em', textAlign: 'center' }}>
-                                                📍 {arc.currentLabel} • {arc.type}
-                                            </div>
-
-                                            {/* Betting outcomes */}
-                                            {expandedArc === arc.id && arc.outcomes && arc.outcomes.length > 0 && (
-                                                <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
-                                                    <div style={{ color: '#ffd700', fontSize: '0.8em', marginBottom: '8px' }}>🎰 Possible Outcomes:</div>
-                                                    {arc.outcomes.map(o => (
-                                                        <div key={o.id} style={{
-                                                            background: 'rgba(255,215,0,0.05)', borderRadius: '8px', padding: '8px 12px',
-                                                            marginBottom: '4px', fontSize: '0.85em', color: '#ddd'
-                                                        }}>
-                                                            {o.label}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
+                            {soapArcs.length === 0 && soapHistory.length === 0 ? <div className="feat-empty"><span className="icon">🎬</span>No active soap operas. The drama engine is cooking...</div> :
+                            <>
+                                {soapArcs.map(arc => (
+                                    <div key={arc.id} className="feat-card highlight" onClick={() => setExpandedArc(expandedArc === arc.id ? null : arc.id)} style={{ cursor: 'pointer' }}>
+                                        <div className="feat-card-header">
+                                            <div className="feat-card-title"><span className="icon">🎬</span><div><div className="name">{arc.title}</div><div className="sub">{arc.type} • Stage {arc.currentStage + 1}/{arc.totalStages}</div></div></div>
+                                            {arc.bettingOpen && <span className="feat-badge" style={{ background: 'rgba(255,215,0,0.15)', color: '#ffd700' }}>🎰 BET NOW</span>}
                                         </div>
-                                    ))}
-
-                                    {/* History */}
-                                    {soapHistory.length > 0 && (
-                                        <div style={{ marginTop: '15px' }}>
-                                            <h4 style={{ color: '#888', fontSize: '0.85em', marginBottom: '8px' }}>📜 Past Drama</h4>
-                                            {soapHistory.map(arc => (
-                                                <div key={arc.id} className="rep-history-item" style={{ opacity: 0.7 }}>
-                                                    <div className="rep-history-left">
-                                                        <span className="rep-history-delta" style={{ color: '#ffd700' }}>🎬</span>
-                                                        <div className="rep-history-info">
-                                                            <span className="rep-history-npc">{arc.title}</span>
-                                                            <span className="rep-history-desc">
-                                                                {(arc.npc1 || '').replace(/_/g, ' ')} vs {(arc.npc2 || '').replace(/_/g, ' ')}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="rep-history-right">
-                                                        <span className="rep-history-source" style={{ color: '#44dd44' }}>{arc.resolvedOutcome || 'resolved'}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', margin: '12px 0' }}>
+                                            <div style={{ textAlign: 'center' }}><div style={{ fontSize: '1.5em' }}>👤</div><div style={{ color: '#00ccff', fontSize: '0.85em', fontWeight: 700 }}>{(arc.npc1 || '').replace(/_/g, ' ')}</div></div>
+                                            <div style={{ color: '#ff4444', fontSize: '1.2em', fontWeight: 900 }}>VS</div>
+                                            <div style={{ textAlign: 'center' }}><div style={{ fontSize: '1.5em' }}>👤</div><div style={{ color: '#ff6b6b', fontSize: '0.85em', fontWeight: 700 }}>{(arc.npc2 || '').replace(/_/g, ' ')}</div></div>
                                         </div>
-                                    )}
-                                </>
-                            )}
+                                        <div style={{ color: '#999', fontSize: '0.85em', textAlign: 'center' }}>{arc.setup}</div>
+                                        {expandedArc === arc.id && arc.outcomes && arc.outcomes.length > 0 && (
+                                            <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
+                                                <div style={{ color: '#ffd700', fontSize: '0.8em', marginBottom: '8px' }}>🎰 Possible Outcomes:</div>
+                                                {arc.outcomes.map(o => <div key={o.id} style={{ background: 'rgba(255,215,0,0.05)', borderRadius: '8px', padding: '8px 12px', marginBottom: '4px', fontSize: '0.85em', color: '#ccc' }}>{o.label}</div>)}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {soapHistory.length > 0 && (
+                                    <div style={{ marginTop: '15px' }}>
+                                        <div style={{ color: '#666', fontSize: '0.82em', fontWeight: 700, marginBottom: '8px' }}>📜 Past Drama</div>
+                                        {soapHistory.map(arc => (
+                                            <div key={arc.id} className="feat-card" style={{ padding: '10px 14px', opacity: 0.7, marginBottom: '6px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <span>🎬</span>
+                                                    <div style={{ flex: 1 }}><div style={{ color: '#ccc', fontSize: '0.85em' }}>{arc.title}</div><div style={{ color: '#666', fontSize: '0.75em' }}>{(arc.npc1 || '').replace(/_/g, ' ')} vs {(arc.npc2 || '').replace(/_/g, ' ')}</div></div>
+                                                    <span style={{ color: '#44dd44', fontSize: '0.72em' }}>{arc.resolvedOutcome || 'resolved'}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>}
                         </div>
                     )}
 
-                    {/* NPC TRACKER TAB */}
                     {tab === 'npcs' && (
-                        <div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
-                                {Object.entries(npcLives).filter(([name]) => name && typeof npcLives[name] === 'object').slice(0, 25).map(([name, life]) => {
-                                    if (!life) return null;
-                                    const statusColors = { normal: '#888', drunk: '#ff8800', bankrupt: '#ff0000', unhinged: '#ff00ff', wanted: '#ff4444' };
-                                    const statusEmojis = { normal: '😐', drunk: '🍺', bankrupt: '💸', unhinged: '🤪', wanted: '🚨' };
-                                    const st = life.status || 'normal';
-
-                                    return (
-                                        <div key={name} style={{
-                                            background: 'rgba(0,0,0,0.3)', borderRadius: '10px', padding: '12px',
-                                            border: `1px solid ${statusColors[st] || '#333'}22`
-                                        }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.9em' }}>
-                                                    {statusEmojis[st] || '😐'} {name.replace(/_/g, ' ')}
-                                                </div>
-                                                <span style={{
-                                                    fontSize: '0.65em', color: statusColors[st] || '#888',
-                                                    background: `${statusColors[st] || '#888'}15`,
-                                                    padding: '2px 6px', borderRadius: '6px', textTransform: 'uppercase'
-                                                }}>{st}</span>
-                                            </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.75em' }}>
-                                                <span style={{ color: '#ffd700' }}>💰 {(life.wealth || 0).toLocaleString()}</span>
-                                                <span style={{ color: '#00ccff' }}>📍 {(life.location || 'Unknown').substring(0, 15)}</span>
-                                                <span style={{ color: '#44dd44' }}>⚡ {life.energy || 0}%</span>
-                                                <span style={{ color: life.drunk > 2 ? '#ff8800' : '#888' }}>🍺 {life.drunk || 0}</span>
-                                            </div>
-                                            {life.partner && (
-                                                <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#ff69b4' }}>
-                                                    ❤️ Dating {(life.partner || '').replace(/_/g, ' ')}
-                                                </div>
-                                            )}
-                                            {life.wanted && (
-                                                <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#ff0000', fontWeight: 'bold' }}>
-                                                    🚨 WANTED BY POLICE
-                                                </div>
-                                            )}
-                                            {life.bankrupt && (
-                                                <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#ff4444' }}>
-                                                    💸 BANKRUPT
-                                                </div>
-                                            )}
+                        <div className="feat-npc-grid">
+                            {Object.entries(npcLives).filter(([n, l]) => n && l && typeof l === 'object').slice(0, 25).map(([name, life]) => {
+                                const stColors = { normal: '#555', drunk: '#ff8800', bankrupt: '#ff0000', unhinged: '#ff00ff', wanted: '#ff4444' };
+                                const stEmojis = { normal: '😐', drunk: '🍺', bankrupt: '💸', unhinged: '🤪', wanted: '🚨' };
+                                const st = life.status || 'normal';
+                                return (
+                                    <div key={name} className="feat-card" style={{ padding: '12px', borderLeft: `3px solid ${stColors[st] || '#444'}` }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                            <div style={{ color: '#eee', fontWeight: 700, fontSize: '0.9em' }}>{stEmojis[st] || '😐'} {name.replace(/_/g, ' ')}</div>
+                                            <span className="feat-badge" style={{ background: `${stColors[st] || '#555'}18`, color: stColors[st] || '#555' }}>{st}</span>
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.78em' }}>
+                                            <span style={{ color: '#ffd700' }}>💰 {(life.wealth || 0).toLocaleString()}</span>
+                                            <span style={{ color: '#00ccff' }}>📍 {(life.location || '?').substring(0, 15)}</span>
+                                            <span style={{ color: '#44dd44' }}>⚡ {life.energy || 0}%</span>
+                                            <span style={{ color: (life.drunk || 0) > 2 ? '#ff8800' : '#555' }}>🍺 {life.drunk || 0}</span>
+                                        </div>
+                                        {life.partner && <div style={{ marginTop: '4px', fontSize: '0.72em', color: '#ff69b4' }}>❤️ Dating {(life.partner || '').replace(/_/g, ' ')}</div>}
+                                        {life.wanted && <div style={{ marginTop: '4px', fontSize: '0.72em', color: '#ff0000', fontWeight: 700 }}>🚨 WANTED</div>}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -38849,8 +38593,8 @@
             const [activeQuest, setActiveQuest] = useState(null);
             const [outcome, setOutcome] = useState(null);
 
-            const DIFFICULTY_COLORS = { easy: '#44dd44', medium: '#ffd700', hard: '#ff6b6b', extreme: '#ff00ff' };
-            const MOOD_COLORS = { eager: '#ffd700', friendly: '#44dd44', cautious: '#888', hostile: '#ff6b6b', threatening: '#ff0000', neutral: '#888' };
+            const DIFF_COLORS = { easy: '#44dd44', medium: '#ffd700', hard: '#ff6b6b', extreme: '#ff00ff' };
+            const MOOD_COLORS = { eager: '#ffd700', friendly: '#44dd44', cautious: '#888', hostile: '#ff6b6b', threatening: '#ff0000', neutral: '#666' };
             const MOOD_EMOJIS = { eager: '🤩', friendly: '😊', cautious: '🤔', hostile: '😠', threatening: '💀', neutral: '😐' };
 
             useEffect(() => { if (playerName) { fetchAll(); const iv = setInterval(fetchAll, 20000); return () => clearInterval(iv); } }, [playerName]);
@@ -38864,283 +38608,176 @@
                     const [gData, qData] = await Promise.all([gRes.json(), qRes.json()]);
                     if (gData.success) setGivers(gData.givers || []);
                     if (qData.success) { setQuests(qData.quests || []); setStats(qData.stats || null); }
-                } catch (e) { console.error('Quest fetch error:', e); }
+                } catch (e) { console.error('Quest fetch:', e); }
                 setLoading(false);
             };
 
             const requestQuest = async (npcName) => {
                 setGenerating(npcName);
                 try {
-                    const res = await fetch(`${API_BASE}/api/v1/quests/generate`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ playerName, npcName })
-                    });
+                    const res = await fetch(`${API_BASE}/api/v1/quests/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ playerName, npcName }) });
                     const data = await res.json();
-                    if (data.success) {
-                        setActiveQuest(data.quest);
-                        setTab('active');
-                        fetchAll();
-                        showToast && showToast(`New quest from ${npcName.replace(/_/g, ' ')}!`, 'success');
-                    } else {
-                        showToast && showToast(data.message || 'Quest failed to generate', 'error');
-                    }
+                    if (data.success) { setActiveQuest(data.quest); setTab('active'); fetchAll(); showToast && showToast(`New quest from ${npcName.replace(/_/g, ' ')}!`, 'success'); }
+                    else { showToast && showToast(data.message || 'Quest failed', 'error'); }
                 } catch (e) { showToast && showToast('Failed to request quest', 'error'); }
                 setGenerating(null);
             };
 
-            const resolveQuest = async (questId, choiceId) => {
+            const doResolve = async (questId, choiceId) => {
                 setResolving(questId);
                 try {
-                    const res = await fetch(`${API_BASE}/api/v1/quests/resolve`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ questId, playerName, choiceId })
-                    });
+                    const res = await fetch(`${API_BASE}/api/v1/quests/resolve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questId, playerName, choiceId }) });
                     const data = await res.json();
-                    if (data.success) {
-                        setOutcome(data.result);
-                        setActiveQuest(null);
-                        fetchAll();
-                    } else {
-                        showToast && showToast(data.message || 'Resolution failed', 'error');
-                    }
-                } catch (e) { showToast && showToast('Failed to resolve quest', 'error'); }
+                    if (data.success) { setOutcome(data.result); setActiveQuest(null); fetchAll(); }
+                    else { showToast && showToast(data.message || 'Failed', 'error'); }
+                } catch (e) { showToast && showToast('Failed', 'error'); }
                 setResolving(null);
             };
 
-            const abandonQuest = async (questId) => {
+            const doAbandon = async (questId) => {
                 try {
-                    const res = await fetch(`${API_BASE}/api/v1/quests/abandon`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ questId, playerName })
-                    });
+                    const res = await fetch(`${API_BASE}/api/v1/quests/abandon`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questId, playerName }) });
                     const data = await res.json();
-                    if (data.success) { fetchAll(); showToast && showToast(data.message || 'Quest abandoned', 'info'); setActiveQuest(null); }
-                } catch (e) { showToast && showToast('Failed to abandon', 'error'); }
+                    if (data.success) { fetchAll(); showToast && showToast(data.message || 'Abandoned', 'info'); setActiveQuest(null); }
+                } catch (e) { showToast && showToast('Failed', 'error'); }
             };
 
-            const timeRemaining = (ms) => {
-                if (!ms || ms <= 0) return 'Expired';
-                const mins = Math.floor(ms / 60000);
-                return mins > 0 ? `${mins}m left` : 'Expiring soon';
-            };
+            const timeLeft = (ms) => { if (!ms || ms <= 0) return 'Expired'; const m = Math.floor(ms / 60000); return m > 0 ? `${m}m left` : 'Expiring soon'; };
 
-            if (loading) return <div className="rep-page"><div className="rep-loading">📋 Loading quests...</div></div>;
-            if (!playerName) return <div className="rep-page"><div className="rep-login-prompt"><div className="rep-login-icon">📋</div><h3>NPC Quests</h3><p>Log in to receive personalized missions from NPCs!</p></div></div>;
+            if (loading) return <div className="feat-page"><div className="feat-empty"><span className="icon">📋</span>Loading quests...</div></div>;
+            if (!playerName) return <div className="feat-page"><div className="feat-empty"><span className="icon">📋</span>Log in to receive personalized NPC missions!</div></div>;
 
             const activeQuests = quests.filter(q => ['available', 'accepted', 'in_progress'].includes(q.status));
             const completedQuests = quests.filter(q => ['completed', 'failed', 'abandoned', 'expired'].includes(q.status));
 
             return (
-                <div className="rep-page">
-                    <div className="rep-header">
-                        <h2 className="rep-title">📋 NPC Quests</h2>
-                        <p className="rep-subtitle">NPCs have missions for you. Your reputation determines what they offer.</p>
+                <div className="feat-page">
+                    <div className="feat-hero">
+                        <div className="feat-hero-icon">📋</div>
+                        <h2>NPC Quests</h2>
+                        <p>NPCs have missions for you. Your reputation determines what they offer.</p>
                     </div>
 
-                    {/* Stats */}
                     {stats && (
-                        <div className="rep-stats-grid" style={{ marginBottom: '15px' }}>
-                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#00ff88' }}>{stats.completed || 0}</div><div className="rep-stat-label">Completed</div></div>
-                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#ff4444' }}>{stats.failed || 0}</div><div className="rep-stat-label">Failed</div></div>
-                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#00ccff' }}>{activeQuests.length}</div><div className="rep-stat-label">Active</div></div>
-                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#ffd700' }}>{stats.npcs_served || 0}</div><div className="rep-stat-label">NPCs Served</div></div>
+                        <div className="feat-stats">
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#00ff88' }}>{stats.completed || 0}</div><div className="feat-stat-label">Completed</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#ff4444' }}>{stats.failed || 0}</div><div className="feat-stat-label">Failed</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#00ccff' }}>{activeQuests.length}</div><div className="feat-stat-label">Active</div></div>
+                            <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#ffd700' }}>{stats.npcs_served || 0}</div><div className="feat-stat-label">NPCs Served</div></div>
                         </div>
                     )}
 
-                    {/* Outcome overlay */}
                     {outcome && (
-                        <div className="quest-outcome" style={{
-                            background: outcome.success ? 'linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,0,0,0.3))' : 'linear-gradient(135deg, rgba(255,68,68,0.15), rgba(0,0,0,0.3))',
-                            border: `1px solid ${outcome.success ? '#00ff8844' : '#ff444444'}`,
-                            borderRadius: '12px', padding: '20px', marginBottom: '15px', animation: 'fadeIn 0.3s ease'
-                        }}>
-                            <div style={{ fontSize: '2em', textAlign: 'center', marginBottom: '10px' }}>{outcome.success ? '🏆' : '💀'}</div>
-                            <div style={{ color: outcome.success ? '#00ff88' : '#ff4444', fontSize: '1.2em', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px' }}>
-                                {outcome.success ? 'QUEST COMPLETE!' : 'QUEST FAILED'}
-                            </div>
-                            <div style={{ color: '#ccc', fontSize: '0.9em', marginBottom: '10px', textAlign: 'center' }}>{outcome.quest_title}</div>
-                            <div style={{ color: '#bbb', fontSize: '0.85em', marginBottom: '12px', lineHeight: 1.5, fontStyle: 'italic' }}>{outcome.narrative}</div>
-                            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
-                                <div style={{ color: '#ffd700', fontSize: '0.8em', marginBottom: '5px' }}>💬 {outcome.npc_name.replace(/_/g, ' ')}:</div>
+                        <div className="feat-outcome" style={{ background: outcome.success ? 'linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,0,0,0.4))' : 'linear-gradient(135deg, rgba(255,68,68,0.12), rgba(0,0,0,0.4))', border: `1px solid ${outcome.success ? '#00ff8833' : '#ff444433'}` }}>
+                            <div style={{ fontSize: '2.5em', marginBottom: '8px' }}>{outcome.success ? '🏆' : '💀'}</div>
+                            <div style={{ color: outcome.success ? '#00ff88' : '#ff4444', fontSize: '1.2em', fontWeight: 'bold', marginBottom: '6px' }}>{outcome.success ? 'QUEST COMPLETE!' : 'QUEST FAILED'}</div>
+                            <div style={{ color: '#999', fontSize: '0.9em', marginBottom: '10px' }}>{outcome.quest_title}</div>
+                            <div style={{ color: '#bbb', fontSize: '0.85em', marginBottom: '12px', lineHeight: 1.5, fontStyle: 'italic', maxWidth: '500px', margin: '0 auto 12px' }}>{outcome.narrative}</div>
+                            <div className="feat-card" style={{ maxWidth: '400px', margin: '0 auto 12px', textAlign: 'left' }}>
+                                <div style={{ color: '#ffd700', fontSize: '0.78em', marginBottom: '4px' }}>💬 {(outcome.npc_name || '').replace(/_/g, ' ')}:</div>
                                 <div style={{ color: '#ccc', fontSize: '0.85em' }}>{outcome.npc_reaction}</div>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', fontSize: '0.85em' }}>
-                                <span style={{ color: outcome.rep_change > 0 ? '#44dd44' : '#ff4444' }}>
-                                    Rep: {outcome.rep_change > 0 ? '+' : ''}{outcome.rep_change}
-                                </span>
+                            <div className="feat-metric-row" style={{ justifyContent: 'center', marginBottom: '12px' }}>
+                                <span style={{ color: outcome.rep_change > 0 ? '#44dd44' : '#ff4444' }}>Rep: {outcome.rep_change > 0 ? '+' : ''}{outcome.rep_change}</span>
                                 {outcome.rewards?.xp && <span style={{ color: '#00ccff' }}>XP: +{outcome.rewards.xp}</span>}
-                                {outcome.rewards?.hopium && outcome.rewards.hopium > 0 && <span style={{ color: '#ffd700' }}>💊 +{outcome.rewards.hopium}</span>}
+                                {outcome.rewards?.hopium > 0 && <span style={{ color: '#ffd700' }}>💊 +{outcome.rewards.hopium}</span>}
                             </div>
-                            <button onClick={() => setOutcome(null)} style={{
-                                display: 'block', margin: '12px auto 0', padding: '8px 20px', background: 'rgba(255,255,255,0.1)',
-                                border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#ccc', cursor: 'pointer', fontSize: '0.85em'
-                            }}>Dismiss</button>
+                            <button className="feat-btn feat-btn-ghost" onClick={() => setOutcome(null)}>Dismiss</button>
                         </div>
                     )}
 
-                    {/* Tabs */}
-                    <div className="rep-tabs">
+                    <div className="feat-tabs">
                         {['available', 'active', 'history'].map(t => (
-                            <button key={t} className={`rep-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-                                {t === 'available' ? `🗺️ Find Quests` :
-                                 t === 'active' ? `⚡ Active (${activeQuests.length})` :
-                                 `📜 History (${completedQuests.length})`}
+                            <button key={t} className={`feat-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+                                {t === 'available' ? '🗺️ Find Quests' : t === 'active' ? `⚡ Active (${activeQuests.length})` : `📜 History (${completedQuests.length})`}
                             </button>
                         ))}
                     </div>
 
-                    {/* Available tab — quest givers */}
                     {tab === 'available' && (
-                        <div className="rep-list">
-                            {givers.length === 0 ? (
-                                <div className="rep-no-data">🤷 No NPCs know you well enough yet. Build reputation first!</div>
-                            ) : givers.sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).map(g => (
-                                <div key={g.npc_name} className="rep-npc-card" style={{
-                                    borderLeft: `3px solid ${MOOD_COLORS[g.mood] || '#888'}`,
-                                    background: 'rgba(0,0,0,0.25)', opacity: g.available ? 1 : 0.5
-                                }}>
-                                    <div className="rep-npc-header">
-                                        <div className="rep-npc-identity">
-                                            <span className="rep-npc-emoji">{MOOD_EMOJIS[g.mood] || '😐'}</span>
-                                            <span className="rep-npc-name">{g.npc_name.replace(/_/g, ' ')}</span>
-                                            <span style={{ fontSize: '0.7em', color: g.score >= 10 ? '#44dd44' : g.score <= -10 ? '#ff4444' : '#888' }}>
-                                                {g.score > 0 ? '+' : ''}{g.score}
-                                            </span>
+                        <div>
+                            {givers.length === 0 ? <div className="feat-empty"><span className="icon">🤷</span>No NPCs know you well enough yet. Build reputation first!</div> :
+                            givers.sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).map(g => (
+                                <div key={g.npc_name} className="feat-card" style={{ borderLeft: `3px solid ${MOOD_COLORS[g.mood] || '#666'}`, opacity: g.available ? 1 : 0.5 }}>
+                                    <div className="feat-card-header">
+                                        <div className="feat-card-title">
+                                            <span className="icon">{MOOD_EMOJIS[g.mood] || '😐'}</span>
+                                            <div>
+                                                <div className="name">{g.npc_name.replace(/_/g, ' ')} <span style={{ color: g.score >= 10 ? '#44dd44' : g.score <= -10 ? '#ff4444' : '#666', fontSize: '0.85em' }}>{g.score > 0 ? '+' : ''}{g.score}</span></div>
+                                                <div className="sub" style={{ color: MOOD_COLORS[g.mood] || '#666' }}>{g.quest_hint}</div>
+                                            </div>
                                         </div>
                                         {g.available ? (
-                                            <button onClick={() => requestQuest(g.npc_name)} disabled={generating === g.npc_name}
-                                                style={{
-                                                    padding: '6px 14px', background: 'linear-gradient(135deg, #ffd700, #ff8800)',
-                                                    border: 'none', borderRadius: '8px', color: '#000', fontWeight: 'bold',
-                                                    cursor: generating ? 'wait' : 'pointer', fontSize: '0.8em'
-                                                }}>
+                                            <button className="feat-btn feat-btn-gold" onClick={() => requestQuest(g.npc_name)} disabled={generating === g.npc_name}>
                                                 {generating === g.npc_name ? '⏳ Generating...' : '📋 Request Quest'}
                                             </button>
-                                        ) : (
-                                            <span style={{ fontSize: '0.75em', color: '#555' }}>⏳ Cooldown</span>
-                                        )}
-                                    </div>
-                                    <div style={{ fontSize: '0.8em', color: MOOD_COLORS[g.mood] || '#888', marginTop: '4px' }}>
-                                        {g.quest_hint}
+                                        ) : <span style={{ fontSize: '0.75em', color: '#555' }}>⏳ Cooldown</span>}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* Active tab — current quests */}
                     {tab === 'active' && (
-                        <div className="rep-list">
-                            {activeQuests.length === 0 && !activeQuest ? (
-                                <div className="rep-no-data">📭 No active quests. Visit the "Find Quests" tab to get one!</div>
-                            ) : (activeQuest ? [activeQuest] : []).concat(activeQuests.filter(q => q.quest_id !== activeQuest?.quest_id)).map(q => {
+                        <div>
+                            {activeQuests.length === 0 && !activeQuest ? <div className="feat-empty"><span className="icon">📭</span>No active quests. Find one in the "Find Quests" tab!</div> :
+                            (activeQuest ? [activeQuest] : []).concat(activeQuests.filter(q => q.quest_id !== activeQuest?.quest_id)).map(q => {
                                 const diff = q.difficulty || 'medium';
                                 return (
-                                    <div key={q.quest_id} style={{
-                                        background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '16px',
-                                        border: `1px solid ${DIFFICULTY_COLORS[diff]}33`, marginBottom: '10px'
-                                    }}>
-                                        {/* Quest header */}
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                            <div>
-                                                <span style={{ fontSize: '1.2em', marginRight: '8px' }}>{q.quest_emoji || '📋'}</span>
-                                                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '1em' }}>{q.title}</span>
+                                    <div key={q.quest_id} className="feat-card" style={{ borderLeft: `3px solid ${DIFF_COLORS[diff]}` }}>
+                                        <div className="feat-card-header">
+                                            <div className="feat-card-title">
+                                                <span className="icon">{q.quest_emoji || '📋'}</span>
+                                                <div><div className="name">{q.title}</div><div className="sub">From {(q.npc_name || q.npc || '').replace(/_/g, ' ')} • {q.quest_label || q.quest_type}</div></div>
                                             </div>
                                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '0.7em', color: DIFFICULTY_COLORS[diff], fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>{diff}</span>
-                                                {q.time_remaining != null && (
-                                                    <span style={{ fontSize: '0.75em', color: q.time_remaining < 300000 ? '#ff4444' : '#888' }}>
-                                                        ⏰ {timeRemaining(q.time_remaining)}
-                                                    </span>
-                                                )}
+                                                <span className="feat-badge" style={{ background: `${DIFF_COLORS[diff]}18`, color: DIFF_COLORS[diff] }}>{diff}</span>
+                                                {q.time_remaining != null && <span style={{ fontSize: '0.72em', color: q.time_remaining < 300000 ? '#ff4444' : '#666' }}>⏰ {timeLeft(q.time_remaining)}</span>}
                                             </div>
                                         </div>
-
-                                        {/* From NPC */}
-                                        <div style={{ fontSize: '0.8em', color: '#00ccff', marginBottom: '8px' }}>
-                                            From: {(q.npc_name || q.npc).replace(/_/g, ' ')} ({q.quest_label || q.quest_type})
-                                        </div>
-
-                                        {/* Description */}
                                         <div style={{ color: '#bbb', fontSize: '0.85em', lineHeight: 1.5, marginBottom: '10px' }}>{q.description}</div>
-
-                                        {/* Briefing */}
                                         {q.briefing && (
-                                            <div style={{ background: 'rgba(255,215,0,0.08)', borderRadius: '8px', padding: '10px', marginBottom: '12px', borderLeft: '3px solid #ffd700' }}>
-                                                <div style={{ color: '#ffd700', fontSize: '0.75em', marginBottom: '4px' }}>💬 {(q.npc_name || q.npc || '').replace(/_/g, ' ')} says:</div>
-                                                <div style={{ color: '#ddd', fontSize: '0.85em', fontStyle: 'italic' }}>{q.briefing}</div>
+                                            <div className="feat-card" style={{ background: 'rgba(255,215,0,0.05)', borderLeft: '3px solid #ffd700', marginBottom: '12px' }}>
+                                                <div style={{ color: '#ffd700', fontSize: '0.72em', marginBottom: '3px' }}>💬 {(q.npc_name || q.npc || '').replace(/_/g, ' ')} says:</div>
+                                                <div style={{ color: '#ccc', fontSize: '0.85em', fontStyle: 'italic' }}>{q.briefing}</div>
                                             </div>
                                         )}
-
-                                        {/* Rewards preview */}
-                                        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', fontSize: '0.8em' }}>
+                                        <div className="feat-metric-row" style={{ marginBottom: '12px' }}>
                                             {q.rewards?.xp && <span style={{ color: '#00ccff' }}>⭐ {q.rewards.xp} XP</span>}
                                             {q.rewards?.rep_change && <span style={{ color: '#44dd44' }}>🎭 +{q.rewards.rep_change} Rep</span>}
                                             {q.rewards?.hopium && <span style={{ color: '#ffd700' }}>💊 {q.rewards.hopium}</span>}
                                             {q.rewards?.special && <span style={{ color: '#ff00ff' }}>✨ {q.rewards.special}</span>}
                                         </div>
-
-                                        {/* Choices */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
                                             {(q.choices || []).map(c => (
-                                                <button key={c.id} onClick={() => resolveQuest(q.quest_id, c.id)}
-                                                    disabled={resolving === q.quest_id}
-                                                    style={{
-                                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                        padding: '10px 14px', background: 'rgba(255,255,255,0.05)',
-                                                        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                                                        color: '#eee', cursor: resolving ? 'wait' : 'pointer', textAlign: 'left',
-                                                        transition: 'all 0.2s', width: '100%'
-                                                    }}
-                                                    onMouseEnter={e => { e.target.style.background = 'rgba(255,215,0,0.1)'; e.target.style.borderColor = '#ffd70066'; }}
-                                                    onMouseLeave={e => { e.target.style.background = 'rgba(255,255,255,0.05)'; e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-                                                >
-                                                    <div>
-                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9em' }}>{c.label}</div>
-                                                        <div style={{ color: '#999', fontSize: '0.8em', marginTop: '2px' }}>{c.desc}</div>
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-                                                        <span style={{ fontSize: '0.7em', color: { low: '#44dd44', medium: '#ffd700', high: '#ff6b6b', extreme: '#ff00ff' }[c.risk] || '#888', textTransform: 'uppercase' }}>{c.risk}</span>
-                                                        <span style={{ fontSize: '0.65em', color: '#555' }}>{c.alignment}</span>
+                                                <button key={c.id} className="feat-choice" onClick={() => doResolve(q.quest_id, c.id)} disabled={resolving === q.quest_id}>
+                                                    <div><div style={{ fontWeight: 700, fontSize: '0.9em' }}>{c.label}</div><div style={{ color: '#777', fontSize: '0.8em', marginTop: '2px' }}>{c.desc}</div></div>
+                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                                                        <span style={{ fontSize: '0.68em', color: DIFF_COLORS[c.risk] || '#888', textTransform: 'uppercase', fontWeight: 700 }}>{c.risk}</span>
+                                                        <span style={{ fontSize: '0.62em', color: '#444' }}>{c.alignment}</span>
                                                     </div>
                                                 </button>
                                             ))}
                                         </div>
-
-                                        {/* Abandon button */}
-                                        <button onClick={() => abandonQuest(q.quest_id)} style={{
-                                            marginTop: '10px', padding: '5px 12px', background: 'transparent',
-                                            border: '1px solid rgba(255,68,68,0.3)', borderRadius: '6px',
-                                            color: '#ff4444', fontSize: '0.75em', cursor: 'pointer', opacity: 0.6
-                                        }}>🏳️ Abandon Quest</button>
+                                        <button className="feat-btn feat-btn-ghost" onClick={() => doAbandon(q.quest_id)} style={{ fontSize: '0.75em', padding: '5px 12px', color: '#ff4444', borderColor: 'rgba(255,68,68,0.2)' }}>🏳️ Abandon</button>
                                     </div>
                                 );
                             })}
                         </div>
                     )}
 
-                    {/* History tab */}
                     {tab === 'history' && (
-                        <div className="rep-history">
-                            {completedQuests.length === 0 ? (
-                                <div className="rep-no-data">📭 No quest history yet. Complete your first quest!</div>
-                            ) : completedQuests.map(q => (
-                                <div key={q.quest_id} className="rep-history-item" style={{ opacity: q.status === 'expired' || q.status === 'abandoned' ? 0.5 : 1 }}>
-                                    <div className="rep-history-left">
-                                        <span className="rep-history-delta" style={{
-                                            color: q.status === 'completed' ? '#44dd44' : '#ff4444'
-                                        }}>
-                                            {q.status === 'completed' ? '✅' : q.status === 'failed' ? '❌' : q.status === 'abandoned' ? '🏳️' : '⏰'}
-                                        </span>
-                                        <div className="rep-history-info">
-                                            <span className="rep-history-npc">{q.title}</span>
-                                            <span className="rep-history-desc">
-                                                From {(q.npc_name || '').replace(/_/g, ' ')} • {q.difficulty} • Rep: {q.rep_before} → {q.rep_after || '?'}
-                                            </span>
+                        <div>
+                            {completedQuests.length === 0 ? <div className="feat-empty"><span className="icon">📭</span>No quest history yet.</div> :
+                            completedQuests.map(q => (
+                                <div key={q.quest_id} className="feat-card" style={{ padding: '10px 14px', marginBottom: '6px', opacity: (q.status === 'expired' || q.status === 'abandoned') ? 0.5 : 1, borderLeft: `3px solid ${q.status === 'completed' ? '#44dd44' : '#ff4444'}` }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span>{q.status === 'completed' ? '✅' : q.status === 'failed' ? '❌' : q.status === 'abandoned' ? '🏳️' : '⏰'}</span>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ color: '#ccc', fontSize: '0.9em', fontWeight: 600 }}>{q.title}</div>
+                                            <div style={{ color: '#666', fontSize: '0.78em' }}>From {(q.npc_name || '').replace(/_/g, ' ')} • {q.difficulty} • Rep: {q.rep_before} → {q.rep_after || '?'}</div>
                                         </div>
-                                    </div>
-                                    <div className="rep-history-right">
-                                        <span className="rep-history-source" style={{ color: q.status === 'completed' ? '#44dd44' : '#ff4444' }}>{q.status}</span>
+                                        <span className="feat-badge" style={{ background: q.status === 'completed' ? 'rgba(68,221,68,0.15)' : 'rgba(255,68,68,0.15)', color: q.status === 'completed' ? '#44dd44' : '#ff4444' }}>{q.status}</span>
                                     </div>
                                 </div>
                             ))}
@@ -39153,280 +38790,125 @@
         // ==================== REPUTATION PAGE ====================
 
         function ReputationPage({ playerName, email }) {
-            const [reputations, setReputations] = useState([]);
-            const [stats, setStats] = useState(null);
+            const [reps, setReps] = useState([]);
             const [history, setHistory] = useState([]);
-            const [leaderboard, setLeaderboard] = useState({ loved: [], hated: [] });
-            const [globalStats, setGlobalStats] = useState(null);
+            const [tab, setTab] = useState('relationships');
             const [loading, setLoading] = useState(true);
-            const [activeTab, setActiveTab] = useState('relationships');
-            const [selectedNpc, setSelectedNpc] = useState(null);
+            const [expanded, setExpanded] = useState(null);
             const [filterTier, setFilterTier] = useState('all');
-            const [sortBy, setSortBy] = useState('score');
+            const [sort, setSort] = useState('score_desc');
 
-            const TIERS = [
-                { label: 'enemy',   emoji: '💀', color: '#ff0000', bg: 'rgba(255,0,0,0.15)', min: -100, max: -60 },
-                { label: 'hostile',  emoji: '😡', color: '#ff4444', bg: 'rgba(255,68,68,0.12)', min: -59, max: -30 },
-                { label: 'dislike',  emoji: '😒', color: '#ff8844', bg: 'rgba(255,136,68,0.10)', min: -29, max: -10 },
-                { label: 'neutral',  emoji: '😐', color: '#888888', bg: 'rgba(136,136,136,0.08)', min: -9, max: 9 },
-                { label: 'friendly', emoji: '😊', color: '#44dd44', bg: 'rgba(68,221,68,0.10)', min: 10, max: 29 },
-                { label: 'ally',     emoji: '🤝', color: '#00ccff', bg: 'rgba(0,204,255,0.12)', min: 30, max: 59 },
-                { label: 'devoted',  emoji: '💎', color: '#ffd700', bg: 'rgba(255,215,0,0.15)', min: 60, max: 100 },
-            ];
+            const TIERS = { enemy: { color: '#ff0000', emoji: '💀' }, hostile: { color: '#ff4444', emoji: '😡' }, unfriendly: { color: '#ff8800', emoji: '😤' }, neutral: { color: '#888', emoji: '😐' }, friendly: { color: '#44dd44', emoji: '😊' }, trusted: { color: '#00ccff', emoji: '😍' }, devoted: { color: '#ffd700', emoji: '💛' } };
 
-            const NPC_ARCHETYPES = {
-                alpha: '🎯', whale: '🐋', analyst: '📊', meme: '🤡', holder: '💎',
-                og: '👴', defi: '🌾', fomo: '😱', paper: '📄', trader: '💹',
-                maxi: '⚡', bear: '🐻', hype: '🚀', victim: '🥴', cope: '🤡',
-                moon: '🌙', degen: '🎰', nft: '🖼️', complainer: '😤', newbie: '🐣'
-            };
-
-            useEffect(() => {
-                if (playerName) {
-                    fetchAll();
-                    const interval = setInterval(fetchAll, 30000);
-                    return () => clearInterval(interval);
-                }
-            }, [playerName]);
+            useEffect(() => { if (playerName) { fetchAll(); const iv = setInterval(fetchAll, 30000); return () => clearInterval(iv); } }, [playerName]);
 
             const fetchAll = async () => {
                 try {
-                    const [repRes, histRes, lovedRes, hatedRes, statsRes] = await Promise.all([
+                    const [repRes, histRes] = await Promise.all([
                         fetch(`${API_BASE}/api/v1/reputation/${encodeURIComponent(playerName)}`),
-                        fetch(`${API_BASE}/api/v1/reputation/${encodeURIComponent(playerName)}/history?limit=50`),
-                        fetch(`${API_BASE}/api/v1/reputation/leaderboard/loved`),
-                        fetch(`${API_BASE}/api/v1/reputation/leaderboard/hated`),
-                        fetch(`${API_BASE}/api/v1/reputation/stats/global`)
+                        fetch(`${API_BASE}/api/v1/reputation/${encodeURIComponent(playerName)}/history?limit=30`)
                     ]);
-
-                    const [repData, histData, lovedData, hatedData, statsData] = await Promise.all([
-                        repRes.json(), histRes.json(), lovedRes.json(), hatedRes.json(), statsRes.json()
-                    ]);
-
-                    if (repData.success) {
-                        setReputations(repData.reputations || []);
-                        setStats(repData.stats || null);
-                    }
+                    const [repData, histData] = await Promise.all([repRes.json(), histRes.json()]);
+                    if (repData.success) setReps(repData.reputations || []);
                     if (histData.success) setHistory(histData.events || []);
-                    if (lovedData.success || hatedData.success) {
-                        setLeaderboard({
-                            loved: lovedData.leaderboard || [],
-                            hated: hatedData.leaderboard || []
-                        });
-                    }
-                    if (statsData.success) setGlobalStats(statsData.stats || null);
-                } catch (err) {
-                    console.error('Reputation fetch error:', err);
-                }
+                } catch (e) { console.error('Rep fetch:', e); }
                 setLoading(false);
             };
 
-            const getTier = (score) => {
-                for (const t of TIERS) {
-                    if (score >= t.min && score <= t.max) return t;
-                }
-                return TIERS[3];
-            };
+            if (loading) return <div className="feat-page"><div className="feat-empty"><span className="icon">🎭</span>Loading reputation...</div></div>;
+            if (!playerName) return <div className="feat-page"><div className="feat-empty"><span className="icon">🎭</span>Log in to see your NPC relationships!</div></div>;
 
-            const getScoreBarWidth = (score) => ((score + 100) / 200) * 100;
+            const allies = reps.filter(r => r.score >= 10).length;
+            const enemies = reps.filter(r => r.score <= -10).length;
+            const avgScore = reps.length > 0 ? Math.round(reps.reduce((a, r) => a + r.score, 0) / reps.length) : 0;
 
-            const timeAgo = (ts) => {
-                if (!ts) return '';
-                const diff = Date.now() - new Date(ts).getTime();
-                const mins = Math.floor(diff / 60000);
-                if (mins < 1) return 'just now';
-                if (mins < 60) return `${mins}m ago`;
-                const hrs = Math.floor(mins / 60);
-                if (hrs < 24) return `${hrs}h ago`;
-                const days = Math.floor(hrs / 24);
-                return `${days}d ago`;
-            };
+            let filtered = reps;
+            if (filterTier !== 'all') filtered = reps.filter(r => r.relationship === filterTier);
+            if (sort === 'score_desc') filtered.sort((a, b) => b.score - a.score);
+            else if (sort === 'score_asc') filtered.sort((a, b) => a.score - b.score);
+            else filtered.sort((a, b) => (b.last_event_at || '') > (a.last_event_at || '') ? 1 : -1);
 
-            const filteredReps = reputations
-                .filter(r => filterTier === 'all' || r.relationship === filterTier)
-                .sort((a, b) => {
-                    if (sortBy === 'score') return b.score - a.score;
-                    if (sortBy === 'interactions') return (b.total_interactions || 0) - (a.total_interactions || 0);
-                    if (sortBy === 'recent') return new Date(b.last_interaction_at || 0) - new Date(a.last_interaction_at || 0);
-                    return Math.abs(b.score) - Math.abs(a.score);
-                });
-
-            if (loading) {
-                return <div className="rep-page"><div className="rep-loading">🎭 Loading reputation data...</div></div>;
-            }
-
-            if (!playerName) {
-                return (
-                    <div className="rep-page">
-                        <div className="rep-login-prompt">
-                            <div className="rep-login-icon">🎭</div>
-                            <h3>NPC Reputation System</h3>
-                            <p>Log in to see how NPCs feel about you. Every action has consequences!</p>
-                        </div>
-                    </div>
-                );
-            }
+            const timeAgo = (ts) => { if (!ts) return ''; const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000); if (s < 60) return 'now'; if (s < 3600) return Math.floor(s/60) + 'm ago'; if (s < 86400) return Math.floor(s/3600) + 'h ago'; return Math.floor(s/86400) + 'd ago'; };
 
             return (
-                <div className="rep-page">
-                    {/* Header */}
-                    <div className="rep-header">
-                        <h2 className="rep-title">🎭 NPC Reputation</h2>
-                        <p className="rep-subtitle">Every NPC remembers. Every action matters.</p>
+                <div className="feat-page">
+                    <div className="feat-hero">
+                        <div className="feat-hero-icon">🎭</div>
+                        <h2>NPC Reputation</h2>
+                        <p>Every NPC remembers. Every action matters.</p>
                     </div>
 
-                    {/* Overview Stats */}
-                    {stats && (
-                        <div className="rep-overview">
-                            <div className="rep-stats-grid">
-                                <div className="rep-stat-card">
-                                    <div className="rep-stat-value" style={{ color: '#00ff88' }}>{stats.knownBy || 0}</div>
-                                    <div className="rep-stat-label">NPCs Know You</div>
-                                </div>
-                                <div className="rep-stat-card">
-                                    <div className="rep-stat-value" style={{ color: '#00ccff' }}>{stats.allies || 0}</div>
-                                    <div className="rep-stat-label">Allies</div>
-                                </div>
-                                <div className="rep-stat-card">
-                                    <div className="rep-stat-value" style={{ color: '#ff4444' }}>{stats.enemies || 0}</div>
-                                    <div className="rep-stat-label">Enemies</div>
-                                </div>
-                                <div className="rep-stat-card">
-                                    <div className="rep-stat-value" style={{ color: stats.averageScore >= 0 ? '#44dd44' : '#ff4444' }}>
-                                        {(stats.averageScore >= 0 ? '+' : '') + (stats.averageScore || 0)}
-                                    </div>
-                                    <div className="rep-stat-label">Avg Score</div>
-                                </div>
-                            </div>
-                            <div className="rep-tier-bar">
-                                {TIERS.map(tier => {
-                                    const count = reputations.filter(r => r.relationship === tier.label).length;
-                                    return count > 0 ? (
-                                        <div key={tier.label} className="rep-tier-segment"
-                                            style={{ flex: count, background: tier.color, opacity: 0.8 }}
-                                            title={`${tier.emoji} ${tier.label}: ${count}`}
-                                        />
-                                    ) : null;
-                                })}
-                            </div>
-                        </div>
-                    )}
+                    <div className="feat-stats">
+                        <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#00ccff' }}>{reps.length}</div><div className="feat-stat-label">NPCs Know You</div></div>
+                        <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#44dd44' }}>{allies}</div><div className="feat-stat-label">Allies</div></div>
+                        <div className="feat-stat"><div className="feat-stat-value" style={{ color: '#ff4444' }}>{enemies}</div><div className="feat-stat-label">Enemies</div></div>
+                        <div className="feat-stat"><div className="feat-stat-value" style={{ color: avgScore >= 0 ? '#44dd44' : '#ff4444' }}>{avgScore > 0 ? '+' : ''}{avgScore}</div><div className="feat-stat-label">Avg Score</div></div>
+                    </div>
 
-                    {/* Tabs */}
-                    <div className="rep-tabs">
-                        {['relationships', 'history', 'leaderboard'].map(tab => (
-                            <button key={tab}
-                                className={`rep-tab ${activeTab === tab ? 'active' : ''}`}
-                                onClick={() => setActiveTab(tab)}
-                            >
-                                {tab === 'relationships' ? `🤝 Relationships${reputations.length > 0 ? ` (${reputations.length})` : ''}` :
-                                 tab === 'history' ? `📜 History${history.length > 0 ? ` (${history.length})` : ''}` :
-                                 '🏆 Leaderboard'}
-                            </button>
+                    <div className="feat-tabs">
+                        {[{ id: 'relationships', label: `🤝 Relationships (${reps.length})` }, { id: 'history', label: '📜 History' }, { id: 'leaderboard', label: '🏆 Leaderboard' }].map(t => (
+                            <button key={t.id} className={`feat-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
                         ))}
                     </div>
 
-                    {/* Filters (relationships tab) */}
-                    {activeTab === 'relationships' && (
-                        <div className="rep-filters">
-                            <div className="rep-filter-group">
-                                <span className="rep-filter-label">Filter:</span>
-                                <button className={`rep-filter-btn ${filterTier === 'all' ? 'active' : ''}`}
-                                    onClick={() => setFilterTier('all')}>All</button>
-                                {TIERS.map(t => (
-                                    <button key={t.label}
-                                        className={`rep-filter-btn ${filterTier === t.label ? 'active' : ''}`}
-                                        style={filterTier === t.label ? { borderColor: t.color, color: t.color } : {}}
-                                        onClick={() => setFilterTier(t.label)}
-                                    >{t.emoji}</button>
-                                ))}
-                            </div>
-                            <div className="rep-filter-group">
-                                <span className="rep-filter-label">Sort:</span>
-                                <select className="rep-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                                    <option value="score">Best → Worst</option>
-                                    <option value="intensity">Most Intense</option>
-                                    <option value="interactions">Most Interactions</option>
-                                    <option value="recent">Most Recent</option>
+                    {tab === 'relationships' && (
+                        <div>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <span style={{ color: '#555', fontSize: '0.78em' }}>Filter:</span>
+                                {['all', ...Object.keys(TIERS)].map(t => {
+                                    const tier = TIERS[t];
+                                    return <button key={t} className={`feat-filter ${filterTier === t ? 'active' : ''}`} style={{ '--filter-color': tier ? tier.color : '#ffd700' }} onClick={() => setFilterTier(t)}>{tier ? tier.emoji : '📋'} {t === 'all' ? 'All' : ''}</button>;
+                                })}
+                                <select className="feat-input" value={sort} onChange={e => setSort(e.target.value)} style={{ marginLeft: 'auto', fontSize: '0.78em', padding: '4px 8px' }}>
+                                    <option value="score_desc">Best → Worst</option>
+                                    <option value="score_asc">Worst → Best</option>
+                                    <option value="recent">Recent</option>
                                 </select>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Relationships Tab */}
-                    {activeTab === 'relationships' && (
-                        <div className="rep-list">
-                            {filteredReps.length === 0 ? (
-                                <div className="rep-no-data">
-                                    {filterTier === 'all'
-                                        ? '🤷 No NPCs know you yet. Go explore the city, vote, and chat to build reputation!'
-                                        : `No NPCs with "${filterTier}" relationship. Keep playing!`}
-                                </div>
-                            ) : filteredReps.map(rep => {
-                                const tier = getTier(rep.score);
-                                const recentMemory = rep.memories && rep.memories.length > 0
-                                    ? rep.memories[rep.memories.length - 1] : null;
+                            {filtered.length === 0 ? <div className="feat-empty"><span className="icon">🤷</span>No NPCs match this filter</div> :
+                            filtered.map(r => {
+                                const tier = TIERS[r.relationship] || TIERS.neutral;
+                                const isOpen = expanded === r.npc_name;
+                                const barPct = Math.min(100, Math.max(0, ((r.score + 100) / 200) * 100));
                                 return (
-                                    <div key={rep.npc} className="rep-npc-card"
-                                        style={{ borderLeft: `3px solid ${tier.color}`, background: tier.bg }}
-                                        onClick={() => setSelectedNpc(selectedNpc === rep.npc ? null : rep.npc)}
-                                    >
-                                        {/* Header */}
-                                        <div className="rep-npc-header">
-                                            <div className="rep-npc-identity">
-                                                <span className="rep-npc-emoji">{NPC_ARCHETYPES[rep.archetype] || '👤'}</span>
-                                                <span className="rep-npc-name">{(rep.npc || '').replace(/_/g, ' ')}</span>
-                                                <span className="rep-npc-tier" style={{ color: tier.color }}>
-                                                    {tier.emoji} {tier.label.toUpperCase()}
-                                                </span>
-                                            </div>
-                                            <div className="rep-npc-score" style={{ color: tier.color }}>
-                                                {rep.score > 0 ? '+' : ''}{rep.score}
-                                            </div>
-                                        </div>
-
-                                        {/* Score bar */}
-                                        <div className="rep-score-bar-bg">
-                                            <div className="rep-score-bar-fill" style={{
-                                                width: getScoreBarWidth(rep.score) + '%',
-                                                background: 'linear-gradient(90deg, #ff0000 0%, #888 50%, #00ff88 100%)',
-                                                opacity: 0.7
-                                            }} />
-                                            <div className="rep-score-bar-marker" style={{
-                                                left: getScoreBarWidth(rep.score) + '%'
-                                            }} />
-                                        </div>
-
-                                        {/* Recent memory */}
-                                        {recentMemory ? (
-                                            <div className="rep-npc-memory">
-                                                <span className="rep-memory-icon">{recentMemory.delta > 0 ? '💚' : '💔'}</span>
-                                                <span className="rep-memory-text">{recentMemory.description || recentMemory.event}</span>
-                                                <span className="rep-memory-time">{timeAgo(recentMemory.timestamp)}</span>
-                                            </div>
-                                        ) : (
-                                            <div className="rep-npc-memory rep-memory-none">— No notable memories yet —</div>
-                                        )}
-
-                                        {/* Expanded memories */}
-                                        {selectedNpc === rep.npc && (
-                                            <div className="rep-npc-expanded">
-                                                <div className="rep-expanded-title">📝 Full Memory Log</div>
-                                                <div className="rep-expanded-stats">
-                                                    {rep.total_interactions || 0} interactions • Last: {timeAgo(rep.last_interaction_at)}
+                                    <div key={r.npc_name} className="feat-card" style={{ borderLeft: `3px solid ${tier.color}`, cursor: 'pointer' }} onClick={() => setExpanded(isOpen ? null : r.npc_name)}>
+                                        <div className="feat-card-header">
+                                            <div className="feat-card-title">
+                                                <span className="icon" style={{ fontSize: '1.3em' }}>{tier.emoji}</span>
+                                                <div>
+                                                    <div className="name">{r.npc_name.replace(/_/g, ' ')}</div>
+                                                    <div className="sub">{r.relationship.toUpperCase()} • Score: <span style={{ color: tier.color, fontWeight: 700 }}>{r.score > 0 ? '+' : ''}{r.score}</span></div>
                                                 </div>
-                                                {(rep.memories || []).slice().reverse().map((mem, i) => (
-                                                    <div key={i} className="rep-memory-item">
-                                                        <span className="rep-memory-delta"
-                                                            style={{ color: mem.delta > 0 ? '#44dd44' : mem.delta < 0 ? '#ff4444' : '#888' }}>
-                                                            {mem.delta > 0 ? '+' + mem.delta : mem.delta}
-                                                        </span>
-                                                        <span className="rep-memory-desc">{mem.description || mem.event}</span>
-                                                        <span className="rep-memory-src">{mem.source || ''}</span>
-                                                        <span className="rep-memory-ts">{timeAgo(mem.timestamp)}</span>
+                                            </div>
+                                            <span className="feat-badge" style={{ background: `${tier.color}18`, color: tier.color }}>{r.relationship}</span>
+                                        </div>
+                                        {/* Score bar */}
+                                        <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', margin: '8px 0', position: 'relative' }}>
+                                            <div style={{ width: barPct + '%', height: '100%', background: `linear-gradient(90deg, #ff4444, #888, #44dd44)`, borderRadius: '2px' }}></div>
+                                            <div style={{ position: 'absolute', top: '-4px', left: barPct + '%', width: '10px', height: '10px', background: tier.color, borderRadius: '50%', transform: 'translateX(-5px)', boxShadow: `0 0 8px ${tier.color}66` }}></div>
+                                        </div>
+                                        {/* Latest memory */}
+                                        {r.memories && r.memories.length > 0 ? (
+                                            <div style={{ fontSize: '0.8em', color: '#888', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ color: r.memories[0].delta > 0 ? '#44dd44' : r.memories[0].delta < 0 ? '#ff4444' : '#888' }}>
+                                                    {r.memories[0].delta > 0 ? '💚' : r.memories[0].delta < 0 ? '💔' : '💬'}
+                                                </span>
+                                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.memories[0].description || r.memories[0].event}</span>
+                                                <span style={{ color: '#444', fontSize: '0.85em', flexShrink: 0 }}>{timeAgo(r.memories[0].created_at)}</span>
+                                            </div>
+                                        ) : <div style={{ fontSize: '0.8em', color: '#444', fontStyle: 'italic' }}>— No notable memories yet —</div>}
+
+                                        {/* Expanded view */}
+                                        {isOpen && r.memories && r.memories.length > 0 && (
+                                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', animation: 'fadeIn 0.2s ease' }}>
+                                                <div style={{ color: '#ffd700', fontSize: '0.82em', marginBottom: '8px' }}>🧠 Memories ({r.memories.length})</div>
+                                                {r.memories.slice(0, 8).map((m, i) => (
+                                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: 'rgba(0,0,0,0.25)', borderRadius: '6px', marginBottom: '4px', fontSize: '0.8em' }}>
+                                                        <span style={{ color: m.delta > 0 ? '#44dd44' : m.delta < 0 ? '#ff4444' : '#888', fontWeight: 700, fontFamily: 'monospace', minWidth: '30px', textAlign: 'right' }}>{m.delta > 0 ? '+' : ''}{m.delta}</span>
+                                                        <span style={{ flex: 1, color: '#bbb' }}>{m.description || m.event}</span>
+                                                        <span style={{ color: '#444', fontSize: '0.82em', flexShrink: 0 }}>{timeAgo(m.created_at)}</span>
                                                     </div>
                                                 ))}
-                                                {(rep.memories || []).length === 0 && <div className="rep-no-data">No memories yet</div>}
                                             </div>
                                         )}
                                     </div>
@@ -39435,80 +38917,49 @@
                         </div>
                     )}
 
-                    {/* History Tab */}
-                    {activeTab === 'history' && (
-                        <div className="rep-history">
-                            {history.length === 0 ? (
-                                <div className="rep-no-data">📭 No reputation events yet. Start interacting with NPCs!</div>
-                            ) : history.map((evt, i) => (
-                                <div key={i} className="rep-history-item">
-                                    <div className="rep-history-left">
-                                        <span className="rep-history-delta"
-                                            style={{ color: evt.delta > 0 ? '#44dd44' : evt.delta < 0 ? '#ff4444' : '#888' }}>
-                                            {evt.delta > 0 ? '+' + evt.delta : String(evt.delta)}
-                                        </span>
-                                        <div className="rep-history-info">
-                                            <span className="rep-history-npc">{(evt.npc_name || '').replace(/_/g, ' ')}</span>
-                                            <span className="rep-history-desc">{evt.description || evt.event_type}</span>
+                    {tab === 'history' && (
+                        <div>
+                            {history.length === 0 ? <div className="feat-empty"><span className="icon">📜</span>No reputation history yet. Explore the city!</div> :
+                            history.map((ev, idx) => (
+                                <div key={idx} className="feat-card" style={{ padding: '10px 14px', marginBottom: '6px', borderLeft: `3px solid ${(ev.delta || 0) > 0 ? '#44dd44' : (ev.delta || 0) < 0 ? '#ff4444' : '#888'}` }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ color: (ev.delta || 0) > 0 ? '#44dd44' : (ev.delta || 0) < 0 ? '#ff4444' : '#888', fontWeight: 700, fontFamily: 'monospace', minWidth: '35px', textAlign: 'right', fontSize: '0.95em' }}>{(ev.delta || 0) > 0 ? '+' : ''}{ev.delta || 0}</span>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ color: '#00ccff', fontSize: '0.85em', fontWeight: 600 }}>{(ev.npc_name || '').replace(/_/g, ' ')}</div>
+                                            <div style={{ color: '#777', fontSize: '0.78em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.description}</div>
                                         </div>
-                                    </div>
-                                    <div className="rep-history-right">
-                                        <span className="rep-history-source">{evt.source || ''}</span>
-                                        <span className="rep-history-time">{timeAgo(evt.created_at)}</span>
+                                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                            <div style={{ color: '#444', fontSize: '0.68em', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{ev.source || ev.event_type}</div>
+                                            <div style={{ color: '#333', fontSize: '0.72em' }}>{timeAgo(ev.created_at)}</div>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* Leaderboard Tab */}
-                    {activeTab === 'leaderboard' && (
-                        <div className="rep-leaderboard">
-                            {/* Most Loved */}
-                            <div className="rep-lb-section">
-                                <h4 className="rep-lb-title" style={{ color: '#00ff88' }}>💚 Most Loved Citizens</h4>
-                                {leaderboard.loved.length === 0 ? (
-                                    <div className="rep-no-data">No data yet</div>
-                                ) : leaderboard.loved.map((p, i) => (
-                                    <div key={i} className="rep-lb-row">
-                                        <span className="rep-lb-rank">{i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                                        <span className="rep-lb-name" style={{ color: p.player_name === playerName ? '#ffd700' : '#ccc' }}>
-                                            {(p.player_name || '').replace(/_/g, ' ')}{p.player_name === playerName ? ' (you)' : ''}
-                                        </span>
-                                        <span className="rep-lb-score" style={{ color: '#44dd44' }}>+{p.total_rep || p.positive_rep || 0}</span>
-                                        <span className="rep-lb-count">{p.npc_count || 0} NPCs</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Most Hated */}
-                            <div className="rep-lb-section">
-                                <h4 className="rep-lb-title" style={{ color: '#ff4444' }}>💀 Most Hated Citizens</h4>
-                                {leaderboard.hated.length === 0 ? (
-                                    <div className="rep-no-data">No data yet</div>
-                                ) : leaderboard.hated.map((p, i) => (
-                                    <div key={i} className="rep-lb-row">
-                                        <span className="rep-lb-rank">{i === 0 ? '☠️' : i === 1 ? '💀' : i === 2 ? '👿' : `#${i + 1}`}</span>
-                                        <span className="rep-lb-name" style={{ color: p.player_name === playerName ? '#ffd700' : '#ccc' }}>
-                                            {(p.player_name || '').replace(/_/g, ' ')}{p.player_name === playerName ? ' (you)' : ''}
-                                        </span>
-                                        <span className="rep-lb-score" style={{ color: '#ff4444' }}>{p.total_rep || 0}</span>
-                                        <span className="rep-lb-count">{p.enemy_count || 0} enemies</span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Global Stats */}
-                            {globalStats && (
-                                <div className="rep-global-stats">
-                                    <div className="rep-global-title">🌍 City Reputation Stats</div>
-                                    <div className="rep-global-grid">
-                                        <div>🔗 Active Relationships: <strong>{globalStats.activeRelationships || 0}</strong></div>
-                                        <div>📊 Total Events: <strong>{globalStats.totalEvents || 0}</strong></div>
-                                        <div>📈 Avg Score: <strong style={{ color: parseFloat(globalStats.averageScore) >= 0 ? '#44dd44' : '#ff4444' }}>{globalStats.averageScore || '0'}</strong></div>
-                                    </div>
+                    {tab === 'leaderboard' && (
+                        <div>
+                            {[{ title: '💛 Best Relationships', data: [...reps].sort((a,b) => b.score - a.score).slice(0, 5), good: true },
+                              { title: '💀 Worst Relationships', data: [...reps].sort((a,b) => a.score - b.score).slice(0, 5), good: false }
+                            ].map(section => (
+                                <div key={section.title} className="feat-card" style={{ marginBottom: '12px' }}>
+                                    <div style={{ color: section.good ? '#ffd700' : '#ff4444', fontSize: '0.95em', fontWeight: 700, marginBottom: '12px' }}>{section.title}</div>
+                                    {section.data.length === 0 ? <div style={{ color: '#555', fontSize: '0.85em' }}>None yet</div> :
+                                    section.data.map((r, idx) => {
+                                        const tier = TIERS[r.relationship] || TIERS.neutral;
+                                        const medals = ['👑', '🥈', '🥉', '4️⃣', '5️⃣'];
+                                        return (
+                                            <div key={r.npc_name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderBottom: idx < section.data.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                                                <span style={{ minWidth: '28px', textAlign: 'center', fontSize: '1em' }}>{medals[idx] || '🔸'}</span>
+                                                <span style={{ fontSize: '1em' }}>{tier.emoji}</span>
+                                                <span style={{ flex: 1, color: '#ccc', fontSize: '0.9em' }}>{r.npc_name.replace(/_/g, ' ')}</span>
+                                                <span style={{ color: tier.color, fontWeight: 700, fontFamily: 'monospace' }}>{r.score > 0 ? '+' : ''}{r.score}</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            )}
+                            ))}
                         </div>
                     )}
                 </div>
