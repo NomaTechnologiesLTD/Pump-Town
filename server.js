@@ -16,6 +16,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const agentBrain = require('./agent-brain.js');
 const reputation = require('./reputation-system.js');
 const questSystem = require('./quest-system.js');
+const economySystem = require('./economy-system.js');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -520,6 +521,7 @@ async function initDatabase() {
     // ==================== REPUTATION SYSTEM TABLES ====================
     await reputation.initReputationTables(pool);
     await questSystem.initQuestTables(pool);
+    await economySystem.initEconomyTables(pool);
 
     // ==================== USER AI AGENTS TABLE ====================
     await client.query(`
@@ -6461,6 +6463,8 @@ reputation.init(pool, NPC_PROFILES, NPC_CITIZENS);
 reputation.registerRoutes(app);
 questSystem.init(pool, anthropic, reputation, NPC_PROFILES, NPC_CITIZENS, getCityStats);
 questSystem.registerRoutes(app);
+economySystem.init(pool, anthropic, NPC_PROFILES, NPC_CITIZENS, getCityStats, updateCityStats, cityLiveData, reputation);
+economySystem.registerRoutes(app);
 
 // ---- NPC RELATIONSHIP DRAMA ----
 async function npcRelationshipEvent() {
@@ -7463,6 +7467,12 @@ const CITY_ENGINE_INTERVAL = 45000; // Check every 45 seconds
 setInterval(cityEventLoop, CITY_ENGINE_INTERVAL);
 setTimeout(() => { console.log('🌆 City Events Engine v3 STARTED! PURE CHAOS MODE.'); cityEventLoop(); }, 10000);
 setInterval(async () => { try { if (getTimeRemaining() < 60000) { await autoResolveVote(); setTimeout(autoGenerateVote, 65000); } } catch(e){} }, 60000);
+
+// Economy tick — every 2 minutes simulate business revenue, every 5 min auto-generate new businesses
+setInterval(async () => { try { await economySystem.economicTick(); } catch(e) { console.error('Economy tick err:', e.message); } }, 120000);
+setInterval(async () => { try { await economySystem.autoGenerateBusinesses(); } catch(e) { console.error('Auto biz err:', e.message); } }, 300000);
+setTimeout(async () => { for (let i = 0; i < 3; i++) { try { await economySystem.autoGenerateBusinesses(); } catch(e) {} await new Promise(r => setTimeout(r, 2000)); } }, 15000);
+
 console.log('🌆 City Events Engine v3 loaded — PURE CHAOS MODE');
 
 // Also add a dedicated action log endpoint
@@ -8854,6 +8864,7 @@ app.listen(PORT, () => {
   console.log(`🧠 Agent Brain: ${anthropic ? 'ENABLED ✅ - NPCs think autonomously!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
   console.log(`🎭 Reputation System: ENABLED ✅ - NPCs remember everything!`);
   console.log(`📋 Quest System: ENABLED ✅ - NPCs give personalized missions!`);
+  console.log(`💰 Economy System: ENABLED ✅ - NPC businesses, investments, competition!`);
   console.log(`🤖 User Agent Brain: ${anthropic ? 'ENABLED ✅ - Player AI agents active!' : 'DISABLED (needs CLAUDE_API_KEY)'}`);
   console.log(`🎬 Soap Opera Engine: ENABLED ✅`);
   console.log(`👑 Mayor Unhinged: ENABLED ✅`);

@@ -16237,6 +16237,14 @@
                                 showToast={showToast}
                             />
                         );
+                    
+                    case 'economy':
+                        return (
+                            <EconomyPage 
+                                playerName={character?.name}
+                                showToast={showToast}
+                            />
+                        );
                         
                     default:
                         return null;
@@ -16463,6 +16471,14 @@
                                 <span className="nav-item-icon">📺</span>
                                 <span className="nav-item-text">City TV</span>
                                 <span className="nav-item-badge new" style={{ background: 'linear-gradient(90deg, #ff0000, #ff6600)' }}>LIVE</span>
+                            </div>
+                            <div 
+                                className={`nav-item ${currentPage === 'economy' ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage('economy'); setSidebarOpen(false); }}
+                            >
+                                <span className="nav-item-icon">💰</span>
+                                <span className="nav-item-text">Economy</span>
+                                <span className="nav-item-badge new" style={{ background: 'linear-gradient(90deg, #00ff88, #ffd700)' }}>NEW</span>
                             </div>
                         </div>
                         
@@ -38134,6 +38150,300 @@
         // ==================== NFT ACHIEVEMENT MINT ====================
 
 
+
+        // ==================== ECONOMY PAGE ====================
+
+        function EconomyPage({ playerName, showToast }) {
+            const [businesses, setBusinesses] = useState([]);
+            const [stats, setStats] = useState(null);
+            const [investments, setInvestments] = useState([]);
+            const [tab, setTab] = useState('businesses');
+            const [loading, setLoading] = useState(true);
+            const [investing, setInvesting] = useState(null);
+            const [investAmount, setInvestAmount] = useState(500);
+
+            const BIZ_TYPE_INFO = {
+                casino: { emoji: '🎰', color: '#ffd700' }, exchange: { emoji: '📊', color: '#00ff88' },
+                bar: { emoji: '🍺', color: '#ff8800' }, info_broker: { emoji: '🕵️', color: '#8a2be2' },
+                nft_gallery: { emoji: '🖼️', color: '#ff69b4' }, degen_gym: { emoji: '💪', color: '#ff4444' },
+                news_outlet: { emoji: '📰', color: '#4488ff' }, protection: { emoji: '🛡️', color: '#ff0000' },
+                token_launchpad: { emoji: '🚀', color: '#00ccff' }, food_cart: { emoji: '🌮', color: '#44dd44' },
+                pawn_shop: { emoji: '🏪', color: '#888' }, underground_lab: { emoji: '🧪', color: '#ff00ff' },
+            };
+
+            useEffect(() => { fetchAll(); const iv = setInterval(fetchAll, 15000); return () => clearInterval(iv); }, [playerName]);
+
+            const fetchAll = async () => {
+                try {
+                    const promises = [
+                        fetch(`${API_BASE}/api/v1/economy/businesses`),
+                        fetch(`${API_BASE}/api/v1/economy/stats`)
+                    ];
+                    if (playerName) promises.push(fetch(`${API_BASE}/api/v1/economy/investments/${encodeURIComponent(playerName)}`));
+                    
+                    const responses = await Promise.all(promises);
+                    const data = await Promise.all(responses.map(r => r.json()));
+                    
+                    if (data[0].success) setBusinesses(data[0].businesses || []);
+                    if (data[1].success) setStats(data[1].stats || null);
+                    if (data[2] && data[2].success) setInvestments(data[2].investments || []);
+                } catch (e) { console.error('Economy fetch error:', e); }
+                setLoading(false);
+            };
+
+            const invest = async (businessId) => {
+                if (!playerName) { showToast && showToast('Login to invest!', 'error'); return; }
+                setInvesting(businessId);
+                try {
+                    const res = await fetch(`${API_BASE}/api/v1/economy/invest`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ playerName, businessId, amount: investAmount })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast && showToast(`Invested ${investAmount} USD in ${data.business_name}!`, 'success');
+                        fetchAll();
+                    } else {
+                        showToast && showToast(data.message || 'Investment failed', 'error');
+                    }
+                } catch (e) { showToast && showToast('Investment failed', 'error'); }
+                setInvesting(null);
+            };
+
+            if (loading) return <div className="rep-page"><div className="rep-loading">💰 Loading economy...</div></div>;
+
+            const openBiz = businesses.filter(b => b.status === 'open');
+            const bankruptBiz = businesses.filter(b => b.status === 'bankrupt');
+
+            return (
+                <div className="rep-page">
+                    <div className="rep-header">
+                        <h2 className="rep-title">💰 Degens City Economy</h2>
+                        <p className="rep-subtitle">NPC businesses compete for profit. Invest and earn returns!</p>
+                    </div>
+
+                    {/* Economy Stats */}
+                    {stats && (
+                        <div className="rep-stats-grid" style={{ marginBottom: '15px' }}>
+                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#00ff88' }}>{stats.active_businesses || 0}</div><div className="rep-stat-label">Businesses</div></div>
+                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#ffd700' }}>{((stats.total_revenue || 0) / 1000).toFixed(0)}K</div><div className="rep-stat-label">Revenue</div></div>
+                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: stats.total_profit >= 0 ? '#44dd44' : '#ff4444' }}>{((stats.total_profit || 0) / 1000).toFixed(0)}K</div><div className="rep-stat-label">Total Profit</div></div>
+                            <div className="rep-stat-card"><div className="rep-stat-value" style={{ color: '#ff4444' }}>{stats.bankrupt_businesses || 0}</div><div className="rep-stat-label">Bankrupt</div></div>
+                        </div>
+                    )}
+
+                    {/* Tabs */}
+                    <div className="rep-tabs">
+                        {[
+                            { id: 'businesses', label: `🏪 Businesses (${openBiz.length})` },
+                            { id: 'investments', label: `📈 My Investments (${investments.length})` },
+                            { id: 'leaderboard', label: '🏆 Top Earners' }
+                        ].map(t => (
+                            <button key={t.id} className={`rep-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* BUSINESSES TAB */}
+                    {tab === 'businesses' && (
+                        <div className="rep-list">
+                            {openBiz.length === 0 ? (
+                                <div className="rep-no-data">🏗️ No businesses yet. NPCs are setting up shop...</div>
+                            ) : openBiz.map(biz => {
+                                const info = BIZ_TYPE_INFO[biz.business_type] || { emoji: '🏪', color: '#888' };
+                                const isInvested = investments.some(i => i.business_id === biz.business_id);
+                                return (
+                                    <div key={biz.business_id} style={{
+                                        background: 'rgba(0,0,0,0.3)', borderRadius: '12px', padding: '14px',
+                                        marginBottom: '10px', border: `1px solid ${info.color}22`,
+                                        borderLeft: `3px solid ${info.color}`
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ fontSize: '1.3em' }}>{info.emoji}</span>
+                                                <div>
+                                                    <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.95em' }}>{biz.name}</div>
+                                                    <div style={{ color: '#888', fontSize: '0.75em' }}>by {(biz.owner_name || '').replace(/_/g, ' ')} • {biz.location}</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ color: '#ffd700', fontSize: '0.75em', fontWeight: 'bold' }}>LVL {biz.level}</div>
+                                                {isInvested && <div style={{ color: '#00ff88', fontSize: '0.65em' }}>✅ INVESTED</div>}
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '8px', fontSize: '0.8em' }}>
+                                            <div style={{ color: '#00ff88' }}>💵 {(biz.revenue || 0).toLocaleString()} rev</div>
+                                            <div style={{ color: biz.profit >= 0 ? '#44dd44' : '#ff4444' }}>
+                                                {biz.profit >= 0 ? '📈' : '📉'} {(biz.profit || 0).toLocaleString()} profit
+                                            </div>
+                                            <div style={{ color: '#00ccff' }}>👥 {(biz.customers || 0).toLocaleString()}</div>
+                                        </div>
+
+                                        {/* Invest */}
+                                        {playerName && (
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                <input type="number" value={investAmount} onChange={e => setInvestAmount(parseInt(e.target.value) || 100)}
+                                                    min="100" max="10000" step="100"
+                                                    style={{
+                                                        width: '80px', padding: '5px 8px', background: 'rgba(255,255,255,0.05)',
+                                                        border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px',
+                                                        color: '#fff', fontSize: '0.8em', textAlign: 'center'
+                                                    }}
+                                                />
+                                                <button onClick={() => invest(biz.business_id)}
+                                                    disabled={investing === biz.business_id}
+                                                    style={{
+                                                        padding: '5px 12px', background: 'linear-gradient(135deg, #00ff88, #00cc66)',
+                                                        border: 'none', borderRadius: '6px', color: '#000', fontWeight: 'bold',
+                                                        fontSize: '0.8em', cursor: investing ? 'wait' : 'pointer'
+                                                    }}>
+                                                    {investing === biz.business_id ? '⏳' : '💰 Invest'}
+                                                </button>
+                                                <span style={{ fontSize: '0.7em', color: '#555' }}>{biz.investor_count || 0} investors</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+
+                            {/* Bankrupt businesses */}
+                            {bankruptBiz.length > 0 && (
+                                <div style={{ marginTop: '15px' }}>
+                                    <h4 style={{ color: '#ff4444', fontSize: '0.85em', marginBottom: '8px' }}>💀 Bankrupt</h4>
+                                    {bankruptBiz.map(biz => {
+                                        const info = BIZ_TYPE_INFO[biz.business_type] || { emoji: '🏪', color: '#888' };
+                                        return (
+                                            <div key={biz.business_id} className="rep-history-item" style={{ opacity: 0.5 }}>
+                                                <div className="rep-history-left">
+                                                    <span className="rep-history-delta" style={{ color: '#ff4444' }}>{info.emoji}</span>
+                                                    <div className="rep-history-info">
+                                                        <span className="rep-history-npc">{biz.name}</span>
+                                                        <span className="rep-history-desc">{(biz.owner_name || '').replace(/_/g, ' ')} • Lost {Math.abs(biz.profit || 0).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                                <span style={{ color: '#ff4444', fontSize: '0.75em' }}>BANKRUPT</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* INVESTMENTS TAB */}
+                    {tab === 'investments' && (
+                        <div className="rep-list">
+                            {!playerName ? (
+                                <div className="rep-no-data">🔒 Login to see your investments</div>
+                            ) : investments.length === 0 ? (
+                                <div className="rep-no-data">📭 No investments yet. Browse businesses and invest!</div>
+                            ) : (
+                                <>
+                                    <div style={{ background: 'rgba(0,255,136,0.08)', borderRadius: '10px', padding: '12px', marginBottom: '12px', border: '1px solid rgba(0,255,136,0.15)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                                            <div>
+                                                <div style={{ color: '#ffd700', fontSize: '1.1em', fontWeight: 'bold' }}>{investments.reduce((a, i) => a + (i.amount || 0), 0).toLocaleString()}</div>
+                                                <div style={{ color: '#888', fontSize: '0.75em' }}>Total Invested</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ color: '#00ff88', fontSize: '1.1em', fontWeight: 'bold' }}>{investments.reduce((a, i) => a + (i.returns_collected || 0), 0).toLocaleString()}</div>
+                                                <div style={{ color: '#888', fontSize: '0.75em' }}>Returns Earned</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ color: '#00ccff', fontSize: '1.1em', fontWeight: 'bold' }}>{investments.length}</div>
+                                                <div style={{ color: '#888', fontSize: '0.75em' }}>Positions</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {investments.map(inv => {
+                                        const info = BIZ_TYPE_INFO[inv.business_type] || { emoji: '🏪', color: '#888' };
+                                        return (
+                                            <div key={inv.id} className="rep-npc-card" style={{ borderLeft: `3px solid ${info.color}` }}>
+                                                <div className="rep-npc-header">
+                                                    <div className="rep-npc-identity">
+                                                        <span className="rep-npc-emoji">{info.emoji}</span>
+                                                        <span className="rep-npc-name">{inv.business_name}</span>
+                                                    </div>
+                                                    <span style={{ fontSize: '0.7em', color: inv.biz_status === 'open' ? '#44dd44' : '#ff4444' }}>
+                                                        {inv.biz_status === 'open' ? '✅ Active' : '💀 Bankrupt'}
+                                                    </span>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '15px', fontSize: '0.8em', marginTop: '6px' }}>
+                                                    <span style={{ color: '#ffd700' }}>💵 {(inv.amount || 0).toLocaleString()} invested</span>
+                                                    <span style={{ color: '#00ff88' }}>📈 {parseFloat(inv.share_pct || 0).toFixed(1)}% share</span>
+                                                    <span style={{ color: '#00ccff' }}>💰 {(inv.returns_collected || 0).toLocaleString()} earned</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* LEADERBOARD TAB */}
+                    {tab === 'leaderboard' && (
+                        <div>
+                            {stats && stats.top_businesses && stats.top_businesses.length > 0 ? (
+                                <>
+                                    <h4 style={{ color: '#ffd700', fontSize: '0.9em', marginBottom: '10px' }}>🏆 Most Profitable Businesses</h4>
+                                    {stats.top_businesses.map((biz, idx) => {
+                                        const info = BIZ_TYPE_INFO[biz.business_type] || { emoji: '🏪', color: '#888' };
+                                        const medals = ['👑', '🥈', '🥉', '4️⃣', '5️⃣'];
+                                        return (
+                                            <div key={idx} style={{
+                                                display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
+                                                background: idx === 0 ? 'rgba(255,215,0,0.08)' : 'rgba(0,0,0,0.15)',
+                                                borderRadius: '10px', marginBottom: '6px',
+                                                border: idx === 0 ? '1px solid rgba(255,215,0,0.2)' : '1px solid transparent'
+                                            }}>
+                                                <span style={{ fontSize: '1.2em', minWidth: '28px', textAlign: 'center' }}>{medals[idx] || '🔸'}</span>
+                                                <span style={{ fontSize: '1.1em' }}>{info.emoji}</span>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.9em' }}>{biz.name}</div>
+                                                    <div style={{ color: '#888', fontSize: '0.75em' }}>{(biz.owner_name || '').replace(/_/g, ' ')} • LVL {biz.level}</div>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <div style={{ color: biz.profit >= 0 ? '#44dd44' : '#ff4444', fontWeight: 'bold', fontSize: '0.9em' }}>
+                                                        {(biz.profit || 0).toLocaleString()} USD
+                                                    </div>
+                                                    <div style={{ color: '#888', fontSize: '0.7em' }}>{(biz.customers || 0).toLocaleString()} customers</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </>
+                            ) : (
+                                <div className="rep-no-data">🏗️ Economy is just getting started... check back soon!</div>
+                            )}
+
+                            {/* Recent economic events */}
+                            {stats && stats.recent_events && stats.recent_events.length > 0 && (
+                                <div style={{ marginTop: '15px' }}>
+                                    <h4 style={{ color: '#888', fontSize: '0.85em', marginBottom: '8px' }}>📜 Recent Economic Activity</h4>
+                                    {stats.recent_events.map((ev, idx) => (
+                                        <div key={idx} className="rep-history-item">
+                                            <div className="rep-history-left">
+                                                <span className="rep-history-delta" style={{ color: '#ffd700' }}>
+                                                    {ev.event_type === 'business_opened' ? '🏪' : ev.event_type === 'investment' ? '📈' : ev.event_type === 'bankruptcy' ? '💀' : '💰'}
+                                                </span>
+                                                <div className="rep-history-info">
+                                                    <span className="rep-history-npc">{(ev.actor || '').replace(/_/g, ' ')}</span>
+                                                    <span className="rep-history-desc">{ev.description}</span>
+                                                </div>
+                                            </div>
+                                            {ev.amount > 0 && <span style={{ color: '#ffd700', fontSize: '0.75em' }}>{ev.amount.toLocaleString()} USD</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
 
         // ==================== CITY TV PAGE ====================
 
