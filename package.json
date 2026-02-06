@@ -1,25 +1,28 @@
 {
-  "name": "pump-town-backend",
-  "version": "1.0.0",
-  "description": "Pump Town AI Mayor Backend",
+  "name": "degens-city",
+  "version": "4.0.0",
+  "description": "Degens City - AI Governed City Simulation",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "build": "node build.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "Noma Technologies LTD",
+  "license": "ISC",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.24.0",
-    "@capacitor/android": "^8.0.1",
-    "@capacitor/cli": "^8.0.1",
-    "@capacitor/core": "^8.0.1",
-    "@capacitor/ios": "^8.0.1",
+    "@anthropic-ai/sdk": "^0.20.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
+    "express": "^4.18.0",
     "node-fetch": "^2.7.0",
-    "pg": "^8.11.3"
+    "pg": "^8.11.0"
   },
-  "engines": {
-    "node": ">=16.0.0"
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/plugin-transform-classes": "^7.28.6",
+    "@babel/preset-react": "^7.28.5"
   }
 }

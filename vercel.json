@@ -1,6 +1,29 @@
 {
+  "outputDirectory": "dist",
+  "buildCommand": "node build.js",
+  "installCommand": "npm install --save-dev @babel/core @babel/preset-react @babel/plugin-transform-classes",
+  "framework": null,
+  "headers": [
+    {
+      "source": "/styles.css",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/app.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    }
+  ],
   "rewrites": [
-    { "source": "/play", "destination": "/index.html" },
-    { "source": "/", "destination": "/landing.html" }
+    { "source": "/((?!styles\\.css|app\\.js|favicon|assets).*)", "destination": "/index.html" }
   ]
 }
