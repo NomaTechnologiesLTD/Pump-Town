@@ -268,12 +268,13 @@ async function getPlayerReputation(playerName) {
     );
 
     return result.rows.map(row => ({
-      npc: row.npc_name,
+      npc_name: row.npc_name,
       score: row.score,
       relationship: row.relationship,
       memories: typeof row.memories === 'string' ? JSON.parse(row.memories) : (row.memories || []),
       total_interactions: row.total_interactions,
       last_interaction_at: row.last_interaction_at,
+      last_event_at: row.last_interaction_at,
       tier: getRelationshipTier(row.score)
     }));
   } catch (err) {
