@@ -26,28 +26,62 @@
 // ==================== CONFIG ====================
 
 const BRAIN_CONFIG = {
-  // How often the brain ticks (called from city engine, not its own interval)
-  minTimeBetweenThoughts: 30000,    // 30 sec minimum between any NPC thinking (was 2 min)
-  minTimeBetweenSameNpc: 180000,    // 3 min before same NPC thinks again (was 10 min)
-  maxConcurrentActions: 5,          // Max actions processing at once (was 3)
-  claudeModel: 'claude-sonnet-4-5-20250929',  // Use Sonnet for speed + cost
-  maxTokens: 500,
-  // Action cooldowns (ms) - all reduced for more activity
+  // ==================== BUDGET CONTROL ====================
+  // Target: $30/month = $1/day = ~67 API calls/day (Haiku ~$0.015/call)
+  dailyBudgetCalls: 70,             // Hard cap: max API calls per day
+  // How often the brain ticks
+  minTimeBetweenThoughts: 300000,   // 5 min between any NPC thinking (was 30 sec!)
+  minTimeBetweenSameNpc: 1800000,   // 30 min before same NPC thinks again (was 3 min!)
+  maxConcurrentActions: 2,          // Max actions processing at once (was 5)
+  claudeModel: 'claude-haiku-4-5-20251001',  // 🔥 Haiku = 15x cheaper than Sonnet
+  maxTokens: 350,                   // Reduced from 500 — Haiku is concise enough
+  // Action cooldowns (ms) - increased for budget
   cooldowns: {
-    sue: 120000,          // 2 min between lawsuits (was 5 min)
-    propose_law: 300000,  // 5 min between law proposals (was 10 min)
-    challenge: 90000,     // 1.5 min between challenges (was 5 min)
-    party: 180000,        // 3 min between parties (was 10 min)
-    rumor: 60000,         // 1 min between rumors (was 3 min)
-    accuse: 90000,        // 1.5 min between accusations (was 5 min)
-    business: 300000,     // 5 min between businesses (was 10 min)
-    protest: 300000,      // 5 min between protests (was 10 min)
-    betray: 300000,       // 5 min between betrayals (was 15 min)
-    run_for_mayor: 600000, // 10 min (was 30 min)
-    crime: 180000,        // 3 min between crimes (was 10 min)
-    dm_player: 120000,    // 2 min between DMs to players (was 5 min)
+    sue: 600000,          // 10 min between lawsuits
+    propose_law: 1800000, // 30 min between law proposals
+    challenge: 600000,    // 10 min between challenges
+    party: 1200000,       // 20 min between parties
+    rumor: 600000,        // 10 min between rumors
+    accuse: 600000,       // 10 min between accusations
+    business: 1800000,    // 30 min between businesses
+    protest: 1800000,     // 30 min between protests
+    betray: 1800000,      // 30 min between betrayals
+    run_for_mayor: 3600000, // 60 min
+    crime: 1200000,       // 20 min between crimes
+    dm_player: 900000,    // 15 min between DMs to players
   }
 };
+
+// ==================== BUDGET TRACKER ====================
+let _budgetTracker = {
+  callsToday: 0,
+  dayStart: Date.now(),
+  totalCallsAllTime: 0,
+  lastReset: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+};
+
+function checkBudget() {
+  const today = new Date().toISOString().split('T')[0];
+  // Reset counter at midnight
+  if (today !== _budgetTracker.lastReset) {
+    console.log(`🧠 [BUDGET] New day! Resetting counter. Yesterday used: ${_budgetTracker.callsToday} calls`);
+    _budgetTracker.callsToday = 0;
+    _budgetTracker.lastReset = today;
+  }
+  // Check if we're over budget
+  if (_budgetTracker.callsToday >= BRAIN_CONFIG.dailyBudgetCalls) {
+    return false; // OVER BUDGET — no more AI calls today
+  }
+  return true;
+}
+
+function trackApiCall() {
+  _budgetTracker.callsToday++;
+  _budgetTracker.totalCallsAllTime++;
+  if (_budgetTracker.callsToday % 10 === 0) {
+    console.log(`🧠 [BUDGET] ${_budgetTracker.callsToday}/${BRAIN_CONFIG.dailyBudgetCalls} API calls used today`);
+  }
+}
 
 // ==================== REAL-TIME CRYPTO PRICES ====================
 // Cache prices to avoid too many API calls
@@ -99,11 +133,14 @@ async function fetchCryptoPrices() {
 
 function formatPricesForPrompt(prices) {
   if (!prices) return '';
-  let str = '\n📊 CURRENT CRYPTO PRICES (use these real prices in your content!):\n';
-  for (const [symbol, data] of Object.entries(prices)) {
+  // Only send top 5 coins to save tokens
+  const topCoins = ['BTC', 'ETH', 'SOL', 'DOGE', 'XRP'];
+  let str = '\n📊 CRYPTO PRICES:\n';
+  for (const symbol of topCoins) {
+    const data = prices[symbol];
+    if (!data) continue;
     const changeStr = data.change > 0 ? `+${data.change}%` : `${data.change}%`;
-    const emoji = data.change > 0 ? '🟢' : '🔴';
-    str += `${emoji} ${symbol}: $${data.price.toLocaleString()} (${changeStr} 24h)\n`;
+    str += `${symbol}: $${data.price.toLocaleString()} (${changeStr})\n`;
   }
   return str;
 }
@@ -683,7 +720,7 @@ function buildCityContext(cityStats) {
   // Recent actions for context
   if (recentAutonomousActions.length > 0) {
     ctx += `\nRecent events in the city (DO NOT REPEAT THESE - be original!):\n`;
-    recentAutonomousActions.slice(0, 8).forEach(a => {
+    recentAutonomousActions.slice(0, 4).forEach(a => {
       ctx += `- ${a.npc_name} did "${a.action_type}" ${a.target_name ? 'targeting ' + a.target_name : ''}: ${(a.description || '').substring(0, 100)}\n`;
     });
     ctx += `\n⚠️ IMPORTANT: Do NOT repeat any of the above actions or targets. Be creative and choose something different!\n`;
@@ -695,8 +732,9 @@ function buildCityContext(cityStats) {
 async function buildAvailableTargets() {
   let targets = `\nPossible targets:\n`;
 
-  // NPCs
-  targets += `NPCs: ${_NPC_CITIZENS.join(', ')}\n`;
+  // NPCs — only send a random subset of 10 to reduce tokens
+  const shuffledNpcs = [..._NPC_CITIZENS].sort(() => Math.random() - 0.5).slice(0, 10);
+  targets += `NPCs: ${shuffledNpcs.join(', ')}\n`;
 
   // User agents (fetch active ones)
   try {
@@ -704,15 +742,16 @@ async function buildAvailableTargets() {
       SELECT name FROM user_agents 
       WHERE is_active = TRUE AND is_banned = FALSE 
       ORDER BY reputation DESC 
-      LIMIT 20
+      LIMIT 10
     `);
     if (result.rows.length > 0) {
       targets += `User Agents: ${result.rows.map(r => r.name).join(', ')}\n`;
     }
   } catch (e) { }
 
-  // Celebrities
-  targets += `Celebrities: ${CELEBRITIES.map(c => c.name).join(', ')}\n`;
+  // Celebrities — random subset of 15 to save tokens (was ALL 100+)
+  const shuffledCelebs = [...CELEBRITIES].sort(() => Math.random() - 0.5).slice(0, 15);
+  targets += `Celebrities: ${shuffledCelebs.map(c => `${c.name} (${c.handle})`).join(', ')}\n`;
   
   targets += `\n(Use target_type: "npc" for NPCs, "user_agent" for user agents, "celebrity" for celebrities, "player" for real players)\n`;
 
@@ -722,6 +761,10 @@ async function buildAvailableTargets() {
 // The main "think" function - asks Claude what an NPC wants to do
 async function npcThink(npcName) {
   if (!_anthropic) return null;
+  if (!checkBudget()) {
+    console.log(`🧠 [BUDGET] Daily limit reached (${_budgetTracker.callsToday}/${BRAIN_CONFIG.dailyBudgetCalls}). ${npcName} skipped.`);
+    return null;
+  }
 
   const npc = _NPC_PROFILES[npcName];
   const life = _cityLiveData.npcLives ? _cityLiveData.npcLives[npcName] : null;
@@ -897,6 +940,7 @@ What's your next move?`;
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
     });
+    trackApiCall();
 
     const text = response.content[0].text.trim();
     // Try to parse JSON - handle potential markdown wrapping
@@ -928,6 +972,10 @@ What's your next move?`;
 // User Agent think function - similar to npcThink but for user-created agents
 async function userAgentThink(agent) {
   if (!_anthropic) return null;
+  if (!checkBudget()) {
+    console.log(`🧠 [BUDGET] Daily limit reached. User agent ${agent.name} skipped.`);
+    return null;
+  }
 
   let cityStats;
   try { cityStats = await _getCityStats(); } catch (e) { cityStats = { economy: 50, security: 50, culture: 50, morale: 50 }; }
@@ -1034,6 +1082,7 @@ What's your next move?`;
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
     });
+    trackApiCall();
 
     const text = response.content[0].text.trim();
     let cleaned = text;
@@ -1162,8 +1211,8 @@ async function executeSue(decision) {
       }, Math.floor(Math.random() * 10000) + 3000);
     }
 
-    // Schedule auto-resolve lawsuit after 5-15 minutes
-    const resolveTime = Math.floor(Math.random() * 600000) + 300000;
+    // Schedule auto-resolve lawsuit after 15-45 minutes (longer = fewer API calls)
+    const resolveTime = Math.floor(Math.random() * 1800000) + 900000;
     setTimeout(() => resolveLawsuit(caseNumber), resolveTime);
 
     console.log(`⚖️ Lawsuit filed: ${decision.npc_name} vs ${decision.target} ${targetHandle} - Case ${caseNumber}`);
@@ -1193,6 +1242,12 @@ async function executeSue(decision) {
 
 async function resolveLawsuit(caseNumber) {
   if (!_anthropic) return;
+  if (!checkBudget()) {
+    console.log(`🧠 [BUDGET] Daily limit reached. Lawsuit ${caseNumber} resolution deferred.`);
+    // Retry in 1 hour
+    setTimeout(() => resolveLawsuit(caseNumber), 3600000);
+    return;
+  }
   try {
     const res = await _pool.query('SELECT * FROM lawsuits WHERE case_number = $1 AND status = $2', [caseNumber, 'filed']);
     if (res.rows.length === 0) return;
@@ -1208,6 +1263,7 @@ async function resolveLawsuit(caseNumber) {
         content: `Case ${caseNumber}: ${lawsuit.plaintiff_name} (${lawsuit.plaintiff_type}) is suing ${lawsuit.defendant_name} (${lawsuit.defendant_type}) for ${lawsuit.damages_requested} USD.\nComplaint: ${lawsuit.complaint}\nDeliver your verdict!`
       }]
     });
+    trackApiCall();
 
     let text = judgeResponse.content[0].text.trim();
     if (text.startsWith('```')) text = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
@@ -1843,6 +1899,11 @@ async function executeAction(decision) {
 async function tick() {
   const now = Date.now();
 
+  // Budget check FIRST — if over daily limit, skip everything
+  if (!checkBudget()) {
+    return; // Silent — already logged in checkBudget
+  }
+
   // Global cooldown
   if (now - lastBrainTick < BRAIN_CONFIG.minTimeBetweenThoughts) {
     return; // Silent return for cooldown
@@ -2094,6 +2155,16 @@ function registerRoutes(app) {
           recentActions: recentAutonomousActions.length,
           activeActions,
           lastTickAge: Date.now() - lastBrainTick,
+          budget: {
+            model: BRAIN_CONFIG.claudeModel,
+            callsToday: _budgetTracker.callsToday,
+            dailyLimit: BRAIN_CONFIG.dailyBudgetCalls,
+            remaining: BRAIN_CONFIG.dailyBudgetCalls - _budgetTracker.callsToday,
+            totalAllTime: _budgetTracker.totalCallsAllTime,
+            lastReset: _budgetTracker.lastReset,
+            tickInterval: BRAIN_CONFIG.minTimeBetweenThoughts / 1000 + 's',
+            npcCooldown: BRAIN_CONFIG.minTimeBetweenSameNpc / 1000 + 's',
+          },
           npcThoughtTimes: Object.entries(npcLastThought).map(([npc, time]) => ({
             npc,
             lastThought: new Date(time).toISOString(),
@@ -2132,4 +2203,12 @@ module.exports = {
   CELEBRITIES,
   ACTIONS,
   recentAutonomousActions,
+  getBudgetStatus: () => ({
+    ..._budgetTracker,
+    dailyLimit: BRAIN_CONFIG.dailyBudgetCalls,
+    remaining: BRAIN_CONFIG.dailyBudgetCalls - _budgetTracker.callsToday,
+    model: BRAIN_CONFIG.claudeModel,
+    tickIntervalSec: BRAIN_CONFIG.minTimeBetweenThoughts / 1000,
+    npcCooldownSec: BRAIN_CONFIG.minTimeBetweenSameNpc / 1000,
+  }),
 };
