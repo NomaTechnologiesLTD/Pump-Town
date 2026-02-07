@@ -783,7 +783,7 @@ Rules:
 - Be creative and entertaining!`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system: MAYOR_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }]
@@ -839,7 +839,7 @@ Generate JSON (pure JSON only):
 }`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 512,
       system: MAYOR_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }]
@@ -889,7 +889,7 @@ Generate JSON (pure JSON only):
 Make it dramatic and crypto-themed! If a stat is critical (below 30), maybe address it.`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 768,
       system: MAYOR_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }]
@@ -996,7 +996,7 @@ ${xUserContext ? `\n[X User Lookup Mode Active - see system prompt for context a
 Respond as Mayor Satoshi McPump in 2-4 sentences. Be witty, use crypto slang, stay in character. Remember: NO asterisks for actions!`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 256,
       system: systemPrompt,
       messages: [{ role: 'user', content: prompt }]
@@ -1019,7 +1019,7 @@ Respond as Mayor Satoshi McPump in 2-4 sentences. Be witty, use crypto slang, st
 app.get('/api/ai/status', (req, res) => {
   res.json({
     enabled: !!anthropic,
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     features: ['vote-generation', 'mayor-reactions', 'events', 'chat', 'daily-briefing', 'x-lookup']
   });
 });
@@ -1127,7 +1127,7 @@ Generate JSON (pure JSON only):
 Be dramatic, use crypto slang, mention any stats that are critically low (<30) or high (>80).`;
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 512,
       system: MAYOR_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }]
@@ -4408,7 +4408,7 @@ app.post('/api/v1/justice/prosecute', authenticateAgent, async (req, res) => {
     // If no argument provided, use AI to generate one
     if (!prosecutionArg && anthropic) {
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 256,
         system: PROSECUTOR_SYSTEM_PROMPT,
         messages: [{
@@ -4471,7 +4471,7 @@ app.post('/api/v1/justice/defend', authenticateAgent, async (req, res) => {
     // If no argument provided, use AI to generate one
     if (!defenseArg && anthropic) {
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 256,
         system: DEFENSE_SYSTEM_PROMPT,
         messages: [{
@@ -4537,7 +4537,7 @@ app.post('/api/v1/justice/verdict', authenticateAgent, async (req, res) => {
     // If no verdict provided, use AI to generate one
     if (!finalVerdict && anthropic) {
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
         system: JUDGE_SYSTEM_PROMPT,
         messages: [{
@@ -5060,7 +5060,7 @@ Respond with JSON:
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 500,
       messages: [
         { role: 'user', content: systemPrompt + '\n\n' + userPrompt }
@@ -5554,7 +5554,7 @@ async function autoGenerateVote() {
     if (anthropic) {
       try {
         const prompt = 'Generate a UNIQUE and WILD voting scenario for Degens City, a chaotic crypto city simulation. Current stats: Economy ' + cityStats.economy + ', Security ' + cityStats.security + ', Culture ' + cityStats.culture + ', Morale ' + cityStats.morale + '. Chaos: ' + cityEngine.chaosLevel + '%. Day ' + day + ' Round ' + round + '. Generate JSON ONLY: {"question":"dramatic funny question","mayorQuote":"2-3 sentences crypto slang","options":[{"id":"A","title":"3-5 words","description":"what it does","effects":[{"stat":"economy","value":10,"type":"positive"}]},{"id":"B","title":"3-5 words","description":"what it does","effects":[{"stat":"morale","value":15,"type":"positive"}]}]}. BE CREATIVE AND FUNNY! Stats: economy, security, culture, morale. Values: -20 to +20. Think bizarre, absurd, crypto-themed scenarios!';
-        const response = await anthropic.messages.create({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, system: MAYOR_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] });
+        const response = await anthropic.messages.create({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: MAYOR_SYSTEM_PROMPT, messages: [{ role: 'user', content: prompt }] });
         const content = response.content[0].text;
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -7783,7 +7783,7 @@ app.post('/api/city-engine/mayor-react', async (req, res) => {
     
     if (anthropic) {
       const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 150,
         system: MAYOR_SYSTEM_PROMPT + '\n\nRespond with a SHORT, punchy 1-2 sentence reaction. Be dramatic, funny, and use crypto slang. NO asterisks for actions.',
         messages: [{ role: 'user', content: `React to this event happening in Degens City: ${event}. Context: Chaos level ${cityEngine.chaosLevel}%, your approval rating ${cityEngine.mayorApproval}%. ${context || ''}` }]
@@ -8097,15 +8097,14 @@ async function mayorRoastPlayer() {
   try {
     // Get recent active players from chat
     const recentPlayers = await pool.query(
-      `SELECT DISTINCT player_name FROM chat_messages 
+      `SELECT player_name FROM (SELECT DISTINCT player_name FROM chat_messages 
        WHERE channel = 'global' AND created_at > NOW() - INTERVAL '1 hour'
        AND player_name NOT LIKE '%BREAKING%' AND player_name NOT LIKE '%Mayor%' 
        AND player_name NOT LIKE '%Reporter%' AND player_name NOT LIKE '%Officer%'
        AND player_name NOT LIKE '%Judge%' AND player_name NOT LIKE '%DRAMA%'
        AND player_name NOT LIKE '%SOAP%' AND player_name NOT LIKE '%BET%'
-       ORDER BY RANDOM() LIMIT 5`
+       ORDER BY player_name) AS sub ORDER BY RANDOM() LIMIT 5`
     );
-    
     const targets = recentPlayers.rows.map(r => r.player_name).filter(n => !NPC_CITIZENS.includes(n) && !mayorUnhinged.roastTargets.includes(n));
     const target = targets.length > 0 ? pick(targets) : pick(NPC_CITIZENS);
     const isNpc = NPC_CITIZENS.includes(target);
@@ -8114,7 +8113,7 @@ async function mayorRoastPlayer() {
     if (anthropic && chance(60)) {
       try {
         const resp = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 100,
           system: `You are Mayor Satoshi McPump, the unhinged crypto-degen mayor. Write a SHORT funny roast (1-2 sentences) of a citizen. Be playful not mean. Use crypto/degen slang. NO asterisks.`,
           messages: [{ role: 'user', content: `Roast ${target} in Degens City. They're ${isNpc ? 'an NPC citizen known as ' + (NPC_PROFILES[target]?.role || 'a degen') : 'a player visiting the city'}. Chaos level: ${cityEngine.chaosLevel}%. Keep it under 30 words.` }]
@@ -8154,7 +8153,7 @@ async function mayorPrediction() {
     if (anthropic && chance(50)) {
       try {
         const resp = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 80,
           system: `You are Mayor Satoshi McPump. Make a SHORT dramatic prediction about what will happen in Degens City next. Be specific, funny, and dramatic. Use crypto slang. NO asterisks. Under 25 words.`,
           messages: [{ role: 'user', content: `Make a prediction. Current state: Chaos ${cityEngine.chaosLevel}%, Approval ${cityEngine.mayorApproval}%, Sentiment: ${cityEngine.marketSentiment}, Weather: ${cityLiveData.weather}. Active feuds: ${cityEngine.activeFeud ? 'yes' : 'no'}. Active disasters: ${cityLiveData.cityDisaster ? 'yes' : 'no'}.` }]
@@ -8221,7 +8220,7 @@ async function mayorHotTake() {
     if (anthropic && chance(50)) {
       try {
         const resp = await anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 80,
           system: `You are Mayor Satoshi McPump. Give a HOT TAKE about something happening in crypto or Degens City. Be controversial, funny, dramatic. Under 25 words. NO asterisks.`,
           messages: [{ role: 'user', content: `Give a hot take. Chaos: ${cityEngine.chaosLevel}%, Weather: ${cityLiveData.weather}, Sentiment: ${cityEngine.marketSentiment}. What's your spiciest opinion right now?` }]
