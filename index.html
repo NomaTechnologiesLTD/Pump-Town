@@ -13564,11 +13564,68 @@
             animation: fadeIn 0.4s ease;
         }
         @media (max-width: 600px) {
+            /* === SHARED FEAT SYSTEM MOBILE === */
+            .feat-page { padding: 10px; }
+            .feat-hero { padding: 15px !important; padding-right: 15px !important; text-align: center !important; }
+            .feat-hero h2 { font-size: 1.15em !important; }
+            .feat-hero p { font-size: 0.78em !important; }
+            .feat-hero-icon { font-size: 1.8em !important; }
             .feat-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-            .feat-tabs { flex-wrap: nowrap; overflow-x: auto; }
-            .feat-tab { font-size: 0.75em; padding: 8px 8px; }
+            .feat-stat { padding: 10px 6px !important; }
+            .feat-stat-value { font-size: 1.2em !important; word-break: break-all; }
+            .feat-stat-label { font-size: 0.65em !important; }
+            .feat-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 3px !important; padding: 3px !important; }
+            .feat-tabs::-webkit-scrollbar { display: none; }
+            .feat-tab { font-size: 0.72em; padding: 7px 8px; flex: 0 0 auto; min-width: fit-content; white-space: nowrap; }
+            .feat-card { padding: 12px !important; margin-bottom: 8px !important; }
+            .feat-card-header { flex-wrap: wrap; gap: 6px; }
+            .feat-card-title { min-width: 0; flex: 1; }
+            .feat-card-title .name { font-size: 0.88em !important; word-break: break-word; }
+            .feat-card-title .sub { font-size: 0.72em !important; word-break: break-word; }
+            .feat-metric-row { gap: 8px !important; font-size: 0.75em !important; }
             .feat-npc-grid { grid-template-columns: 1fr; }
-            .feat-hero h2 { font-size: 1.2em; }
+            .feat-badge { font-size: 0.6em !important; padding: 2px 6px !important; }
+            .feat-input { font-size: 16px !important; } /* prevent iOS zoom */
+            .feat-btn { font-size: 0.78em !important; padding: 7px 12px !important; }
+            .feat-empty { padding: 20px 15px !important; }
+            .feat-filters { flex-wrap: wrap !important; gap: 6px !important; margin-bottom: 10px !important; }
+            .feat-filter { font-size: 0.72em !important; padding: 5px 8px !important; }
+
+            /* === CITY TV MOBILE === */
+            .feat-ticker { font-size: 0.72em !important; overflow: hidden; }
+            .feat-live-dot { width: 6px !important; height: 6px !important; }
+
+            /* === ECONOMY MOBILE === */
+            .feat-page .feat-card [style*="display: flex"][style*="gap: 8px"][style*="align-items: center"] {
+                flex-wrap: wrap;
+            }
+
+            /* === SOCIAL / CHAT MOBILE === */
+            .chat-section { padding: 12px !important; }
+            .chat-header { flex-direction: column; align-items: flex-start !important; gap: 8px; }
+            .chat-header h2 { font-size: 1.05em !important; }
+            .chat-tabs { width: 100%; }
+            .chat-tab { font-size: 0.78em !important; padding: 5px 10px !important; flex: 1; text-align: center; }
+            .chat-messages { height: 220px !important; padding: 8px !important; }
+            .chat-input-area { gap: 6px !important; }
+            .chat-input { font-size: 16px !important; padding: 10px !important; }
+            .chat-send-btn { padding: 10px 14px !important; font-size: 0.82em !important; }
+            .chat-message { padding: 6px 8px !important; font-size: 0.85em !important; }
+
+            /* Flex card button */
+            .flex-card-btn { font-size: 0.9em !important; padding: 12px !important; }
+
+            /* === REPUTATION MOBILE extras === */
+            .feat-page select.feat-input { font-size: 14px !important; padding: 5px 8px !important; }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 380px) {
+            .feat-page { padding: 6px; }
+            .feat-stat-value { font-size: 1em !important; }
+            .feat-tab { font-size: 0.68em; padding: 6px 6px; }
+            .chat-section { padding: 8px !important; }
+            .chat-header h2 { font-size: 0.95em !important; }
         }
     </style>
 </head>
@@ -36965,7 +37022,7 @@
 
             return (
                 <div className="feat-page">
-                    <div className="feat-hero" style={{ textAlign: 'left', paddingRight: '80px' }}>
+                    <div className="feat-hero" style={{ textAlign: 'left' }}>
                         <div style={{ position: 'absolute', top: '12px', right: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span className="feat-live-dot"></span>
                             <span style={{ color: '#ff0000', fontSize: '0.75em', fontWeight: 'bold', letterSpacing: '2px' }}>LIVE</span>
